@@ -1,0 +1,127 @@
+---
+title: Coat Rack Wardrobe
+---
+
+import JscadModelViewer from "@jscad/components/JscadModelViewer.astro";
+import { cm, inch, mm, toCm, NumberWithUnit } from "@pocs/values";
+import { calculateDimensions } from "@pocs/coat-rack-wardrobe/calculations";
+import { CoatRackWardrobe } from "@pocs/coat-rack-wardrobe/coat-rack-wardrobe.model";
+import { DrillJigs } from "@pocs/coat-rack-wardrobe/drill-jigs.model";
+import { materials } from "@pocs/coat-rack-wardrobe/materials";
+import { Dimensions } from "@pocs/coat-rack-wardrobe/types";
+
+export const pub = process.env.NODE_ENV === "production" ? "/ideas/" : "/"
+
+export const dimensions = {
+  space: {
+    width: cm(220),
+    height: cm(265),
+    depth: cm(65)
+  },
+  heatingControl: {
+    width: cm(121),
+    height: cm(65),
+    depth: cm(13.5)
+  },
+  bestaBottom: {
+    width: cm(60),
+    height: cm(64),
+    depth: cm(42)
+  },
+  bestaTop: {
+    width: cm(60),
+    height: cm(38),
+    depth: cm(42)
+  },
+  gapShelfBottom: {
+    width: cm(40),
+    height: cm(220),
+    depth: cm(61.6),
+  },
+  gapShelfTop: {
+    width: cm(40),
+    height: cm(40),
+    depth: cm(61.6),
+  },
+  nordli: {
+    width: cm(80),
+    height: cm(115),
+    depth: cm(26),
+  },
+  benchBoard: {
+    width: cm(180),
+    depth: cm(60),
+    thickness: cm(1.8),
+  },
+  wallMount: {
+    width: cm(9.8),
+    thickness: cm(5.8),
+  },
+  bottomRail: {
+    thickness: cm(1.7),
+  },
+  wallMountExtension: {
+    height: cm(30),
+    thickness: mm(18)
+  },
+  valance: {
+    thickness: cm(1.6)
+  }
+};
+
+export const calculatedDimensions = calculateDimensions(dimensions);
+
+export const labels = {
+  space: "Available Space",
+  heatingControl: "Heating Control",
+  bestaBottom: "BESTA Cabinet",
+  bestaTop: "BESTA Wall Cabinet",
+  gapShelfBottom: "METOD High Cabinet",
+  gapShelfTop: "METOD Wall Cabinet",
+  nordli: "NORDLI Coat Rack",
+  benchBoard: "Bench Board",
+  wallMount: "Wall Mount",
+  bottomRail: "Bottom Rail",
+  valance: "Valance",
+};
+
+# Coat Rack Wardrobe
+
+<JscadModelViewer
+  name="coat-rack-wardrobe-model"
+  materials={materials}
+  model={CoatRackWardrobe({ dimensions: calculatedDimensions })}
+  background="#0d1117"
+  style={{ width: "100%", height: "70vh", marginBottom: "3rem" }}
+/>
+
+<table>
+  <thead>
+    <tr>
+      <th>Component</th>
+      <th>Width</th>
+      <th>Height / Thickness</th>
+      <th>Depth</th>
+    </tr>
+  </thead>
+  <tbody>
+    {Object.entries(calculatedDimensions).map(([key, dim]) => (
+      <tr>
+        <td>{labels[key]}</td>
+        <td>{dim.width.toString()}</td>
+        <td>{dim.height.toString()}</td>
+        <td>{dim.depth.toString()}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+## Drill Jigs
+
+<JscadModelViewer
+  name="drill-jig-model"
+  materials={materials}
+  model={DrillJigs({ dimensions: calculatedDimensions })}
+  background="#0d1117"
+  style={{ width: "100%", height: "70vh", marginBottom: "3rem" }}
+/>
