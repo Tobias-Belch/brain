@@ -1,0 +1,35 @@
+/* Teal accent + background theme overrides for both dark and light modes.
+   These unlayered rules take precedence over Starlight's `starlight` layer
+   and the Six theme's `six` layer per the cascade layer order. */
+
+:root[data-theme='dark'] {
+  /* Accent */
+  --sl-color-accent-low:  #00838f;
+  --sl-color-accent:      #26c6da;
+  --sl-color-accent-high: #b2ebf2;
+  /* Six theme uses --primary for --sl-color-text-accent */
+  --primary: #b2ebf2;
+
+  /* Shift Starlight's gray ramp from blue (hsl 224) to teal (hsl 187),
+     preserving original lightness values */
+  --sl-color-gray-1: hsl(187, 20%, 94%);
+  --sl-color-gray-2: hsl(187,  6%, 77%);
+  --sl-color-gray-3: hsl(187,  6%, 56%);
+  --sl-color-gray-4: hsl(187,  7%, 36%);
+  --sl-color-gray-5: hsl(187, 10%, 23%);
+  --sl-color-gray-6: hsl(187, 14%, 16%);
+  --sl-color-black:  hsl(187, 12%, 8%);
+
+  /* Six theme surface colours — shifted to dark teal */
+  --background: #06100f;
+  --card:        #091614;
+  --popover:     #112220;
+  --muted:       #0e1c1a;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low:  #e0f7fa;
+  --sl-color-accent:      #00acc1;
+  --sl-color-accent-high: #00696f;
+  --primary: #00696f;
+}
