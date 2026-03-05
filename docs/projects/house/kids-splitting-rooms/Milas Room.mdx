@@ -1,0 +1,65 @@
+---
+title: "Mila's Room"
+---
+
+import { cm, formatValueWithUnit, m, toM } from "@pocs/values";
+import JscadModelViewer from "@jscad/components/JscadModelViewer.astro";
+import { MilasRoom } from "./models/milas-room.model";
+import { materials } from "./models/materials";
+
+export const measurements = {
+  wall: {
+    thickness: cm(26)
+  },
+  room: {
+    width: m(2.13),
+    depth: m(4.33),
+    height: m(2.67),
+    window: {
+      width: cm(193),
+      height: cm(159),
+      depth: cm(13),
+      left: cm(7),
+      right: cm(13),
+      bottom: cm(77 + 3.5),
+      board: {
+        width: cm(213),
+        height: cm(3.5),
+        depth: cm(4.5),
+        left: cm(0),
+        right: cm(0),
+        bottom: cm(77)
+      },
+    },
+    door: {
+      width: cm(106.7),
+      height: cm(206.1),
+      depth: cm(12),
+      left: cm(36.2),
+      right: cm(68.3),
+      bottom: cm(0)
+    }
+  },
+  brimnes: {
+    width: cm(205),
+    depth: cm(87),
+    height: cm(58)
+  }
+}
+
+<JscadModelViewer
+  name="milas-room-model"
+  materials={materials}
+  model={MilasRoom({ measurements })}
+  background="#0d1117"
+  style={{ width: "100%", height: "70vh", marginBottom: "3rem" }}
+/>
+
+## Measurements
+
+| | WxHxD |
+|-|-------|
+| Room | {formatValueWithUnit(measurements.room.width)} x {formatValueWithUnit(measurements.room.height)} x {formatValueWithUnit(measurements.room.depth)} ({(toM(measurements.room.width).value * toM(measurements.room.depth).value).toFixed(1)} m²) |
+| Window | {formatValueWithUnit(measurements.room.window.width)} x {formatValueWithUnit(measurements.room.window.height)} x {formatValueWithUnit(measurements.room.window.depth)} |
+| Window Board | {formatValueWithUnit(measurements.room.window.board.width)} x {formatValueWithUnit(measurements.room.window.board.height)} x {formatValueWithUnit(measurements.room.window.board.depth)} |
+| Door | {formatValueWithUnit(measurements.room.door.width)} x {formatValueWithUnit(measurements.room.door.height)} x {formatValueWithUnit(measurements.room.door.depth)} |

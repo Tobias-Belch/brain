@@ -16,12 +16,17 @@ export type Milimeters = ReturnType<typeof mm>;
 export const cm = numberWithUnit(" cm");
 export type Centimeters = ReturnType<typeof cm>;
 
-export type NumberWithUnit = Inch | Milimeters | Centimeters;
+export const m = numberWithUnit(" m");
+export type Meters = ReturnType<typeof m>;
+
+export type NumberWithUnit = Inch | Milimeters | Centimeters | Meters;
 
 export function toMm(value: NumberWithUnit): Milimeters {
   switch (value.unit) {
     case " cm":
       return mm(value.value * 10);
+    case " m":
+      return mm(value.value * 1000);
     case '"':
       return mm(value.value * 25.4);
     default:
@@ -35,6 +40,8 @@ export function toCm(value: NumberWithUnit): Centimeters {
       return cm(value.value / 10);
     case '"':
       return cm(value.value * 2.54);
+    case " m":
+      return cm(value.value * 100);
     default:
       return value;
   }
@@ -46,13 +53,28 @@ export function toInch(value: NumberWithUnit): Inch {
       return inch(value.value / 25.4);
     case " cm":
       return inch(value.value / 2.54);
+    case " m":
+      return inch(value.value / 0.0254);
+    default:
+      return value;
+  }
+}
+
+export function toM(value: NumberWithUnit): Meters {
+  switch (value.unit) {
+    case " mm":
+      return m(value.value / 1000);
+    case " cm":
+      return m(value.value / 100);
+    case '"':
+      return m(value.value * 0.0254);
     default:
       return value;
   }
 }
 
 export function formatValueWithUnit(
-  value: Centimeters | Milimeters | Inch,
+  value: Centimeters | Milimeters | Inch | Meters,
 ): string {
   return `${value.value}${value.unit}`;
 }
