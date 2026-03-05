@@ -1,0 +1,112 @@
+---
+title: "Monitor Riser for Gigabyte Aorus FV43U"
+---
+
+## Goal
+Design and build **two compact risers** (one per pair of monitor feet: left and right) to raise a **Gigabyte Aorus FV43U** monitor by **190 mm (19 cm)**, allowing a laptop to sit open in front of the screen, while remaining **stable on a standing desk that exhibits some wobble**.
+
+## Key constraints
+- Minimal footprint (significantly less than current 380 mm depth)
+- Very high lateral stability
+- No permanent modification of the monitor
+- Clean, furniture-grade appearance
+- Buildable with woodworking tools + consumer 3D printer
+
+## Monitor & Desk Context
+- Monitor weight (with stand): ~10 kg total (~5 kg per foot)
+- Stand type: two independent metal feet
+- Desk depth: 900 mm
+- Desk type: height-adjustable standing desk (prone to small lateral oscillations)
+- Primary instability risk: **micro-movement and walking**, not static tipping
+
+## Final Riser Geometry (Per Side — Paired Feet)
+
+![Aorus FV43U Monitor Riser Rendering](./assets/aorus-fv43u-monitor-riser-rendering.png)
+
+### Overall Dimensions
+- **Height:** 190 mm (19 cm, fixed)
+- **Width (left–right):** 190 mm
+- **Depth (front–back):** 300 mm (30 cm) — combined riser depth for each paired-foot riser
+
+This footprint provides strong resistance to dynamic sway for each paired-foot riser; depth trade-offs prioritize supporting both feet per riser while keeping the riser compact compared to the original full stand depth.
+
+## Structural Layout
+Layered vertical stack (bottom → top):
+
+1. **Bottom damping layer**
+   - 3–5 mm rubber or cork–rubber composite
+   - Shore A ≈ 50–60
+   - Covers ≥80% of base area
+
+2. **Wooden structural core**
+   - Height: 165 mm  
+   - Width: 190 mm  
+   - Depth: 300 mm  
+   - Material:
+     - Hardwood (oak, beech, maple), **or**
+     - Laminated birch plywood  
+   - Chamfered edges (~5 mm) to reduce visual bulk
+
+3. **3D-printed locking cradle**
+   - Height: 20 mm
+   - Width: ~160 mm (contour to pair spacing)
+   - Depth: ~280 mm (to accommodate paired feet within the combined riser)
+   - Material: PLA+ (non-structural)
+   - Mechanically bonded to wood (VHB tape or screws from below)
+
+**Total height:** 190 mm (19 cm)
+
+## Locking Mechanism (Critical Feature)
+
+![Aorus FV43U Monitor Riser Locking Solutions](./assets/aorus-fv43u-monitor-riser-locking-solutions.png)
+
+### Type
+**Shallow mechanical foot pocket (parking-curb style)**
+
+### Geometry
+- Pocket depth: **4–5 mm**
+- Wall thickness: **≥4 mm**
+- Clearance: **+0.5 mm per side** relative to monitor foot
+- Rear stop: **6 mm vertical lip**
+- Bottom of pocket: flat (monitor foot rests on solid surface)
+
+### Function
+- Prevents lateral sliding in all directions
+- Blocks forward/backward movement during desk oscillation
+- Does **not** trap the foot vertically (lift-off removal remains possible)
+- Relies on geometry, not friction alone
+
+## 3D Printing Parameters (PLA+)
+- Print orientation: flat on build plate
+- Walls: 4–5 perimeters
+- Infill: 25–30% (gyroid or cubic)
+- Layer height: 0.2 mm
+- Internal fillets: 1–2 mm at pocket corners
+
+PLA+ is acceptable because it carries **no bending load** and only experiences compression and contact forces.
+
+## Stability Strategy (Standing Desk Optimized)
+- Wide stance (190 mm) resists lateral acceleration
+- Reduced lever arm from targeted depth (300 mm per combined riser) balances compactness and paired-foot support to minimize oscillation leverage
+- Bottom rubber layer damps desk motion and prevents “walking”
+- Mechanical foot lock eliminates slow creep over time
+## Material Choice Rationale
+- **Wood (preferred):**
+  - High damping
+  - Light enough for standing desk motors
+  - Easy to shape and iterate
+- **Concrete:** explicitly avoided due to poor dynamic behavior, high mass, and desk wear risk
+
+## Status
+This design is considered:
+- Mechanically safe
+- Optimized for minimal bulk
+- Ready for CAD modeling and fabrication
+- Suitable for further refinement (visual tapering, material finish, cradle contouring)
+
+### Possible Next Iterations
+- CAD-ready dimensioned drawings
+- Exact cradle contour matching the FV43U foot
+- Further depth reduction trade-off analysis
+- Visual slimming (tapers, shadow grooves)
+- STL generation for the cradle

@@ -1,0 +1,385 @@
+---
+title: "Monitor Riser Speakers – Concept Summary"
+---
+
+import JscadModelViewer from "@jscad/components/JscadModelViewer.astro";
+import { cm, inch, mm, toCm } from "@pocs/values";
+import { materials } from "@pocs/monitor-riser-speaker-model/models/materials";
+import { MonitorRiserSpeakerModel } from "@pocs/monitor-riser-speaker-model/models/MonitorRiserSpeakerModel";
+import { 
+  volume, 
+  internalVolume, 
+  internalWidth, 
+  internalDepth, 
+  requiredThicknessSteel_cm, 
+  plateMassKg,
+  displayName,
+  materialOrder,
+  combinedScoreFor,
+  densityFor,
+  thicknessCmFor,
+  notesFor,
+  acousticPropsFor,
+  acousticPointsFor,
+  fFundFor,
+  fFundClampedFor,
+  fundamentalsPointsFor,
+  neopreneIsolationFraction,
+  riskBandFor,
+  neoprenePointsFor,
+  tLead,
+  tCastIron,
+  requiredThicknessGranite_cm
+} from "@pocs/monitor-riser-speaker-model/analysis";
+
+export const speaker = {
+  width: cm(19),
+  height: cm(19),
+  depth: cm(30),
+  enclosureBoardThickness: mm(21),
+  braceWindowPct: 0.7,
+  driver: {
+    tweeter: inch(1.1),
+    woofer: inch(4)
+  },
+  bassPort: inch(1.1),
+  volumeKnob: mm(8),
+};
+
+<JscadModelViewer
+  name="monitor-riser-speaker-model"
+  model={MonitorRiserSpeakerModel(speaker)}
+  materials={materials}
+  background="#0d1117"
+  style={{ width: "100%", height: "70vh" }}
+/>
+
+## Table of Contents
+
+- [Background](#background)
+- [Core Idea](#core-idea)
+- [Target Dimensions](#target-dimensions)
+- [Feasibility Assessment](#feasibility-assessment)
+  - [DIY vs Off-the-Shelf](#diy-vs-off-the-shelf)
+  - [Functional Requirements](#functional-requirements)
+- [Enclosure Design Principles](#enclosure-design-principles)
+- [Materials & Construction](#materials--construction)
+- [Ballast Decision](#ballast-decision)
+  - [Note on fundamental frequency](#note-on-fundamental-frequency)
+  - [Recommendation](#recommendation)
+- [Internal Bracing & Load Path (off-centre feet)](#internal-bracing--load-path-off-centre-feet)
+  - [Key bracing elements](#key-bracing-elements)
+  - [Joinery & fasteners](#joinery--fasteners)
+  - [Layout notes](#layout-notes)
+- [Acoustic Concept](#acoustic-concept)
+  - [Option 1 – Full-Range Driver (Simpler)](#option-1--full-range-driver-simpler)
+  - [Option 2 – 2-Way Speaker (Higher Performance)](#option-2--2-way-speaker-higher-performance)
+- [Electronics Architecture](#electronics-architecture)
+  - [Recommended Setup](#recommended-setup)
+- [Internal Layout (Final Concept)](#internal-layout-final-concept)
+  - [Internal Zoning](#internal-zoning)
+- [Key Outcomes](#key-outcomes)
+- [Suggested Next Steps](#suggested-next-steps)
+
+## Background
+
+The project started with a **[custom monitor riser](https://tobias-belch.github.io/ideas/docs/monitor-riser/aorus-fv43u-monitor-riser/)** design for a large display (AORUS FV43U).  
+While structurally sound, the resulting risers were **bulky** and consumed a significant amount of desk space.
+
+To compensate and add value, the idea evolved into turning the risers into **fully functional desk speakers**.
+
+## Core Idea
+
+Transform each monitor riser into a **stereo speaker enclosure**, creating:
+
+- A **space-efficient audio solution**
+- Proper speaker placement for near-field listening
+- A multi-functional piece of desk furniture
+
+Each riser becomes part of a **left/right stereo pair**, with one acting as a _master_ (electronics) and the other as a _slave_ (speaker only).
+
+## Target Dimensions
+
+Per riser (external):
+
+- **Width (X):** {speaker.width.value}{speaker.width.unit}
+- **Height (Y):** {speaker.height.value}{speaker.height.unit}
+- **Depth (Z):** {speaker.depth.value}{speaker.depth.unit}
+
+These outside dimensions provide approximately **{volume(speaker).toFixed(1)} liters of external volume**. With a uniform panel thickness of **{speaker.enclosureBoardThickness.value}{speaker.enclosureBoardThickness.unit}** the internal usable acoustic volume becomes approximately **{internalVolume(speaker).toFixed(1)} liters** (before accounting for braces, driver displacement and internal compartments), which is in the target range for compact desktop speakers.
+
+## Feasibility Assessment
+
+### DIY vs Off-the-Shelf
+
+- Existing commercial speakers do **not fit the dimensions well**
+- DIY is **not only possible, but preferable**
+- All required electronics exist as **off-the-shelf modules**
+
+### Functional Requirements
+
+
+The speaker system supports:
+
+- **3.5 mm stereo analog audio input** (for direct connection to monitor or computer)
+- Bluetooth audio
+- Stereo amplification
+- Optional headphone output with speaker muting
+- Front-accessible controls
+- **Banana plug speaker terminals** for connecting the passive (slave) speaker to the active (master) speaker
+
+No custom PCBs or DSP are required.
+
+## Enclosure Design Principles
+
+- **Front-firing driver and bass port**
+- Optimised for near-wall and desk placement
+- Internally braced to handle:
+  - Acoustic pressure
+  - Monitor weight
+- Acoustic damping inside the enclosure
+- Electronics isolated from the speaker air volume
+
+## Materials & Construction
+
+- **Primary material:** 18–21 mm plywood or MDF (birch plywood preferred for visible surfaces). Use 18 mm for side panels and 21 mm for the top plate if the top will contain the foot-lock pocket.
+- **Top plate / load spreader:** double-thickness top (two 18 mm layers laminated, or single 21–24 mm board) where the monitor feet sit. Reinforce the foot-pocket area with a small doubler plate beneath the top layer.
+- **Internal bracing material:** same plywood as the enclosure. All braces should be glued and screwed; use dovetail or lap joints where possible for rigidity.
+- **Bottom ballast:** use a steel plate sized to the internal floor (approximately **{internalWidth(speaker).toFixed(1)} × {internalDepth(speaker).toFixed(1)} cm**) with thickness **{requiredThicknessSteel_cm(speaker).toFixed(1)} cm**. A plate of this footprint and thickness has approximately **{plateMassKg.toFixed(2)} kg** mass per enclosure; place it in a dedicated tray at the very bottom. Use two plates (one per enclosure) for the stereo pair.
+
+## Ballast Decision
+
+After evaluating required mass to replace the original wooden risers (two wooden risers per enclosure) the target ballast is set to **{plateMassKg.toFixed(2)} kg** per enclosure. Below are material options sized to the internal floor footprint ({internalWidth(speaker).toFixed(1)} × {internalDepth(speaker).toFixed(1)} cm) ordered by combined acoustic score (best → worst):
+
+<table>
+  <thead>
+    <tr>
+      <th>Property / Material</th>
+      <th>{displayName(materialOrder(speaker)[0])}</th>
+      <th>{displayName(materialOrder(speaker)[1])}</th>
+      <th>{displayName(materialOrder(speaker)[2])}</th>
+      <th>{displayName(materialOrder(speaker)[3])}</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Combined acoustic score (0-100)</th>
+      <td>{combinedScoreFor(materialOrder(speaker)[0], speaker)}</td>
+      <td>{combinedScoreFor(materialOrder(speaker)[1], speaker)}</td>
+      <td>{combinedScoreFor(materialOrder(speaker)[2], speaker)}</td>
+      <td>{combinedScoreFor(materialOrder(speaker)[3], speaker)}</td>
+    </tr>
+    <tr>
+      <th>Density (kg/m³)</th>
+      <td>{densityFor(materialOrder(speaker)[0])}</td>
+      <td>{densityFor(materialOrder(speaker)[1])}</td>
+      <td>{densityFor(materialOrder(speaker)[2])}</td>
+      <td>{densityFor(materialOrder(speaker)[3])}</td>
+    </tr>
+    <tr>
+      <th>Required thickness (cm)</th>
+      <td>{thicknessCmFor(materialOrder(speaker)[0], speaker).toFixed(2)}</td>
+      <td>{thicknessCmFor(materialOrder(speaker)[1], speaker).toFixed(2)}</td>
+      <td>{thicknessCmFor(materialOrder(speaker)[2], speaker).toFixed(2)}</td>
+      <td>{thicknessCmFor(materialOrder(speaker)[3], speaker).toFixed(2)}</td>
+    </tr>
+    <tr>
+      <th>Notes</th>
+      <td>{notesFor(materialOrder(speaker)[0])}</td>
+      <td>{notesFor(materialOrder(speaker)[1])}</td>
+      <td>{notesFor(materialOrder(speaker)[2])}</td>
+      <td>{notesFor(materialOrder(speaker)[3])}</td>
+    </tr>
+    <tr>
+      <th>Acoustic properties</th>
+      <td>{acousticPropsFor(materialOrder(speaker)[0])}</td>
+      <td>{acousticPropsFor(materialOrder(speaker)[1])}</td>
+      <td>{acousticPropsFor(materialOrder(speaker)[2])}</td>
+      <td>{acousticPropsFor(materialOrder(speaker)[3])}</td>
+    </tr>
+    <tr>
+      <th>Score breakdown — acoustic points (0–30)</th>
+      <td>{acousticPointsFor(materialOrder(speaker)[0]).toFixed(0)}</td>
+      <td>{acousticPointsFor(materialOrder(speaker)[1]).toFixed(0)}</td>
+      <td>{acousticPointsFor(materialOrder(speaker)[2]).toFixed(0)}</td>
+      <td>{acousticPointsFor(materialOrder(speaker)[3]).toFixed(0)}</td>
+    </tr>
+    <tr>
+      <th>Fundamental freq</th>
+      <td>{`${fFundFor(materialOrder(speaker)[0], speaker).toFixed(1)} Hz (sim ≈ ${fFundClampedFor(materialOrder(speaker)[0], speaker).toFixed(1)} Hz clamped)`}</td>
+      <td>{`${fFundFor(materialOrder(speaker)[1], speaker).toFixed(1)} Hz (sim ≈ ${fFundClampedFor(materialOrder(speaker)[1], speaker).toFixed(1)} Hz clamped)`}</td>
+      <td>{`${fFundFor(materialOrder(speaker)[2], speaker).toFixed(1)} Hz (sim ≈ ${fFundClampedFor(materialOrder(speaker)[2], speaker).toFixed(1)} Hz clamped)`}</td>
+      <td>{`${fFundFor(materialOrder(speaker)[3], speaker).toFixed(1)} Hz (sim ≈ ${fFundClampedFor(materialOrder(speaker)[3], speaker).toFixed(1)} Hz clamped)`}</td>
+    </tr>
+    <tr>
+      <th>Score breakdown — fundamentals points (0–40)</th>
+      <td>{fundamentalsPointsFor(materialOrder(speaker)[0], speaker).toFixed(0)}</td>
+      <td>{fundamentalsPointsFor(materialOrder(speaker)[1], speaker).toFixed(0)}</td>
+      <td>{fundamentalsPointsFor(materialOrder(speaker)[2], speaker).toFixed(0)}</td>
+      <td>{fundamentalsPointsFor(materialOrder(speaker)[3], speaker).toFixed(0)}</td>
+    </tr>
+    <tr>
+      <th>Attachment: thin rubber / neoprene pads (recommended)</th>
+      <td>{`${Math.round(neopreneIsolationFraction * 100)}% insertion loss (~${(20 * Math.log10(1 / (1 - neopreneIsolationFraction))).toFixed(1)} dB); medium coupling, medium Q`}</td>
+      <td>{`${Math.round(neopreneIsolationFraction * 100)}% insertion loss (~${(20 * Math.log10(1 / (1 - neopreneIsolationFraction))).toFixed(1)} dB); medium coupling, medium Q`}</td>
+      <td>{`${Math.round(neopreneIsolationFraction * 100)}% insertion loss (~${(20 * Math.log10(1 / (1 - neopreneIsolationFraction))).toFixed(1)} dB); medium coupling, medium Q`}</td>
+      <td>{`${Math.round(neopreneIsolationFraction * 100)}% insertion loss (~${(20 * Math.log10(1 / (1 - neopreneIsolationFraction))).toFixed(1)} dB); medium coupling, medium Q`}</td>
+    </tr>
+    <tr>
+      <th>Risk band</th>
+      <td>{riskBandFor(materialOrder(speaker)[0], speaker)}</td>
+      <td>{riskBandFor(materialOrder(speaker)[1], speaker)}</td>
+      <td>{riskBandFor(materialOrder(speaker)[2], speaker)}</td>
+      <td>{riskBandFor(materialOrder(speaker)[3], speaker)}</td>
+    </tr>
+    <tr>
+      <th>Neoprene isolation (est.)</th>
+      <td>{`${Math.round(neopreneIsolationFraction * 100)}% insertion loss (approx)`}</td>
+      <td>{`${Math.round(neopreneIsolationFraction * 100)}% insertion loss (approx)`}</td>
+      <td>{`${Math.round(neopreneIsolationFraction * 100)}% insertion loss (approx)`}</td>
+      <td>{`${Math.round(neopreneIsolationFraction * 100)}% insertion loss (approx)`}</td>
+    </tr>
+    <tr>
+      <th>Score breakdown — neoprene points (0–30)</th>
+      <td>{neoprenePointsFor(materialOrder(speaker)[0]).toFixed(0)}</td>
+      <td>{neoprenePointsFor(materialOrder(speaker)[1]).toFixed(0)}</td>
+      <td>{neoprenePointsFor(materialOrder(speaker)[2]).toFixed(0)}</td>
+      <td>{neoprenePointsFor(materialOrder(speaker)[3]).toFixed(0)}</td>
+    </tr>
+  </tbody>
+</table>
+
+### Note on fundamental frequency
+
+- **Why it matters:** the plate's fundamental (lowest) vibration frequency determines where the ballast can happily coexist with the speaker system. If the plate's resonance falls inside the speaker's passband (or near strong driver output peaks), the ballast can be excited and produce audible ringing or colouration, or couple structure-borne vibration into the desk and room.
+- **What influences it:** plate size and aspect ratio, thickness, material stiffness (Young's modulus), mass per unit area, and edge support (clamped vs simply-supported). Heavier and stiffer plates lower or raise resonant frequencies depending on thickness vs mass distribution; increasing mass per area tends to lower modal frequencies, while increasing stiffness (t³ dependence on thickness) raises them.
+- **Good vs bad values:**
+  - Good: fundamental frequencies well below the speaker's lowest useful output (e.g., < 40 Hz for small desktop speakers) or well above the audible bass band so they are not excited by normal playback. Plate fundamentals in the 20–40 Hz range are typically safe for small desktop speakers because most energy above that is lower. Higher plate fundamentals (several hundred Hz) are risky because they sit inside the critical mid/bass band and will be easily excited.
+  - Bad: plate fundamentals that coincide with driver resonance, bass port tuning, or strong musical content (e.g., 60–300 Hz). These will produce perceptible ringing, boominess, or unwanted vibrations transmitted to the desk.
+- **Mitigations:** use Sorbothane or rubber isolation between plate and enclosure to damp structure-borne energy; increase mass (thicker plate or denser material) to move fundamentals lower; add constrained-layer damping; ensure plate is well supported and constrained to reduce Q and spread modal energy.
+
+- **Table row explanations (short):**
+  - **Attachment (thin rubber / neoprene pads):** shows the recommended practical decoupling solution. The numeric value shown is an estimated insertion-loss percentage (and approximate dB) for a thin neoprene pad — it does not change the plate's natural frequency much, but reduces how strongly that mode is excited and how much energy transmits into the desk.
+  - **Risk band:** a simple classification (Low / Medium / High) derived from the plate fundamental relative to typical audio bands. "Low" means the fundamental is unlikely to be excited by normal playback; "High" means the fundamental could sit inside mid/bass content and cause audible issues.
+  - **Neoprene isolation (est.):** an approximate, frequency‑averaged figure expressing how effective the neoprene pads are at reducing transmitted vibration. It's a rule-of-thumb — real insertion loss depends on pad stiffness, contact area, compression and frequency.
+  - **Combined acoustic score (0–100):** a heuristic aggregate for quick comparison combining material damping, where the fundamental lies, and the assumed neoprene isolation. Use it only for relative ranking — it's not a substitute for measurements or FEA.
+
+### Recommendation
+
+- **Primary choice — Steel plate (practical, compact):** use a steel plate sized to the internal floor ({internalWidth(speaker).toFixed(1)} × {internalDepth(speaker).toFixed(1)} cm) with thickness **{requiredThicknessSteel_cm(speaker).toFixed(2)} cm** (≈ {plateMassKg.toFixed(2)} kg). Steel is easy to machine, predictable under load, and economical. Install it in a shallow tray at the enclosure bottom.
+- **Attachment / isolation (required):** decouple the plate from the desk using thin neoprene pads (3–5 mm) or a continuous neoprene/Sorbothane sheet under the enclosure. This gives the practical balance of decoupling without dramatically changing the plate fundamentals. Use 3–4 small pads placed near the enclosure corners if a continuous sheet is impractical.
+- **Preferred high-acoustic option — Lead insert (best acoustic score):** if you can source pre-cut lead sheets or safe lead-lined inserts, a thin lead sheet achieves the same mass with much smaller thickness (**{(tLead(speaker) * 100).toFixed(2)} cm**) and gives lower modal frequency and high internal damping. Handle lead safely (wear PPE while cutting, avoid dust) and encapsulate it so it cannot be scratched or shed.
+- **Alternative — Cast iron:** if lead is not acceptable, cast iron provides good mass and moderate damping with thickness **{(tCastIron(speaker) * 100).toFixed(2)} cm**. Cast iron is brittle — avoid sharp impacts and secure it well.
+- **Aesthetic option — Stone (granite):** granite looks premium but requires significantly more thickness (**{requiredThicknessGranite_cm(speaker).toFixed(2)} cm**) and careful handling and mounting to avoid chipping.
+- **Safety & installation notes:**
+  - When cutting or machining lead, use respirators and wet-cut methods; encapsulate or coat the finished element. Do not sand or grind lead on-site without proper controls.
+  - Use fixings that clamp the ballast into a tray; avoid relying on glue alone for heavy plates.
+  - Add a thin constrained-layer damping pad (adhesive rubber + bitumen or a Sorbothane washer) near high-stress contact points if residual ringing is audible after neoprene isolation.
+
+This recommendation reflects the numeric scoring and modal analysis above: steel is the pragmatic choice, while lead (or lead inserts) gives the best acoustic performance if handled safely and encapsulated.
+
+## Internal Bracing & Load Path (off-centre feet)
+
+To maximize both enclosure rigidity and usable internal volume, this design uses a **window brace**—a frame-like structure with a large central cutout. This approach provides excellent structural support for both the monitor's weight and the acoustic pressure generated by the speaker, while allowing the full internal volume to be acoustically active.
+
+### Key bracing elements
+
+- **Window brace (frame structure):** A full-height vertical brace with a large central opening, forming a rigid frame. This ties together the top, bottom, and side panels, preventing flex and parallelogramming, but does not divide the enclosure into separate chambers. The open center ensures airflow and acoustic volume are not restricted.
+- **Top doubler / foot pocket rib:** Local doublers under each monitor foot pocket transfer load straight down to the window brace and bottom plate. These should be glued and screwed to the top plate and tied into the window brace for direct load paths.
+- **Vertical foot-support braces:** Two vertical braces directly beneath the foot pocket locations (these can be narrower than the window brace) run from the top plate to the bottom plate, creating direct load columns under each foot.
+- **Bottom load-spreading plate / tray:** A thick bottom plate or tray receives the vertical loads from the foot-support braces and contains the ballast. The ballast sits on the bottom tray, which is rigidly attached to the side walls and braces.
+- **Horizontal stiffeners / mid-level brace:** One horizontal brace at approximately 1/3 height adds torsional stiffness and provides mounting for tweeter or crossover if needed.
+
+### Joinery & fasteners
+
+- Glue and screws for all major joints. Countersink screws and use glue in long-grain joints.
+- Use hardwood dowels or biscuits for alignment on the top doubler and window brace if routing is available.
+- Seal and fillet inside corners to avoid small vibrational pockets.
+
+### Layout notes
+
+- Keep heavy electronics and power supplies in a separate compartment at the rear/top of the enclosure if present, but try to keep heavy PCB transformers or battery packs low in the rear electronics compartment to avoid raising the center of mass.
+- Place the bass reflex port in the front/top area as planned, ensuring the ballast does not obstruct internal port airflow.
+- If the monitor feet are moved significantly inboard (>50 mm from the outer edge), increase the thickness of the top doubler or add an additional short pillar brace directly under the pocket.
+
+## Acoustic Concept
+
+Two viable acoustic approaches were identified:
+
+### Option 1 – Full-Range Driver (Simpler)
+
+- One 3–4″ full-range driver per riser
+- No crossover required
+- Clean, coherent sound for desk use
+
+### Option 2 – 2-Way Speaker (Higher Performance)
+
+- 4″ woofer + tweeter
+- Passive crossover
+- Better clarity and stereo imaging
+
+## Electronics Architecture
+
+### Recommended Setup
+
+
+- **Active speaker system**
+- One riser (master) contains:
+  - Bluetooth + DAC + amplifier board
+  - Volume control
+  - Headphone jack
+  - Status LED
+  - **3.5 mm stereo input jack** (for analog audio from monitor or other sources)
+  - **Banana plug output terminals** (for connecting to the passive speaker)
+- Second riser (slave) is passive, with:
+  - **Banana plug input terminals** (for speaker-level signal from the master)
+
+**Wiring:**
+- Use a standard 2-conductor speaker cable with banana plugs to connect the master (active) speaker's output terminals to the slave (passive) speaker's input terminals.
+- Observe polarity: connect red (+) to red (+), black (–) to black (–).
+
+Common amplifier solutions:
+
+- Class-D modules (e.g. TPA3116 / TPA3118 based)
+
+## Internal Layout (Final Concept)
+
+### Internal Zoning
+
+- **Front / Middle:** Speaker driver
+- **Front / Top:** Bass reflex port
+- **Front / Bottom:** Controls and connectors
+- **Middle:** Horizontal load-bearing brace
+- **Rear / Top:** Electronics compartment
+
+
+This layout aligns structural, acoustic, and usability requirements.
+
+---
+
+## Input & Master/Slave Connector Details
+
+- **Audio Input:**
+  - The master (active) speaker features a 3.5 mm stereo input jack for analog audio, compatible with most monitors, computers, and mobile devices.
+- **Master/Slave Connection:**
+  - The master speaker's amplifier output is connected to the slave (passive) speaker using a pair of banana plug terminals on each enclosure. This allows for robust, tool-free connection and easy cable management.
+  - Use standard 2-conductor speaker wire with banana plugs for the connection. For desktop distances, 16–18 AWG wire is sufficient.
+  - This approach is standard for active/passive desktop speaker pairs and ensures reliable, high-quality signal transfer.
+
+## Key Outcomes
+
+- The concept is **technically sound and buildable**
+- DIY speakers are the **best solution** for the given constraints
+- The risers become a **coherent product**, not a compromise
+- The design scales toward:
+  - Detailed CAD
+  - Acoustic tuning
+  - A potential product or open design
+
+## Suggested Next Steps
+
+- Lock driver choice (full-range vs 2-way)
+- Tune enclosure volume and port dimensions
+- Define exact electronics BOM
+- Add wall thickness, fasteners, and service panels
+- Convert concept into a manufacturing-ready CAD model
