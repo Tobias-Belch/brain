@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from "astro/config";
+import react from "@astrojs/react";
 import starlight from "@astrojs/starlight";
 import starlightThemeSix from "@six-tech/starlight-theme-six";
 import mermaid from "astro-mermaid";
@@ -40,6 +41,7 @@ export default defineConfig({
     remarkPlugins: [remarkRewriteMdLinks],
   },
   integrations: [
+    react(),
     mermaid({ autoTheme: true }),
     starlight({
       plugins: [starlightThemeSix({})],
