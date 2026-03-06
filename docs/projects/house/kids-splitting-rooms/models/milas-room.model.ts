@@ -1,89 +1,91 @@
 import modeling from "@jscad/modeling";
-import { type NumberWithUnit, toCm } from "@pocs/values";
+import { cm, m, type NumberWithUnit } from "@pocs/values";
 import { materials } from "./materials";
+import { box, normalize } from "./utils";
+import * as ikea from "./ikea";
 
 const {
   colors: { colorize },
-  primitives: { cuboid },
   booleans: { union, subtract },
   transforms: { translate },
 } = modeling;
 
-type Measurements = {
-  wall: { thickness: NumberWithUnit };
+export const measurements = {
+  wall: {
+    thickness: cm(26),
+  },
   room: {
-    width: NumberWithUnit;
-    depth: NumberWithUnit;
-    height: NumberWithUnit;
+    width: m(2.13),
+    depth: m(4.33),
+    height: m(2.67),
     window: {
-      width: NumberWithUnit;
-      height: NumberWithUnit;
-      depth: NumberWithUnit;
-      left: NumberWithUnit;
-      right: NumberWithUnit;
-      bottom: NumberWithUnit;
+      width: cm(193),
+      height: cm(159),
+      depth: cm(13),
+      left: cm(7),
+      right: cm(13),
+      bottom: cm(77 + 3.5),
       board: {
-        width: NumberWithUnit;
-        height: NumberWithUnit;
-        depth: NumberWithUnit;
-        left: NumberWithUnit;
-        right: NumberWithUnit;
-        bottom: NumberWithUnit;
-      };
-    };
+        width: cm(213),
+        height: cm(3.5),
+        depth: cm(4.5),
+        left: cm(0),
+        right: cm(0),
+        bottom: cm(77),
+      },
+    },
     door: {
-      width: NumberWithUnit;
-      height: NumberWithUnit;
-      depth: NumberWithUnit;
-      left: NumberWithUnit;
-      right: NumberWithUnit;
-      bottom: NumberWithUnit;
-    };
-  };
-  brimnes: {
-    width: NumberWithUnit;
-    height: NumberWithUnit;
-    depth: NumberWithUnit;
+      width: cm(106.7),
+      height: cm(206.1),
+      depth: cm(12),
+      left: cm(36.2),
+      right: cm(68.3),
+      bottom: cm(0),
+    },
+  },
+};
+
+type State = {
+  bed: {
+    variant: "single" | "double";
   };
 };
+
+const defaultState = {
+  bed: {
+    variant: "single",
+  },
+} satisfies State;
 
 const DEBUG = false;
 
 export function MilasRoom({
-  measurements,
+  state = defaultState,
   variant = "A",
-}: {
-  measurements: Measurements;
-  variant?: "A";
-}) {
-  const t = u(measurements.wall.thickness);
-  const W = u(measurements.room.width);
-  const H = u(measurements.room.height);
-  const D = u(measurements.room.depth);
+}: { state?: State; variant?: "A" } = {}) {
+  const t = normalize(measurements.wall.thickness);
+  const W = normalize(measurements.room.width);
+  const H = normalize(measurements.room.height);
+  const D = normalize(measurements.room.depth);
 
   const debugElements = DEBUG
     ? [translate([t, t, t], colorize(materials.Debug.color, box(W, H, D)))]
     : [];
 
-  const furniture = variant === "A" ? furnitureVariantA(measurements) : [];
+  const furniture = variant === "A" ? furnitureVariantA(state) : [];
 
-  return [room(measurements), ...furniture, ...debugElements];
+  return [room(), ...furniture, ...debugElements];
 }
 
-function furnitureVariantA(measurements: Measurements) {
+function furnitureVariantA(state: State) {
   const normalised = {
     wall: {
-      thickness: u(measurements.wall.thickness),
+      thickness: normalize(measurements.wall.thickness),
     },
     room: {
-      width: u(measurements.room.width),
-      height: u(measurements.room.height),
-      depth: u(measurements.room.depth),
-    },
-    brimnes: {
-      width: u(measurements.brimnes.width),
-      height: u(measurements.brimnes.height),
-      depth: u(measurements.brimnes.depth),
+      width: normalize(measurements.room.width),
+      height: normalize(measurements.room.height),
+      depth: normalize(measurements.room.depth),
     },
   };
 
@@ -93,46 +95,40 @@ function furnitureVariantA(measurements: Measurements) {
       normalised.wall.thickness,
       normalised.wall.thickness +
         normalised.room.depth -
-        normalised.brimnes.depth,
+        normalize(ikea.measurements.beds.Brimnes.closed.depth) -
+        normalize(cm(10)),
     ],
-    colorize(
-      materials.Furniture.color,
-      box(
-        normalised.brimnes.width,
-        normalised.brimnes.height,
-        normalised.brimnes.depth,
-      ),
-    ),
+    colorize(materials.Furniture.color, ikea.beds.Brimnes(state.bed)),
   );
 
   return [brimnes];
 }
 
-function room(measurements: Measurements) {
-  const t = u(measurements.wall.thickness);
-  const W = u(measurements.room.width);
-  const H = u(measurements.room.height);
-  const D = u(measurements.room.depth);
+function room() {
+  const t = normalize(measurements.wall.thickness);
+  const W = normalize(measurements.room.width);
+  const H = normalize(measurements.room.height);
+  const D = normalize(measurements.room.depth);
 
   // Window (on back wall, at Z = D - t … D)
-  const wW = u(measurements.room.window.width);
-  const wH = u(measurements.room.window.height);
-  const wD = u(measurements.room.window.depth);
-  const wRight = u(measurements.room.window.right);
-  const wBottom = u(measurements.room.window.bottom);
+  const wW = normalize(measurements.room.window.width);
+  const wH = normalize(measurements.room.window.height);
+  const wD = normalize(measurements.room.window.depth);
+  const wRight = normalize(measurements.room.window.right);
+  const wBottom = normalize(measurements.room.window.bottom);
 
-  const wbW = u(measurements.room.window.board.width);
-  const wbH = u(measurements.room.window.board.height);
-  const wbD = u(measurements.room.window.board.depth);
-  const wbRight = u(measurements.room.window.board.right);
-  const wbBottom = u(measurements.room.window.board.bottom);
+  const wbW = normalize(measurements.room.window.board.width);
+  const wbH = normalize(measurements.room.window.board.height);
+  const wbD = normalize(measurements.room.window.board.depth);
+  const wbRight = normalize(measurements.room.window.board.right);
+  const wbBottom = normalize(measurements.room.window.board.bottom);
 
   // Door (on front wall, at Z = 0 … t)
-  const dW = u(measurements.room.door.width);
-  const dH = u(measurements.room.door.height);
-  const dD = u(measurements.room.door.depth);
-  const dRight = u(measurements.room.door.right);
-  const dBottom = u(measurements.room.door.bottom);
+  const dW = normalize(measurements.room.door.width);
+  const dH = normalize(measurements.room.door.height);
+  const dD = normalize(measurements.room.door.depth);
+  const dRight = normalize(measurements.room.door.right);
+  const dBottom = normalize(measurements.room.door.bottom);
 
   // --- Front wall (Z = 0 to t), full width, with door cutout ---
   const frontWall = translate(
@@ -174,7 +170,7 @@ function room(measurements: Measurements) {
   );
 
   // --- Floor ---
-  const floor = colorize(materials.Floor.color, box(W + 2 * t, t, D + 2 * t));
+  const floor = colorize(materials.Wall.color, box(W + 2 * t, t, D + 2 * t));
 
   // --- Ceiling ---
   /*const ceiling = translate(
@@ -183,15 +179,4 @@ function room(measurements: Measurements) {
   );*/
 
   return [frontWall, backWall, leftWall, rightWall, floor /*ceiling*/];
-}
-
-function box(w: number, h: number, d: number) {
-  return cuboid({
-    size: [w, h, d],
-    center: [w / 2, h / 2, d / 2],
-  });
-}
-
-function u(value: NumberWithUnit): number {
-  return toCm(value).value;
 }

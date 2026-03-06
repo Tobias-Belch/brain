@@ -193,6 +193,7 @@ export function ThreeModelViewer({
           bottom: "1rem",
           display: "flex",
           gap: "1rem",
+          alignItems: "flex-end",
         }}
       >
         {withCameraAction && <CameraActionButton views={views} />}
@@ -248,6 +249,7 @@ function CameraActionButton({
             gridTemplateColumns: "repeat(2, auto)",
             gridTemplateRows: "repeat(3, auto)",
             gap: "1rem",
+            alignItems: "flex-end",
           }}
         >
           {(["front", "back", "top", "bottom", "right", "left"] as const).map(

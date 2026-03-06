@@ -1,0 +1,16 @@
+{
+  "exclude": ["dist"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@charts/*": ["../apps/docs/src/charts/*"],
+      "@components/*": ["../apps/docs/src/components/*"],
+      "@jscad/*": ["../apps/docs/src/@jscad/*"],
+      "@pocs/*": ["../apps/docs/src/pocs/*"],
+      "@types/*": ["../apps/docs/src/types/*"],
+      "@utils/*": ["../apps/docs/src/utils/*"]
+    },
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
+  }
+}
