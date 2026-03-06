@@ -11,13 +11,13 @@ import type { Geom3 } from "@jscad/modeling/src/geometries/types";
 
 export type JscadModel = Geom3 | Geom3[] | (Geom3 | Geom3[])[];
 
-export type Outline = Color | { color: Color; opacity: number };
+export type Outline = RGB | RGBA | { color: RGB | RGBA; thickness: number };
 
 export type MaterialId = `${RGB[0]}_${RGB[1]}_${RGB[2]}`;
 export type Material = {
   id: MaterialId;
   color: RGB | RGBA;
-  outline?: RGB | RGBA;
+  outline?: Outline;
   three:
     | (MeshStandardMaterialParameters & { threeType: "MeshStandardMaterial" })
     | (MeshPhongMaterialParameters & { threeType: "MeshPhongMaterial" });

@@ -1,4 +1,7 @@
 import * as THREE from "three";
+import { LineMaterial } from "three/addons/lines/LineMaterial.js";
+import { LineGeometry } from "three/addons/lines/LineGeometry.js";
+import { Line2 } from "three/addons/lines/Line2.js";
 import type { Mat4 } from "@jscad/modeling/src/maths/types";
 import type { Geom3 } from "@jscad/modeling/src/geometries/types";
 import {
@@ -8,7 +11,6 @@ import {
   type Material,
   type MaterialId,
   type Materials,
-  type Outline,
 } from "@jscad/types";
 
 export function jscadToThree(
@@ -36,24 +38,34 @@ export function jscadToThree(
 
       if (!outline) continue;
 
-      const outlineColor = outline;
+      const normalisedOutline = Array.isArray(outline)
+        ? { color: outline, thickness: undefined }
+        : outline;
 
-      const outlineOpacity = outline.length > 3 ? outline[3]! : 1;
+      const outlineColor = normalisedOutline.color;
+      const outlineThickness = normalisedOutline.thickness ?? 1;
 
-      // Add crisp outline using EdgesGeometry
+      const outlineOpacity = outlineColor.length > 3 ? outlineColor[3]! : 1;
+
+      // Add outline using Line2 (supports actual linewidth in WebGL)
       const edges = new THREE.EdgesGeometry(mesh.geometry);
-      const lines = new THREE.LineSegments(
-        edges,
-        new THREE.LineBasicMaterial({
+      const edgePositions = edges.attributes.position.array as Float32Array;
+      const lineGeometry = new LineGeometry();
+      lineGeometry.setPositions(edgePositions);
+      const lines = new Line2(
+        lineGeometry,
+        new LineMaterial({
           color: new THREE.Color(
             outlineColor[0],
             outlineColor[1],
             outlineColor[2],
-          ),
+          ).getHex(),
           opacity: outlineOpacity,
           transparent: outlineOpacity < 1,
+          linewidth: outlineThickness,
         }),
       );
+      lines.computeLineDistances();
       lines.position.copy(mesh.position);
       lines.rotation.copy(mesh.rotation);
       lines.scale.copy(mesh.scale);
