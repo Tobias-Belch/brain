@@ -1,0 +1,239 @@
+{
+  "name": "Streaming Media and Web Security",
+  "children": [
+    {
+      "name": "Streaming Technologies",
+      "children": [
+        {
+          "name": "MPEG-DASH",
+          "children": [
+            {
+              "name": "Dynamic Adaptive Streaming over HTTP"
+            },
+            {
+              "name": "Standardized ISO/IEC 23009-1"
+            },
+            {
+              "name": "MPD Manifest (XML-based)"
+            },
+            {
+              "name": "Codec Agnostic"
+            }
+          ]
+        },
+        {
+          "name": "HLS (HTTP Live Streaming)",
+          "children": [
+            {
+              "name": "Apple Developed"
+            },
+            {
+              "name": "M3U8 Manifest (UTF-8)"
+            },
+            {
+              "name": "MPEG-2 Transport Stream (.ts)"
+            },
+            {
+              "name": "AES-128 Encryption Support"
+            }
+          ]
+        },
+        {
+          "name": "Adaptive Bitrate Streaming (ABR)",
+          "children": [
+            {
+              "name": "Multiple Quality Copies"
+            },
+            {
+              "name": "Client-side Network Detection"
+            },
+            {
+              "name": "Segmented Media Chunks"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Content Protection",
+      "children": [
+        {
+          "name": "Encryption Methods",
+          "children": [
+            {
+              "name": "AES-128 (Full Segment)"
+            },
+            {
+              "name": "SAMPLE-AES (Media Samples)"
+            },
+            {
+              "name": "Common Encryption (CENC)"
+            }
+          ]
+        },
+        {
+          "name": "Digital Rights Management (DRM)",
+          "children": [
+            {
+              "name": "Widevine (Google)"
+            },
+            {
+              "name": "FairPlay (Apple)"
+            },
+            {
+              "name": "PlayReady (Microsoft)"
+            }
+          ]
+        },
+        {
+          "name": "Anti-Piracy Strategies",
+          "children": [
+            {
+              "name": "Forensic Watermarking"
+            },
+            {
+              "name": "Token-based Authentication"
+            },
+            {
+              "name": "CDN Tokenization"
+            },
+            {
+              "name": "Geo-blocking"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Web Scraping & Automation",
+      "children": [
+        {
+          "name": "Tools",
+          "children": [
+            {
+              "name": "Puppeteer / Playwright"
+            },
+            {
+              "name": "Selenium / Undetected ChromeDriver"
+            },
+            {
+              "name": "Nodriver (Async Stealth)"
+            },
+            {
+              "name": "yt-dlp (Command-line Downloader)"
+            }
+          ]
+        },
+        {
+          "name": "Bypass Techniques",
+          "children": [
+            {
+              "name": "Stealth Plugins"
+            },
+            {
+              "name": "Headless: False Mode"
+            },
+            {
+              "name": "AutomationControlled Disabling"
+            },
+            {
+              "name": "User-Agent Spoofing"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Network Security Challenges",
+      "children": [
+        {
+          "name": "Detection Mechanisms",
+          "children": [
+            {
+              "name": "TLS Fingerprinting (JA3)"
+            },
+            {
+              "name": "IP Reputation (Residential vs DC)"
+            },
+            {
+              "name": "Cloudflare Turnstile (CAPTCHA)"
+            },
+            {
+              "name": "Behavioral Biometrics"
+            }
+          ]
+        },
+        {
+          "name": "Cross-Origin Policies",
+          "children": [
+            {
+              "name": "CORS (Resource Sharing)"
+            },
+            {
+              "name": "CSP (Content Security Policy)"
+            },
+            {
+              "name": "COOP (Opener Policy)"
+            },
+            {
+              "name": "COEP (Embedder Policy)"
+            }
+          ]
+        },
+        {
+          "name": "CDN Vulnerabilities",
+          "children": [
+            {
+              "name": "CDN Leeching"
+            },
+            {
+              "name": "Key Lifecycle Exploits"
+            },
+            {
+              "name": "Referer/Origin Spoofing"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Broadband Infrastructure",
+      "children": [
+        {
+          "name": "Connectivity Vision",
+          "children": [
+            {
+              "name": "10G Platform"
+            },
+            {
+              "name": "DOCSIS 4.0 (Full/Frequency Duplex)"
+            },
+            {
+              "name": "FTTP / XGS-PON"
+            },
+            {
+              "name": "Coherent Optics (100G/200G)"
+            }
+          ]
+        },
+        {
+          "name": "Future Trends",
+          "children": [
+            {
+              "name": "Edge Computing (NaaS)"
+            },
+            {
+              "name": "AI Agent Security"
+            },
+            {
+              "name": "Quantum Key Distribution (QKD)"
+            },
+            {
+              "name": "Low Latency DOCSIS (LLD)"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
