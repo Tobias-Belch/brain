@@ -20,23 +20,23 @@ export const measurements = {
       height: cm(58),
       depth: cm(87),
       boards: {
-        thickness: mm(16),
+        thickness: cm(1.8),
         side: {
           height: cm(58),
           depth: cm(87),
         },
         back: {
-          width: cm(205 - 2 * 1.6),
+          width: cm(205 - 2 * 1.8),
           height: cm(58),
         },
         front: {
-          width: cm(205 - 2 * 1.6),
+          width: cm(205 - 2 * 1.8),
           height: cm(42),
         },
       },
       drawer: {
         boards: {
-          thickness: mm(16),
+          thickness: cm(1.8),
           height: cm(12),
           back: {
             width: cm(85),
@@ -45,7 +45,7 @@ export const measurements = {
             depth: cm(54),
           },
           front: {
-            width: cm(85 + 2 * 1.6),
+            width: cm(85 + 2 * 1.8),
             height: cm(16),
           },
         },
@@ -97,6 +97,45 @@ export const measurements = {
           // bottom shelf
           calculateVolume(cm(72), cm(30), cm(24)).value,
       ),
+      boards: {
+        thickness: cm(1.8),
+        outer: {
+          side: {
+            height: cm(106),
+            depth: cm(28),
+          },
+          shelf: {
+            width: cm(80 - 2 * 1.8),
+            depth: cm(28),
+            fromTop: cm(23.9),
+          },
+        },
+        inner: {
+          back: {
+            thickness: mm(3),
+            width: cm(71.9 + 2 * 1.8),
+            height: cm(74.3 - 1.8),
+          },
+          side: {
+            height: cm(74.3 - 1.8),
+            depth: cm(24),
+          },
+          top: {
+            width: cm(71.9 + 2 * 1.8),
+            depth: cm(24),
+          },
+          shelf: {
+            width: cm(71.9),
+            depth: cm(24),
+            fromTop: cm(31),
+            fromBottom: cm(74.3 - 2 * 1.8 - 31 - 29.8),
+          },
+        },
+        desk: {
+          width: cm(71.9 + 2 * 1.8),
+          depth: cm(28 + 54.5),
+        },
+      },
       width: cm(80),
       height: cm(106),
       closed: {
@@ -437,23 +476,153 @@ export const cabinets = {
 };
 
 export const desks = {
-  Billy: ({ variant }: { variant: "closed" | "opened" }) => {
-    if (variant === "opened") {
-      return translate(
-        [0, 0, 0],
+  Billy: (state: { variant: "closed" | "opened" }) => {
+    const outer = [
+      // right
+      box(
+        normalize(measurements.desks.Billy.boards.thickness),
+        normalize(measurements.desks.Billy.boards.outer.side.height),
+        normalize(measurements.desks.Billy.boards.outer.side.depth),
+      ),
+      // left
+      translate(
+        [
+          normalize(measurements.desks.Billy.boards.outer.shelf.width) +
+            normalize(measurements.desks.Billy.boards.thickness),
+          0,
+          0,
+        ],
         box(
-          normalize(measurements.desks.Billy.width),
-          normalize(measurements.desks.Billy.height),
-          normalize(measurements.desks.Billy.opened.depth),
+          normalize(measurements.desks.Billy.boards.thickness),
+          normalize(measurements.desks.Billy.boards.outer.side.height),
+          normalize(measurements.desks.Billy.boards.outer.side.depth),
         ),
-      );
-    }
+      ),
+      // top
+      translate(
+        [
+          normalize(measurements.desks.Billy.boards.thickness),
+          normalize(measurements.desks.Billy.boards.outer.side.height) -
+            normalize(measurements.desks.Billy.boards.thickness),
+          0,
+        ],
+        box(
+          normalize(measurements.desks.Billy.boards.outer.shelf.width),
+          normalize(measurements.desks.Billy.boards.thickness),
+          normalize(measurements.desks.Billy.boards.outer.shelf.depth),
+        ),
+      ),
+      // shelf
+      translate(
+        [
+          normalize(measurements.desks.Billy.boards.thickness),
+          normalize(measurements.desks.Billy.boards.outer.side.height) -
+            normalize(measurements.desks.Billy.boards.thickness) -
+            normalize(measurements.desks.Billy.boards.outer.shelf.fromTop),
+          0,
+        ],
+        box(
+          normalize(measurements.desks.Billy.boards.outer.shelf.width),
+          normalize(measurements.desks.Billy.boards.thickness),
+          normalize(measurements.desks.Billy.boards.outer.shelf.depth),
+        ),
+      ),
+    ];
 
-    return box(
-      normalize(measurements.desks.Billy.width),
-      normalize(measurements.desks.Billy.height),
-      normalize(measurements.desks.Billy.closed.depth),
+    const inner = translate(
+      [
+        normalize(measurements.desks.Billy.boards.thickness),
+        0,
+        state.variant === "opened"
+          ? normalize(measurements.desks.Billy.boards.desk.depth)
+          : 0,
+      ],
+      [
+        //back
+        box(
+          normalize(measurements.desks.Billy.boards.inner.back.width),
+          normalize(measurements.desks.Billy.boards.inner.back.height),
+          normalize(measurements.desks.Billy.boards.inner.back.thickness),
+        ),
+        // right
+        box(
+          normalize(measurements.desks.Billy.boards.thickness),
+          normalize(measurements.desks.Billy.boards.inner.side.height),
+          normalize(measurements.desks.Billy.boards.inner.side.depth),
+        ),
+        // left
+        translate(
+          [
+            normalize(measurements.desks.Billy.boards.inner.shelf.width) +
+              normalize(measurements.desks.Billy.boards.thickness),
+            0,
+            0,
+          ],
+          box(
+            normalize(measurements.desks.Billy.boards.thickness),
+            normalize(measurements.desks.Billy.boards.inner.side.height),
+            normalize(measurements.desks.Billy.boards.inner.side.depth),
+          ),
+        ),
+        // top
+        translate(
+          [0, normalize(measurements.desks.Billy.boards.inner.side.height), 0],
+          box(
+            normalize(measurements.desks.Billy.boards.inner.top.width),
+            normalize(measurements.desks.Billy.boards.thickness),
+            normalize(measurements.desks.Billy.boards.inner.top.depth),
+          ),
+        ),
+        // shelf
+        translate(
+          [
+            normalize(measurements.desks.Billy.boards.thickness),
+            normalize(measurements.desks.Billy.boards.inner.side.height) -
+              normalize(measurements.desks.Billy.boards.thickness) -
+              normalize(measurements.desks.Billy.boards.inner.shelf.fromTop),
+            0,
+          ],
+          box(
+            normalize(measurements.desks.Billy.boards.inner.shelf.width),
+            normalize(measurements.desks.Billy.boards.thickness),
+            normalize(measurements.desks.Billy.boards.inner.shelf.depth),
+          ),
+        ),
+        // shelf bottom
+        translate(
+          [
+            normalize(measurements.desks.Billy.boards.thickness),
+            normalize(measurements.desks.Billy.boards.inner.shelf.fromBottom),
+            0,
+          ],
+          box(
+            normalize(measurements.desks.Billy.boards.inner.shelf.width),
+            normalize(measurements.desks.Billy.boards.thickness),
+            normalize(measurements.desks.Billy.boards.inner.shelf.depth),
+          ),
+        ),
+      ],
     );
+
+    const desk =
+      state.variant === "opened"
+        ? [
+            translate(
+              [
+                normalize(measurements.desks.Billy.boards.thickness),
+                normalize(measurements.desks.Billy.boards.inner.side.height),
+                0,
+              ],
+              box(
+                normalize(measurements.desks.Billy.boards.desk.width),
+                normalize(measurements.desks.Billy.boards.thickness),
+                normalize(measurements.desks.Billy.boards.desk.depth),
+              ),
+            ),
+          ]
+        : [];
+
+    return [...outer, ...inner, ...desk];
   },
 };
 
