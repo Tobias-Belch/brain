@@ -1,4 +1,6 @@
-# Technical Analysis of Streaming Infrastructure, Anti-Bot Evasion, and Content Security
+---
+title: "NotebookLM Briefing"
+---
 
 This briefing document synthesizes current methodologies, challenges, and technological frameworks regarding adaptive bitrate streaming, anti-bot detection systems (specifically Cloudflare), and comprehensive content protection strategies as of early 2026.
 

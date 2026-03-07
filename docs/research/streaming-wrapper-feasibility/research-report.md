@@ -1,14 +1,23 @@
-# Research Report: Personal Streaming Wrapper App — Feasibility Assessment
+---
+title: "Report"
+---
 
 ## Table of Contents
 
-1. [Research Question & Scope](#1-research-question--scope)
-2. [Methodology](#2-methodology)
-3. [Key Findings](#3-key-findings)
-4. [Source Inventory](#4-source-inventory)
-5. [Conflicts & Open Questions](#5-conflicts--open-questions)
-6. [Blindspot / Gap Analysis](#6-blindspot--gap-analysis)
-7. [Recommended Next Steps](#7-recommended-next-steps)
+- [Table of Contents](#table-of-contents)
+- [1. Research Question \& Scope](#1-research-question--scope)
+- [2. Methodology](#2-methodology)
+- [3. Key Findings](#3-key-findings)
+  - [3.1 putlocker.best Technical Architecture](#31-putlockerbest-technical-architecture)
+  - [3.2 Stream Extraction Feasibility](#32-stream-extraction-feasibility)
+  - [3.3 The 3-Layer Piracy Site Architecture](#33-the-3-layer-piracy-site-architecture)
+  - [3.4 Netflix, Disney+, and Amazon Prime Video APIs](#34-netflix-disney-and-amazon-prime-video-apis)
+  - [3.5 Personal Tracking Feature Implementation](#35-personal-tracking-feature-implementation)
+  - [3.6 Prior Art: vidsrc-api](#36-prior-art-vidsrc-api)
+- [4. Source Inventory](#4-source-inventory)
+- [5. Conflicts \& Open Questions](#5-conflicts--open-questions)
+- [6. Blindspot / Gap Analysis](#6-blindspot--gap-analysis)
+- [7. Recommended Next Steps](#7-recommended-next-steps)
 
 ---
 
