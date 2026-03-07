@@ -1,0 +1,124 @@
+/* ─── Layout wrapper ──────────────────────────────────────────────── */
+.switch-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  user-select: none;
+}
+
+.switch-wrapper--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ─── Track (the outer pill) ──────────────────────────────────────── */
+.switch-track {
+  /* Glassmorphism – matches .floating from styles.css */
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  /* width grows to fit label content */
+  min-width: 3rem;
+  height: 1.75rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s,
+    padding 0.18s ease;
+  outline: none;
+  flex-shrink: 0;
+  justify-content: space-between;
+}
+
+/* OFF: thumb occupies left side → push content away from left */
+.switch-track--off {
+  padding-left: calc(1.25rem + 0.35rem);
+  padding-right: 0.35rem;
+}
+
+/* ON: thumb occupies right side → push content away from right */
+.switch-track--on {
+  padding-left: 0.35rem;
+  padding-right: calc(1.25rem + 0.35rem);
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.switch-track:focus-visible {
+  box-shadow:
+    0 8px 32px 0 rgba(31, 38, 135, 0.37),
+    0 0 0 2px rgba(255, 255, 255, 0.55);
+}
+
+.switch-track:hover:not([aria-disabled="true"]) {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* ─── Track labels (on / off text inside the track) ──────────────── */
+.switch-track-label {
+  display: grid;
+  grid-template-columns: 1fr;
+  transition: grid-template-columns 0.18s ease, opacity 0.18s ease;
+}
+
+.switch-track-label-inner {
+  overflow: hidden;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: rgba(0, 0, 0, 0.7);
+  line-height: 1;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Hide the inactive label: fade out AND collapse to zero width */
+.switch-track--on  .switch-track-label--off,
+.switch-track--off .switch-track-label--on {
+  opacity: 0;
+  grid-template-columns: 0fr;
+}
+
+/* ─── Thumb ───────────────────────────────────────────────────────── */
+.switch-thumb {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 0.2rem;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  transition: left 0.18s ease, right 0.18s ease, background 0.2s;
+}
+
+/* OFF: thumb on the left, label on the right */
+.switch-track--off .switch-thumb {
+  left: 0.2rem;
+}
+
+/* ON: thumb on the right, label on the left */
+.switch-track--on .switch-thumb {
+  right: 0.2rem;
+  left: auto;
+}
+
+/* ─── Outer label ─────────────────────────────────────────────────── */
+.switch-label {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.switch-wrapper--disabled .switch-label {
+  cursor: not-allowed;
+}

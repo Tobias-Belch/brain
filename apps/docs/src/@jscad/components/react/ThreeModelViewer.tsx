@@ -22,6 +22,10 @@ export function ThreeModelViewer({
   const controlsRef = useRef<any>(null);
   const sizeRef = useRef<number>(50);
   const distRef = useRef<number>(40);
+  const savedCameraRef = useRef<{
+    position: THREE.Vector3;
+    target: THREE.Vector3;
+  } | null>(null);
 
   const views = {
     front: () => setView(new THREE.Vector3(0, 0, 1)),
@@ -82,7 +86,11 @@ export function ThreeModelViewer({
     }
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 5000);
-    camera.position.set(size * 0.8, size * 0.8, size * 0.8);
+    if (savedCameraRef.current) {
+      camera.position.copy(savedCameraRef.current.position);
+    } else {
+      camera.position.set(size * 0.8, size * 0.8, size * 0.8);
+    }
     camera.lookAt(center);
     cameraRef.current = camera;
 
@@ -109,7 +117,7 @@ export function ThreeModelViewer({
       controls.panSpeed = 1.0;
       controls.screenSpacePanning = true; // pan parallel to screen
 
-      controls.target.copy(center);
+      controls.target.copy(savedCameraRef.current?.target ?? center);
       controls.update();
       controlsRef.current = controls;
     })();
@@ -140,6 +148,14 @@ export function ThreeModelViewer({
     // Cleanup
     // -------------------------
     return () => {
+      // Save camera state before teardown so it can be restored on re-mount
+      if (cameraRef.current && controlsRef.current) {
+        savedCameraRef.current = {
+          position: cameraRef.current.position.clone(),
+          target: controlsRef.current.target.clone(),
+        };
+      }
+
       cancelAnimationFrame(frame);
 
       // Dispose renderer
