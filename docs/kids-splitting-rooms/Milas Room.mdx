@@ -2,30 +2,34 @@
 title: "Mila's Room"
 ---
 
-import { cm, formatValueWithUnit, m, toM } from "@pocs/values";
-import JscadModelViewer from "@jscad/components/JscadModelViewer.astro";
+import { cm, m, l, toM } from "@pocs/values";
+import { MilasRoomViewer } from "./components/MilasRoomViewer";
+import * as ikea from "./models/ikea";
 import { MilasRoom, measurements } from "./models/milas-room.model";
 import { materials } from "./models/materials";
 
-export const state = {
-  bed: {
-    variant: "double",
-  }
-}
+| | WxHxD |
+|-|-------|
+| Room | {measurements.room.width} x {measurements.room.height} x {measurements.room.depth} ({(toM(measurements.room.width).value * toM(measurements.room.depth).value).toFixed(1)} m²) |
+| Window | {measurements.room.window.width} x {measurements.room.window.height} x {measurements.room.window.depth} |
+| Window Board | {measurements.room.window.board.width} x {measurements.room.window.board.height} x {measurements.room.window.board.depth} |
+| Door | {measurements.room.door.width} x {measurements.room.door.height} x {measurements.room.door.depth} |
 
-<JscadModelViewer
+## Variant: IKEA only
+
+<MilasRoomViewer
+  client:only="react"
   name="milas-room-model"
   materials={materials}
-  model={MilasRoom({ state })}
   background="#0d1117"
   style={{ width: "100%", height: "70vh", marginBottom: "3rem" }}
 />
 
-## Measurements
+### Furniture
 
-| | WxHxD |
-|-|-------|
-| Room | {formatValueWithUnit(measurements.room.width)} x {formatValueWithUnit(measurements.room.height)} x {formatValueWithUnit(measurements.room.depth)} ({(toM(measurements.room.width).value * toM(measurements.room.depth).value).toFixed(1)} m²) |
-| Window | {formatValueWithUnit(measurements.room.window.width)} x {formatValueWithUnit(measurements.room.window.height)} x {formatValueWithUnit(measurements.room.window.depth)} |
-| Window Board | {formatValueWithUnit(measurements.room.window.board.width)} x {formatValueWithUnit(measurements.room.window.board.height)} x {formatValueWithUnit(measurements.room.window.board.depth)} |
-| Door | {formatValueWithUnit(measurements.room.door.width)} x {formatValueWithUnit(measurements.room.door.height)} x {formatValueWithUnit(measurements.room.door.depth)} |
+| | Measurements (WxHxD) | Storage |
+|-|----------------------|---------|
+| IKEA Brimnes | {ikea.measurements.beds.Brimnes.width} x {ikea.measurements.beds.Brimnes.height} x {ikea.measurements.beds.Brimnes.depth} / {cm(ikea.measurements.beds.Brimnes.depth.value + cm(50).value)} / {cm(ikea.measurements.beds.Brimnes.depth.value + ikea.measurements.beds.Mattress.width.value)} | {ikea.measurements.beds.Brimnes.storage} |
+| IKEA Pax | {ikea.measurements.cabinets.Pax.width} x {ikea.measurements.cabinets.Pax.height} x {ikea.measurements.cabinets.Pax.closed.depth} / {ikea.measurements.cabinets.Pax.opened.depth} | {ikea.measurements.cabinets.Pax.storage} |
+| IKEA Billy | {ikea.measurements.desks.Billy.width} x {ikea.measurements.desks.Billy.height} x {ikea.measurements.desks.Billy.closed.depth} / {ikea.measurements.desks.Billy.opened.depth} | {ikea.measurements.desks.Billy.storage} |
+| Total | | {l(ikea.measurements.beds.Brimnes.storage.value + ikea.measurements.cabinets.Pax.storage.value + ikea.measurements.desks.Billy.storage.value)} |

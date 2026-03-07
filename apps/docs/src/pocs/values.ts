@@ -73,8 +73,20 @@ export function toM(value: NumberWithUnit): Meters {
   }
 }
 
-export function formatValueWithUnit(
-  value: Centimeters | Milimeters | Inch | Meters,
-): string {
+export const l = numberWithUnit(" l");
+export type Liters = ReturnType<typeof l>;
+
+export function calculateVolume(
+  width: NumberWithUnit,
+  height: NumberWithUnit,
+  depth: NumberWithUnit,
+): Liters {
+  const volumeInCubicMeters =
+    toM(width).value * toM(height).value * toM(depth).value;
+
+  return l(Number((volumeInCubicMeters * 1000).toFixed(2)));
+}
+
+export function formatValueWithUnit(value: NumberWithUnit | Liters): string {
   return `${value.value}${value.unit}`;
 }

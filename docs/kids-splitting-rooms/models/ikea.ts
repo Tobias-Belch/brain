@@ -1,5 +1,5 @@
 import modeling from "@jscad/modeling";
-import { cm, mm } from "@pocs/values";
+import { calculateVolume, cm, l, m, mm } from "@pocs/values";
 import { box, normalize } from "./utils";
 
 const {
@@ -14,7 +14,12 @@ export const measurements = {
       height: cm(10),
       depth: cm(200),
     },
+    // https://www.ikea.com/de/de/p/brimnes-tagesbettgestell-2-schubladen-weiss-00228705/
     Brimnes: {
+      storage: l(2 * calculateVolume(cm(85), cm(16), cm(54)).value),
+      width: cm(205),
+      height: cm(58),
+      depth: cm(87),
       boards: {
         thickness: mm(16),
         side: {
@@ -30,12 +35,77 @@ export const measurements = {
           height: cm(42),
         },
       },
-      closed: {
-        width: cm(205),
-        height: cm(58),
-        depth: cm(87),
+      drawer: {
+        boards: {
+          thickness: mm(16),
+          height: cm(12),
+          back: {
+            width: cm(85),
+          },
+          side: {
+            depth: cm(54),
+          },
+          front: {
+            width: cm(85 + 2 * 1.6),
+            height: cm(16),
+          },
+        },
       },
-      storage: {},
+    },
+  },
+  cabinets: {
+    // https://www.ikea.com/de/de/p/pax-forsand-kleiderschrank-weiss-weiss-s49502665/
+    Pax: {
+      storage: calculateVolume(cm(96), cm(200), cm(58)),
+      width: cm(100),
+      height: cm(236),
+      closed: {
+        depth: cm(60),
+      },
+      opened: {
+        depth: cm(60 + 50),
+      },
+    },
+  },
+  desks: {
+    // https://www.ikea.com/de/de/p/billy-buecherregal-mit-klapptisch-weiss-00579755/
+    Billy: {
+      storage: l(
+        // top shelf
+        calculateVolume(cm(76), cm(24), cm(26)).value +
+          // middle shelf
+          calculateVolume(cm(72), cm(31), cm(24)).value +
+          // bottom shelf
+          calculateVolume(cm(72), cm(30), cm(24)).value,
+      ),
+      width: cm(80),
+      height: cm(106),
+      closed: {
+        depth: cm(32.5),
+      },
+      opened: {
+        depth: cm(112.4),
+      },
+    },
+  },
+  shelfs: {
+    // https://www.ikea.com/de/de/p/kallax-regal-weiss-20301554/
+    Kallax: {
+      width: cm(39),
+      height: cm(40.7),
+      depth: cm(41.5),
+      boards: {
+        thickness: mm(35.5),
+        side: {
+          height: cm(33.5),
+          depth: cm(39),
+        },
+        bottomTop: {
+          width: cm(41.5),
+          depth: cm(39),
+        },
+      },
+      storage: l(2 * calculateVolume(cm(39), cm(33.5), cm(33.5)).value),
     },
   },
 };
@@ -51,7 +121,7 @@ const brimnesBed = {
     [
       normalize(measurements.beds.Brimnes.boards.thickness),
       0,
-      normalize(measurements.beds.Brimnes.closed.depth) -
+      normalize(measurements.beds.Brimnes.depth) -
         normalize(measurements.beds.Brimnes.boards.thickness),
     ],
     box(
@@ -114,30 +184,94 @@ const brimnesBed = {
       ),
     ],
   ),
+  drawer: translate(
+    [0, 0, 0],
+    [
+      // front
+      box(
+        normalize(measurements.beds.Brimnes.drawer.boards.front.width),
+        normalize(measurements.beds.Brimnes.drawer.boards.front.height),
+        normalize(measurements.beds.Brimnes.drawer.boards.thickness),
+      ),
+      // right
+      translate(
+        [0, 0, normalize(measurements.beds.Brimnes.drawer.boards.thickness)],
+        box(
+          normalize(measurements.beds.Brimnes.drawer.boards.thickness),
+          normalize(measurements.beds.Brimnes.drawer.boards.height),
+          normalize(measurements.beds.Brimnes.drawer.boards.side.depth),
+        ),
+      ),
+      // left
+      translate(
+        [
+          normalize(measurements.beds.Brimnes.drawer.boards.front.width) -
+            normalize(measurements.beds.Brimnes.drawer.boards.thickness),
+          0,
+          normalize(measurements.beds.Brimnes.drawer.boards.thickness),
+        ],
+        box(
+          normalize(measurements.beds.Brimnes.drawer.boards.thickness),
+          normalize(measurements.beds.Brimnes.drawer.boards.height),
+          normalize(measurements.beds.Brimnes.drawer.boards.side.depth),
+        ),
+      ),
+      // bottom
+      translate(
+        [0, 0, normalize(measurements.beds.Brimnes.drawer.boards.thickness)],
+        box(
+          normalize(measurements.beds.Brimnes.drawer.boards.front.width),
+          normalize(measurements.beds.Brimnes.drawer.boards.thickness),
+          normalize(measurements.beds.Brimnes.drawer.boards.side.depth),
+        ),
+      ),
+    ],
+  ),
 };
 
 export const beds = {
-  Brimnes: ({ variant }: { variant: "single" | "double" }) => {
-    const box =
-      variant === "double"
-        ? [
-            brimnesBed.back,
-            brimnesBed.right,
-            brimnesBed.left,
-            translate(
-              [0, 0, -normalize(measurements.beds.Mattress.width)],
-              brimnesBed.front,
-            ),
-          ]
-        : [
-            brimnesBed.back,
-            brimnesBed.right,
-            brimnesBed.left,
-            brimnesBed.front,
-          ];
+  Brimnes: (state: {
+    drawers: "closed" | "opened";
+    variant: "single" | "double";
+  }) => {
+    const frontDepthCorrection =
+      state.variant === "double"
+        ? -normalize(measurements.beds.Mattress.width)
+        : 0;
+
+    const box = [
+      brimnesBed.back,
+      brimnesBed.right,
+      brimnesBed.left,
+      translate([0, 0, frontDepthCorrection], brimnesBed.front),
+    ];
+
+    const drawerGap =
+      (normalize(measurements.beds.Brimnes.boards.front.width) -
+        2 * normalize(measurements.beds.Brimnes.drawer.boards.front.width)) /
+      3;
+
+    const drawerDepthCorrection =
+      state.drawers === "opened" ? -normalize(cm(50)) : 0;
+
+    const drawers = translate(
+      [drawerGap, drawerGap, frontDepthCorrection + drawerDepthCorrection],
+      [
+        brimnesBed.drawer,
+        translate(
+          [
+            normalize(measurements.beds.Brimnes.drawer.boards.front.width) +
+              drawerGap,
+            0,
+            0,
+          ],
+          brimnesBed.drawer,
+        ),
+      ],
+    );
 
     const mattresses =
-      variant === "double"
+      state.variant === "double"
         ? [
             translate(
               [
@@ -173,6 +307,97 @@ export const beds = {
             ),
           ];
 
-    return [...box, ...mattresses];
+    return [...box, drawers, ...mattresses];
+  },
+};
+
+export const cabinets = {
+  Pax: ({ variant }: { variant: "closed" | "opened" }) => {
+    if (variant === "opened") {
+      return translate(
+        [0, 0, 0],
+        box(
+          normalize(measurements.cabinets.Pax.width),
+          normalize(measurements.cabinets.Pax.height),
+          normalize(measurements.cabinets.Pax.opened.depth),
+        ),
+      );
+    }
+
+    return box(
+      normalize(measurements.cabinets.Pax.width),
+      normalize(measurements.cabinets.Pax.height),
+      normalize(measurements.cabinets.Pax.closed.depth),
+    );
+  },
+};
+
+export const desks = {
+  Billy: ({ variant }: { variant: "closed" | "opened" }) => {
+    if (variant === "opened") {
+      return translate(
+        [0, 0, 0],
+        box(
+          normalize(measurements.desks.Billy.width),
+          normalize(measurements.desks.Billy.height),
+          normalize(measurements.desks.Billy.opened.depth),
+        ),
+      );
+    }
+
+    return box(
+      normalize(measurements.desks.Billy.width),
+      normalize(measurements.desks.Billy.height),
+      normalize(measurements.desks.Billy.closed.depth),
+    );
+  },
+};
+
+export const shelfs = {
+  Kallax: () => {
+    const bottom = box(
+      normalize(measurements.shelfs.Kallax.boards.bottomTop.depth),
+      normalize(measurements.shelfs.Kallax.boards.thickness),
+      normalize(measurements.shelfs.Kallax.boards.bottomTop.width),
+    );
+
+    const left = translate(
+      [0, normalize(measurements.shelfs.Kallax.boards.thickness), 0],
+      box(
+        normalize(measurements.shelfs.Kallax.boards.side.depth),
+        normalize(measurements.shelfs.Kallax.boards.side.height),
+        normalize(measurements.shelfs.Kallax.boards.thickness),
+      ),
+    );
+
+    const right = translate(
+      [
+        0,
+        normalize(measurements.shelfs.Kallax.boards.thickness),
+        normalize(measurements.shelfs.Kallax.boards.bottomTop.width) -
+          normalize(measurements.shelfs.Kallax.boards.thickness),
+      ],
+      box(
+        normalize(measurements.shelfs.Kallax.boards.side.depth),
+        normalize(measurements.shelfs.Kallax.boards.side.height),
+        normalize(measurements.shelfs.Kallax.boards.thickness),
+      ),
+    );
+
+    const top = translate(
+      [
+        0,
+        normalize(measurements.shelfs.Kallax.boards.thickness) +
+          normalize(measurements.shelfs.Kallax.boards.side.height),
+        0,
+      ],
+      box(
+        normalize(measurements.shelfs.Kallax.boards.bottomTop.depth),
+        normalize(measurements.shelfs.Kallax.boards.thickness),
+        normalize(measurements.shelfs.Kallax.boards.bottomTop.width),
+      ),
+    );
+
+    return [bottom, left, right, top];
   },
 };

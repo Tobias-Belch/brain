@@ -7,7 +7,7 @@ import * as ikea from "./ikea";
 const {
   colors: { colorize },
   booleans: { union, subtract },
-  transforms: { translate },
+  transforms: { rotate, translate },
 } = modeling;
 
 export const measurements = {
@@ -45,15 +45,29 @@ export const measurements = {
   },
 };
 
-type State = {
+export type State = {
   bed: {
+    drawers: "closed" | "opened";
     variant: "single" | "double";
+  };
+  cabinet: {
+    variant: "closed" | "opened";
+  };
+  desk: {
+    variant: "closed" | "opened";
   };
 };
 
 const defaultState = {
   bed: {
+    drawers: "closed",
     variant: "single",
+  },
+  cabinet: {
+    variant: "closed",
+  },
+  desk: {
+    variant: "closed",
   },
 } satisfies State;
 
@@ -89,19 +103,60 @@ function furnitureVariantA(state: State) {
     },
   };
 
+  const billy = translate(
+    [
+      normalised.wall.thickness,
+      normalised.wall.thickness,
+      normalised.wall.thickness +
+        normalize(cm(10)) +
+        normalize(ikea.measurements.cabinets.Pax.width) +
+        normalize(cm(2)) +
+        normalize(ikea.measurements.desks.Billy.width),
+    ],
+    rotate(
+      [0, Math.PI / 2, 0],
+      colorize(materials.Furniture.color, ikea.desks.Billy(state.desk)),
+    ),
+  );
+
+  const pax = translate(
+    [
+      normalised.wall.thickness,
+      normalised.wall.thickness,
+      normalised.wall.thickness +
+        normalize(cm(10)) +
+        normalize(ikea.measurements.cabinets.Pax.width),
+    ],
+    rotate(
+      [0, Math.PI / 2, 0],
+      colorize(materials.Furniture.color, ikea.cabinets.Pax(state.cabinet)),
+    ),
+  );
+
   const brimnes = translate(
     [
       normalised.wall.thickness,
       normalised.wall.thickness,
       normalised.wall.thickness +
         normalised.room.depth -
-        normalize(ikea.measurements.beds.Brimnes.closed.depth) -
+        normalize(ikea.measurements.beds.Brimnes.depth) -
         normalize(cm(10)),
     ],
     colorize(materials.Furniture.color, ikea.beds.Brimnes(state.bed)),
   );
 
-  return [brimnes];
+  /*const kallaxStairs = translate(
+    [
+      normalised.wall.thickness +
+        normalised.room.width -
+        normalize(ikea.measurements.shelfs.Kallax.width),
+      normalised.wall.thickness,
+      normalised.wall.thickness,
+    ],
+    colorize(materials.Furniture.color, [ikea.shelfs.Kallax()]),
+  );*/
+
+  return [billy, pax, brimnes];
 }
 
 function room() {

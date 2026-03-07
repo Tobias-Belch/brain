@@ -17,6 +17,7 @@ export const materials = {
   Wall: {
     id: materialId([0.85, 0.82, 0.78]),
     color: [0.85, 0.82, 0.78, roomAlpha],
+    outline: { color: [0, 0, 0, 0.1], thickness: 3 },
     three: {
       threeType: "MeshPhongMaterial" as const,
       color: 0xd9d1c7,
