@@ -3,8 +3,7 @@ import { calculateVolume, cm, l, m, mm } from "@pocs/values";
 import { box, normalize } from "./utils";
 
 const {
-  booleans: { union, subtract },
-  transforms: { translate },
+  transforms: { rotate, translate },
 } = modeling;
 
 export const measurements = {
@@ -57,6 +56,26 @@ export const measurements = {
     // https://www.ikea.com/de/de/p/pax-forsand-kleiderschrank-weiss-weiss-s49502665/
     Pax: {
       storage: calculateVolume(cm(96), cm(200), cm(58)),
+      boards: {
+        thickness: mm(18),
+        back: {
+          width: cm(100),
+          height: cm(236),
+          thickness: mm(3),
+        },
+        side: {
+          height: cm(236 - 2 * 1.8),
+          depth: cm(58),
+        },
+        bottomTop: {
+          width: cm(100),
+          depth: cm(58),
+        },
+        door: {
+          width: cm(50),
+          height: cm(229),
+        },
+      },
       width: cm(100),
       height: cm(236),
       closed: {
@@ -312,23 +331,108 @@ export const beds = {
 };
 
 export const cabinets = {
-  Pax: ({ variant }: { variant: "closed" | "opened" }) => {
-    if (variant === "opened") {
-      return translate(
+  Pax: (state: { variant: "closed" | "opened" }) => {
+    const corpus = [
+      // back
+      box(
+        normalize(measurements.cabinets.Pax.boards.back.width),
+        normalize(measurements.cabinets.Pax.boards.back.height),
+        normalize(measurements.cabinets.Pax.boards.back.thickness),
+      ),
+      // right
+      box(
+        normalize(measurements.cabinets.Pax.boards.thickness),
+        normalize(measurements.cabinets.Pax.boards.side.height),
+        normalize(measurements.cabinets.Pax.boards.side.depth),
+      ),
+      // left
+      translate(
+        [
+          normalize(measurements.cabinets.Pax.boards.back.width) -
+            normalize(measurements.cabinets.Pax.boards.thickness),
+          0,
+          0,
+        ],
+        box(
+          normalize(measurements.cabinets.Pax.boards.thickness),
+          normalize(measurements.cabinets.Pax.boards.side.height),
+          normalize(measurements.cabinets.Pax.boards.side.depth),
+        ),
+      ),
+      // bottom
+      translate(
         [0, 0, 0],
         box(
-          normalize(measurements.cabinets.Pax.width),
-          normalize(measurements.cabinets.Pax.height),
-          normalize(measurements.cabinets.Pax.opened.depth),
+          normalize(measurements.cabinets.Pax.boards.bottomTop.width),
+          normalize(measurements.cabinets.Pax.boards.thickness),
+          normalize(measurements.cabinets.Pax.boards.bottomTop.depth),
         ),
-      );
-    }
+      ),
+      // top
+      translate(
+        [
+          0,
+          normalize(measurements.cabinets.Pax.boards.side.height) +
+            normalize(measurements.cabinets.Pax.boards.thickness),
+          0,
+        ],
+        box(
+          normalize(measurements.cabinets.Pax.boards.bottomTop.width),
+          normalize(measurements.cabinets.Pax.boards.thickness),
+          normalize(measurements.cabinets.Pax.boards.bottomTop.depth),
+        ),
+      ),
+    ];
 
-    return box(
-      normalize(measurements.cabinets.Pax.width),
-      normalize(measurements.cabinets.Pax.height),
-      normalize(measurements.cabinets.Pax.closed.depth),
+    const rightDoor = translate(
+      [
+        normalize(measurements.cabinets.Pax.boards.door.width) +
+          (state.variant === "opened"
+            ? normalize(measurements.cabinets.Pax.boards.door.width)
+            : 0),
+        0,
+        0,
+      ],
+      rotate(
+        [0, state.variant === "opened" ? -Math.PI / 2 : 0, 0],
+        box(
+          normalize(measurements.cabinets.Pax.boards.door.width),
+          normalize(measurements.cabinets.Pax.boards.door.height),
+          normalize(measurements.cabinets.Pax.boards.thickness),
+        ),
+      ),
     );
+
+    const leftDoor = translate(
+      [
+        state.variant === "opened"
+          ? normalize(measurements.cabinets.Pax.boards.thickness)
+          : 0,
+        0,
+        0,
+      ],
+      rotate(
+        [0, state.variant === "opened" ? -Math.PI / 2 : 0, 0],
+        box(
+          normalize(measurements.cabinets.Pax.boards.door.width),
+          normalize(measurements.cabinets.Pax.boards.door.height),
+          normalize(measurements.cabinets.Pax.boards.thickness),
+        ),
+      ),
+    );
+
+    const doors = translate(
+      [
+        0,
+        2 * normalize(measurements.cabinets.Pax.boards.thickness) +
+          normalize(measurements.cabinets.Pax.boards.side.height) -
+          normalize(measurements.cabinets.Pax.boards.door.height),
+        normalize(measurements.cabinets.Pax.boards.side.depth),
+      ],
+      [leftDoor, rightDoor],
+    );
+
+    return [...corpus, doors];
   },
 };
 
