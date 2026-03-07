@@ -1,5 +1,5 @@
 import modeling from "@jscad/modeling";
-import { cm, m, type NumberWithUnit } from "@pocs/values";
+import { cm, m } from "@pocs/values";
 import { materials } from "./materials";
 import { box, normalize } from "./utils";
 import * as ikea from "./ikea";
@@ -103,23 +103,7 @@ function furnitureVariantA(state: State) {
     },
   };
 
-  const billy = translate(
-    [
-      normalised.wall.thickness,
-      normalised.wall.thickness,
-      normalised.wall.thickness +
-        normalize(cm(10)) +
-        normalize(ikea.measurements.cabinets.Pax.width) +
-        normalize(cm(2)) +
-        normalize(ikea.measurements.desks.Billy.width),
-    ],
-    rotate(
-      [0, Math.PI / 2, 0],
-      colorize(materials.Furniture.color, ikea.desks.Billy(state.desk)),
-    ),
-  );
-
-  const pax = translate(
+  const closet = translate(
     [
       normalised.wall.thickness,
       normalised.wall.thickness,
@@ -133,7 +117,41 @@ function furnitureVariantA(state: State) {
     ),
   );
 
-  const brimnes = translate(
+  const desk = translate(
+    [
+      normalised.wall.thickness,
+      normalised.wall.thickness,
+      normalised.wall.thickness +
+        normalize(cm(10)) +
+        normalize(ikea.measurements.cabinets.Pax.width) +
+        normalize(cm(5)) +
+        normalize(ikea.measurements.desks.Billy.width),
+    ],
+    rotate(
+      [0, Math.PI / 2, 0],
+      colorize(materials.Furniture.color, ikea.desks.Billy(state.desk)),
+    ),
+  );
+
+  const shelfOverDesk = translate(
+    [
+      normalised.wall.thickness,
+      normalised.wall.thickness +
+        normalize(ikea.measurements.desks.Billy.height) +
+        normalize(cm(24)),
+      normalised.wall.thickness +
+        normalize(cm(10)) +
+        normalize(ikea.measurements.cabinets.Pax.width) +
+        normalize(cm(5)) +
+        normalize(ikea.measurements.desks.Billy.width),
+    ],
+    rotate(
+      [0, Math.PI / 2, 0],
+      colorize(materials.Furniture.color, ikea.shelfs.Billy()),
+    ),
+  );
+
+  const bed = translate(
     [
       normalised.wall.thickness,
       normalised.wall.thickness,
@@ -145,18 +163,7 @@ function furnitureVariantA(state: State) {
     colorize(materials.Furniture.color, ikea.beds.Brimnes(state.bed)),
   );
 
-  /*const kallaxStairs = translate(
-    [
-      normalised.wall.thickness +
-        normalised.room.width -
-        normalize(ikea.measurements.shelfs.Kallax.width),
-      normalised.wall.thickness,
-      normalised.wall.thickness,
-    ],
-    colorize(materials.Furniture.color, [ikea.shelfs.Kallax()]),
-  );*/
-
-  return [billy, pax, brimnes];
+  return [bed, closet, desk, shelfOverDesk];
 }
 
 function room() {

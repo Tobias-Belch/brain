@@ -147,6 +147,29 @@ export const measurements = {
     },
   },
   shelfs: {
+    // https://www.ikea.com/de/de/p/billy-buecherregal-weiss-30263844/
+    Billy: {
+      storage: l(3 * calculateVolume(cm(76), cm(33), cm(28)).value),
+      width: cm(80),
+      height: cm(106),
+      depth: cm(28),
+      boards: {
+        thickness: cm(1.8),
+        back: {
+          thickness: mm(3),
+          width: cm(80),
+          height: cm(106),
+        },
+        side: {
+          height: cm(106),
+          depth: cm(28),
+        },
+        shelf: {
+          width: cm(80 - 2 * 1.8),
+          depth: cm(28),
+        },
+      },
+    },
     // https://www.ikea.com/de/de/p/kallax-regal-weiss-20301554/
     Kallax: {
       width: cm(39),
@@ -379,17 +402,20 @@ export const cabinets = {
         normalize(measurements.cabinets.Pax.boards.back.thickness),
       ),
       // right
-      box(
-        normalize(measurements.cabinets.Pax.boards.thickness),
-        normalize(measurements.cabinets.Pax.boards.side.height),
-        normalize(measurements.cabinets.Pax.boards.side.depth),
+      translate(
+        [0, normalize(measurements.cabinets.Pax.boards.thickness), 0],
+        box(
+          normalize(measurements.cabinets.Pax.boards.thickness),
+          normalize(measurements.cabinets.Pax.boards.side.height),
+          normalize(measurements.cabinets.Pax.boards.side.depth),
+        ),
       ),
       // left
       translate(
         [
           normalize(measurements.cabinets.Pax.boards.back.width) -
             normalize(measurements.cabinets.Pax.boards.thickness),
-          0,
+          normalize(measurements.cabinets.Pax.boards.thickness),
           0,
         ],
         box(
@@ -627,6 +653,87 @@ export const desks = {
 };
 
 export const shelfs = {
+  Billy: () => {
+    return [
+      // back
+      box(
+        normalize(measurements.shelfs.Billy.boards.back.width),
+        normalize(measurements.shelfs.Billy.boards.back.height),
+        normalize(measurements.shelfs.Billy.boards.back.thickness),
+      ),
+      // right
+      box(
+        normalize(measurements.shelfs.Billy.boards.thickness),
+        normalize(measurements.shelfs.Billy.boards.side.height),
+        normalize(measurements.shelfs.Billy.boards.side.depth),
+      ),
+      // left
+      translate(
+        [
+          normalize(measurements.shelfs.Billy.boards.back.width) -
+            normalize(measurements.shelfs.Billy.boards.thickness),
+          0,
+          0,
+        ],
+        box(
+          normalize(measurements.shelfs.Billy.boards.thickness),
+          normalize(measurements.shelfs.Billy.boards.side.height),
+          normalize(measurements.shelfs.Billy.boards.side.depth),
+        ),
+      ),
+      // bottom
+      translate(
+        [
+          normalize(measurements.shelfs.Billy.boards.thickness),
+          normalize(cm(5)),
+          0,
+        ],
+        box(
+          normalize(measurements.shelfs.Billy.boards.shelf.width),
+          normalize(measurements.shelfs.Billy.boards.thickness),
+          normalize(measurements.shelfs.Billy.boards.shelf.depth),
+        ),
+      ),
+      translate(
+        [
+          normalize(measurements.shelfs.Billy.boards.thickness),
+          normalize(cm(38)),
+          0,
+        ],
+        box(
+          normalize(measurements.shelfs.Billy.boards.shelf.width),
+          normalize(measurements.shelfs.Billy.boards.thickness),
+          normalize(measurements.shelfs.Billy.boards.shelf.depth),
+        ),
+      ),
+      translate(
+        [
+          normalize(measurements.shelfs.Billy.boards.thickness),
+          normalize(cm(72)),
+          0,
+        ],
+        box(
+          normalize(measurements.shelfs.Billy.boards.shelf.width),
+          normalize(measurements.shelfs.Billy.boards.thickness),
+          normalize(measurements.shelfs.Billy.boards.shelf.depth),
+        ),
+      ),
+      // top
+      translate(
+        [
+          normalize(measurements.shelfs.Billy.boards.thickness),
+          normalize(measurements.shelfs.Billy.boards.side.height) -
+            normalize(measurements.shelfs.Billy.boards.thickness),
+          0,
+        ],
+        box(
+          normalize(measurements.shelfs.Billy.boards.shelf.width),
+          normalize(measurements.shelfs.Billy.boards.thickness),
+          normalize(measurements.shelfs.Billy.boards.shelf.depth),
+        ),
+      ),
+    ];
+  },
   Kallax: () => {
     const bottom = box(
       normalize(measurements.shelfs.Kallax.boards.bottomTop.depth),

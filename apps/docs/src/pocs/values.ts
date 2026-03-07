@@ -84,7 +84,7 @@ export function calculateVolume(
   const volumeInCubicMeters =
     toM(width).value * toM(height).value * toM(depth).value;
 
-  return l(Number((volumeInCubicMeters * 1000).toFixed(2)));
+  return l(Number((volumeInCubicMeters * 1000).toFixed(0)));
 }
 
 export function formatValueWithUnit(value: NumberWithUnit | Liters): string {
