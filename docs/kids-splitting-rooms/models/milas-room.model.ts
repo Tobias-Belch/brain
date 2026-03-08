@@ -663,7 +663,7 @@ function room(state: State) {
         colorize(
           materials.Wall.color,
           subtract(
-            box(W, H + 2 * t, t),
+            box(W, H + t, t),
             translate([dRight, dBottom, t - dD], box(dW, dH, dD)),
           ),
         ),
@@ -678,7 +678,7 @@ function room(state: State) {
           materials.Wall.color,
           union(
             subtract(
-              box(W, H + 2 * t, t),
+              box(W, H + t, t),
               translate([wRight, wBottom, 0], box(wW, wH, wD)),
             ),
             translate([wbRight, wbBottom, -wbD], box(wbW, wbH, wbD)),
@@ -689,14 +689,14 @@ function room(state: State) {
 
   // --- Right wall (X = 0 to t), between front and back walls ---
   const rightWall = surfaces.rightWall
-    ? colorize(materials.Wall.color, box(t, H + 2 * t, D + 2 * t))
+    ? colorize(materials.Wall.color, box(t, H + t, D + 2 * t))
     : null;
 
   // --- Left wall (X = W - t to W), between front and back walls ---
   const leftWall = surfaces.leftWall
     ? translate(
         [t + W, 0, 0],
-        colorize(materials.Wall.color, box(t, H + 2 * t, D + 2 * t)),
+        colorize(materials.Wall.color, box(t, H + t, D + 2 * t)),
       )
     : null;
 
@@ -707,7 +707,10 @@ function room(state: State) {
 
   // --- Ceiling ---
   const ceiling = surfaces.ceiling
-    ? translate([t, H + t, t], colorize(materials.Wall.color, box(W, t, D)))
+    ? translate(
+        [0, H + t, 0],
+        colorize(materials.Wall.color, box(W + 2 * t, t, D + 2 * t)),
+      )
     : null;
 
   return [frontWall, backWall, leftWall, rightWall, floor, ceiling].filter(
