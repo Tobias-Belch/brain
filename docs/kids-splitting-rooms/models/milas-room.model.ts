@@ -659,12 +659,12 @@ function room(state: State) {
   // --- Front wall (Z = 0 to t), full width, with door cutout ---
   const frontWall = surfaces.frontWall
     ? translate(
-        [0, t, 0],
+        [t, 0, 0],
         colorize(
           materials.Wall.color,
           subtract(
-            box(W + 2 * t, H, t),
-            translate([t + dRight, dBottom, t - dD], box(dW, dH, dD)),
+            box(W, H + 2 * t, t),
+            translate([dRight, dBottom, t - dD], box(dW, dH, dD)),
           ),
         ),
       )
@@ -673,15 +673,15 @@ function room(state: State) {
   // --- Back wall (Z = D - t to D), full width, with window cutout ---
   const backWall = surfaces.backWall
     ? translate(
-        [0, t, D + t],
+        [t, 0, D + t],
         colorize(
           materials.Wall.color,
           union(
             subtract(
-              box(W + 2 * t, H, t),
-              translate([t + wRight, wBottom, 0], box(wW, wH, wD)),
+              box(W, H + 2 * t, t),
+              translate([wRight, wBottom, 0], box(wW, wH, wD)),
             ),
-            translate([t + wbRight, wbBottom, -wbD], box(wbW, wbH, wbD)),
+            translate([wbRight, wbBottom, -wbD], box(wbW, wbH, wbD)),
           ),
         ),
       )
@@ -689,25 +689,25 @@ function room(state: State) {
 
   // --- Right wall (X = 0 to t), between front and back walls ---
   const rightWall = surfaces.rightWall
-    ? translate([0, t, t], colorize(materials.Wall.color, box(t, H, D)))
+    ? colorize(materials.Wall.color, box(t, H + 2 * t, D + 2 * t))
     : null;
 
   // --- Left wall (X = W - t to W), between front and back walls ---
   const leftWall = surfaces.leftWall
-    ? translate([t + W, t, t], colorize(materials.Wall.color, box(t, H, D)))
+    ? translate(
+        [t + W, 0, 0],
+        colorize(materials.Wall.color, box(t, H + 2 * t, D + 2 * t)),
+      )
     : null;
 
   // --- Floor ---
   const floor = surfaces.floor
-    ? colorize(materials.Wall.color, box(W + 2 * t, t, D + 2 * t))
+    ? translate([t, 0, t], colorize(materials.Wall.color, box(W, t, D)))
     : null;
 
   // --- Ceiling ---
   const ceiling = surfaces.ceiling
-    ? translate(
-        [0, H + t, 0],
-        colorize(materials.Wall.color, box(W + 2 * t, t, D + 2 * t)),
-      )
+    ? translate([t, H + t, t], colorize(materials.Wall.color, box(W, t, D)))
     : null;
 
   return [frontWall, backWall, leftWall, rightWall, floor, ceiling].filter(
