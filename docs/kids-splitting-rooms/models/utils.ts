@@ -1,5 +1,5 @@
 import modeling from "@jscad/modeling";
-import { NumberWithUnit, toCm } from "@pocs/values";
+import { type NumberWithUnit, toCm } from "@pocs/values";
 
 const {
   primitives: { cuboid },

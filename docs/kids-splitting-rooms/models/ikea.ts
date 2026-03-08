@@ -1,5 +1,6 @@
 import modeling from "@jscad/modeling";
 import { calculateVolume, cm, l, m, mm } from "@pocs/values";
+import * as general from "./general";
 import { box, normalize } from "./utils";
 
 const {
@@ -8,11 +9,6 @@ const {
 
 export const measurements = {
   beds: {
-    Mattress: {
-      width: cm(80),
-      height: cm(10),
-      depth: cm(200),
-    },
     // https://www.ikea.com/de/de/p/brimnes-tagesbettgestell-2-schubladen-weiss-00228705/
     Brimnes: {
       storage: l(2 * calculateVolume(cm(85), cm(16), cm(54)).value),
@@ -191,12 +187,6 @@ export const measurements = {
   },
 };
 
-const mattress = box(
-  normalize(measurements.beds.Mattress.depth),
-  normalize(measurements.beds.Mattress.height),
-  normalize(measurements.beds.Mattress.width),
-);
-
 const brimnesBed = {
   back: translate(
     [
@@ -246,7 +236,7 @@ const brimnesBed = {
         normalize(measurements.beds.Brimnes.boards.thickness),
         normalize(measurements.beds.Brimnes.boards.front.height) -
           normalize(cm(3)),
-        normalize(measurements.beds.Mattress.width),
+        normalize(general.measurements.Mattress.width),
       ),
       // left
       translate(
@@ -260,7 +250,7 @@ const brimnesBed = {
           normalize(measurements.beds.Brimnes.boards.thickness),
           normalize(measurements.beds.Brimnes.boards.front.height) -
             normalize(cm(3)),
-          normalize(measurements.beds.Mattress.width),
+          normalize(general.measurements.Mattress.width),
         ),
       ),
     ],
@@ -317,7 +307,7 @@ export const beds = {
   }) => {
     const frontDepthCorrection =
       state.variant === "double"
-        ? -normalize(measurements.beds.Mattress.width)
+        ? -normalize(general.measurements.Mattress.width)
         : 0;
 
     const box = [
@@ -359,15 +349,19 @@ export const beds = {
                 normalize(measurements.beds.Brimnes.boards.thickness),
                 normalize(measurements.beds.Brimnes.boards.front.height) -
                   normalize(cm(3)),
-                normalize(measurements.beds.Brimnes.boards.thickness),
+                normalize(measurements.beds.Brimnes.boards.thickness) +
+                  normalize(general.measurements.Mattress.width),
               ],
-              [
-                mattress,
-                translate(
-                  [0, 0, -normalize(measurements.beds.Mattress.width)],
-                  mattress,
-                ),
-              ],
+              rotate(
+                [0, Math.PI / 2, 0],
+                [
+                  general.mattress,
+                  translate(
+                    [normalize(general.measurements.Mattress.width), 0, 0],
+                    general.mattress,
+                  ),
+                ],
+              ),
             ),
           ]
         : [
@@ -376,15 +370,19 @@ export const beds = {
                 normalize(measurements.beds.Brimnes.boards.thickness),
                 normalize(measurements.beds.Brimnes.boards.front.height) -
                   normalize(cm(3)),
-                normalize(measurements.beds.Brimnes.boards.thickness),
+                normalize(measurements.beds.Brimnes.boards.thickness) +
+                  normalize(general.measurements.Mattress.width),
               ],
-              [
-                mattress,
-                translate(
-                  [0, normalize(measurements.beds.Mattress.height), 0],
-                  mattress,
-                ),
-              ],
+              rotate(
+                [0, Math.PI / 2, 0],
+                [
+                  general.mattress,
+                  translate(
+                    [0, normalize(general.measurements.Mattress.height), 0],
+                    general.mattress,
+                  ),
+                ],
+              ),
             ),
           ];
 
@@ -734,7 +732,12 @@ export const shelfs = {
       ),
     ];
   },
-  Kallax: () => {
+  Kallax: (
+    { rows, columns }: { rows?: number; columns?: number } = {
+      rows: 1,
+      columns: 1,
+    },
+  ) => {
     const bottom = box(
       normalize(measurements.shelfs.Kallax.boards.bottomTop.depth),
       normalize(measurements.shelfs.Kallax.boards.thickness),
@@ -778,6 +781,19 @@ export const shelfs = {
       ),
     );
 
-    return [bottom, left, right, top];
+    const kallax = [bottom, left, right, top];
+
+    return Array.from({ length: rows }, (_, i) => i).flatMap((r) =>
+      Array.from({ length: columns }, (_, j) => j).map((c) => {
+        return translate(
+          [
+            0,
+            r * normalize(measurements.shelfs.Kallax.height),
+            c * normalize(measurements.shelfs.Kallax.depth),
+          ],
+          kallax,
+        );
+      }),
+    );
   },
 };

@@ -21,6 +21,17 @@ export type Meters = ReturnType<typeof m>;
 
 export type NumberWithUnit = Inch | Milimeters | Centimeters | Meters;
 
+export function isNumberWithUnit(value: any): value is NumberWithUnit {
+  return (
+    value &&
+    typeof value === "object" &&
+    "value" in value &&
+    "unit" in value &&
+    typeof value.value === "number" &&
+    typeof value.unit === "string"
+  );
+}
+
 export function toMm(value: NumberWithUnit): Milimeters {
   switch (value.unit) {
     case " cm":

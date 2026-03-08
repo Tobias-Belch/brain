@@ -3,18 +3,26 @@ import {
   JscadModelViewer,
   type Props,
 } from "@jscad/components/react/JscadModelViewer";
+import { Select } from "@components/react/Select";
 import { Switch } from "@components/react/Switch";
-import { MilasRoom, State } from "../models/milas-room.model";
+import { MilasRoom, type State, variants } from "../models/milas-room.model";
+
+const variantOptions = Object.entries(variants).map(([value, label]) => ({
+  value,
+  label,
+}));
 
 // ─── Reducer ────────────────────────────────────────────────────────────────
 
 type Action =
+  | { type: "SET_VARIANT"; value: State["variant"] }
   | { type: "SET_BED_DRAWERS"; value: State["bed"]["drawers"] }
   | { type: "SET_BED_VARIANT"; value: State["bed"]["variant"] }
   | { type: "SET_CABINET_VARIANT"; value: State["cabinet"]["variant"] }
   | { type: "SET_DESK_VARIANT"; value: State["desk"]["variant"] };
 
 const initialState: State = {
+  variant: "brimnesBillyPax",
   bed: {
     drawers: "closed",
     variant: "single",
@@ -37,6 +45,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, cabinet: { variant: action.value } };
     case "SET_DESK_VARIANT":
       return { ...state, desk: { variant: action.value } };
+    case "SET_VARIANT":
+      return { ...state, variant: action.value };
   }
 }
 
@@ -54,6 +64,13 @@ export function MilasRoomViewer(props: Omit<Props, "model">) {
           gap: "0.75rem",
         }}
       >
+        <Select
+          options={variantOptions}
+          value={state.variant}
+          onChange={(value) =>
+            dispatch({ type: "SET_VARIANT", value: value as State["variant"] })
+          }
+        />
         <Switch
           checked={state.bed.variant === "double"}
           onChange={(checked) =>

@@ -26,9 +26,17 @@ export default defineConfig({
   },
   vite: {
     resolve: {
-      alias: {
-        "@charts": resolve(__dirname, "src/charts"),
-      },
+      alias: [
+        // Local source aliases (non-npm)
+        { find: "@charts", replacement: resolve(__dirname, "src/charts") },
+        { find: "@components", replacement: resolve(__dirname, "src/components") },
+        { find: "@pocs", replacement: resolve(__dirname, "src/pocs") },
+        { find: "@types", replacement: resolve(__dirname, "src/types") },
+        { find: "@utils", replacement: resolve(__dirname, "src/utils") },
+        // @jscad/* — only redirect the local files; npm packages like
+        // @jscad/modeling and @jscad/stl-serializer must NOT be aliased.
+        { find: /^@jscad\/(types|downloadModel|jscadToThree|components)(\/.*)?$/, replacement: resolve(__dirname, "src/@jscad/$1$2") },
+      ],
       preserveSymlinks: true,
     },
     server: {

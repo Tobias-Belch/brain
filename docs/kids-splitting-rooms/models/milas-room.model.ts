@@ -1,8 +1,9 @@
 import modeling from "@jscad/modeling";
 import { cm, m } from "@pocs/values";
+import * as general from "./general";
+import * as ikea from "./ikea";
 import { materials } from "./materials";
 import { box, normalize } from "./utils";
-import * as ikea from "./ikea";
 
 const {
   colors: { colorize },
@@ -45,7 +46,16 @@ export const measurements = {
   },
 };
 
+export const variants = {
+  brimnesBillyPax: "BRIMNES Bed, BILLY Desk & 1 PAX",
+  highbedKallaxWall: "High Bed, 2 PAX, Desk & KALLAX Wall",
+  highbedCouch: "High Bed, 2 PAX, Desk & Couch",
+};
+
+export type Variant = keyof typeof variants;
+
 export type State = {
+  variant: Variant;
   bed: {
     drawers: "closed" | "opened";
     variant: "single" | "double";
@@ -59,6 +69,7 @@ export type State = {
 };
 
 const defaultState = {
+  variant: "brimnesBillyPax",
   bed: {
     drawers: "closed",
     variant: "single",
@@ -73,10 +84,7 @@ const defaultState = {
 
 const DEBUG = false;
 
-export function MilasRoom({
-  state = defaultState,
-  variant = "A",
-}: { state?: State; variant?: "A" } = {}) {
+export function MilasRoom({ state = defaultState }: { state?: State } = {}) {
   const t = normalize(measurements.wall.thickness);
   const W = normalize(measurements.room.width);
   const H = normalize(measurements.room.height);
@@ -86,12 +94,24 @@ export function MilasRoom({
     ? [translate([t, t, t], colorize(materials.Debug.color, box(W, H, D)))]
     : [];
 
-  const furniture = variant === "A" ? furnitureVariantA(state) : [];
+  const models = [room(), ...debugElements];
 
-  return [room(), ...furniture, ...debugElements];
+  switch (state.variant) {
+    case "brimnesBillyPax":
+      models.push(...brimnesBillyPax(state));
+      break;
+    case "highbedKallaxWall":
+      models.push(...highbedKallaxWall(state));
+      break;
+    case "highbedCouch":
+      models.push(...highbedCouch(state));
+      break;
+  }
+
+  return models;
 }
 
-function furnitureVariantA(state: State) {
+function brimnesBillyPax(state: State) {
   const normalised = {
     wall: {
       thickness: normalize(measurements.wall.thickness),
@@ -166,6 +186,307 @@ function furnitureVariantA(state: State) {
   return [bed, closet, desk, shelfOverDesk];
 }
 
+function highbedKallaxWall(state: State) {
+  const normalised = {
+    wall: {
+      thickness: normalize(measurements.wall.thickness),
+    },
+    room: {
+      width: normalize(measurements.room.width),
+      height: normalize(measurements.room.height),
+      depth: normalize(measurements.room.depth),
+    },
+  };
+
+  const closet = translate(
+    [0, 0, normalize(cm(10)) + normalize(ikea.measurements.cabinets.Pax.width)],
+    rotate(
+      [0, Math.PI / 2, 0],
+      colorize(materials.Furniture.color, ikea.cabinets.Pax(state.cabinet)),
+    ),
+  );
+
+  const cabinet = translate(
+    [
+      0,
+      0,
+      normalize(cm(10)) +
+        normalize(ikea.measurements.cabinets.Pax.width) +
+        normalize(ikea.measurements.cabinets.Pax.width),
+    ],
+    rotate(
+      [0, Math.PI / 2, 0],
+      colorize(materials.Furniture.color, ikea.cabinets.Pax(state.cabinet)),
+    ),
+  );
+
+  const { model: bedModel } = general.Bed({
+    guards: { right: cm(0), cutout: "bottom-left" },
+    padding: { right: cm(10) },
+  });
+
+  const bed = [
+    translate(
+      [
+        0,
+        normalize(cm(180)),
+        normalize(cm(10)) +
+          normalize(ikea.measurements.cabinets.Pax.width) +
+          normalize(ikea.measurements.cabinets.Pax.width),
+      ],
+      colorize(materials.Furniture.color, bedModel),
+    ),
+  ];
+
+  if (state.bed.variant === "double") {
+    bed.push([
+      translate(
+        [
+          normalised.room.width -
+            normalize(general.measurements.Mattress.width),
+          0,
+          normalize(ikea.measurements.cabinets.Pax.width) +
+            normalize(ikea.measurements.cabinets.Pax.width),
+        ],
+        colorize(materials.Furniture.color, general.mattress),
+      ),
+    ]);
+  }
+
+  const desk = translate(
+    [
+      normalised.room.width - normalize(cm(200)),
+      normalize(cm(70)),
+      normalised.room.depth - normalize(cm(60)),
+    ],
+    colorize(
+      materials.Furniture.color,
+      box(normalize(cm(200)), normalize(cm(5)), normalize(cm(60))),
+    ),
+  );
+
+  const kallaxWall = translate(
+    [
+      0,
+      0,
+      normalize(cm(10)) +
+        normalize(ikea.measurements.cabinets.Pax.width) +
+        normalize(ikea.measurements.cabinets.Pax.width),
+    ],
+    colorize(
+      materials.Furniture.color,
+      ikea.shelfs.Kallax({ rows: 4, columns: 5 }),
+    ),
+  );
+
+  return translate(
+    [
+      normalised.wall.thickness,
+      normalised.wall.thickness,
+      normalised.wall.thickness,
+    ],
+    [closet, cabinet, ...bed, desk, kallaxWall],
+  );
+}
+
+function highbedCouch(state: State) {
+  const normalised = {
+    wall: {
+      thickness: normalize(measurements.wall.thickness),
+    },
+    room: {
+      width: normalize(measurements.room.width),
+      height: normalize(measurements.room.height),
+      depth: normalize(measurements.room.depth),
+    },
+  };
+
+  const closet = translate(
+    [0, 0, normalize(cm(10)) + normalize(ikea.measurements.cabinets.Pax.width)],
+    rotate(
+      [0, Math.PI / 2, 0],
+      colorize(materials.Furniture.color, ikea.cabinets.Pax(state.cabinet)),
+    ),
+  );
+
+  const cabinet = translate(
+    [
+      0,
+      0,
+      normalize(cm(10)) +
+        normalize(ikea.measurements.cabinets.Pax.width) +
+        normalize(ikea.measurements.cabinets.Pax.width) / 2,
+    ],
+    rotate(
+      [0, Math.PI / 2, 0],
+      colorize(materials.Furniture.color, ikea.cabinets.Pax(state.cabinet)),
+    ),
+  );
+
+  const { model: bedModel } = general.Bed({
+    guards: { right: cm(0), cutout: "bottom-left" },
+    padding: { right: cm(10) },
+  });
+
+  const bed = [
+    translate(
+      [
+        0,
+        normalize(cm(160)),
+        normalize(cm(10)) +
+          normalize(ikea.measurements.cabinets.Pax.width) +
+          normalize(ikea.measurements.cabinets.Pax.width),
+      ],
+      colorize(materials.Furniture.color, bedModel),
+    ),
+  ];
+
+  const desk = translate(
+    [
+      normalised.room.width - normalize(cm(100)),
+      normalize(cm(70)),
+      normalised.room.depth - normalize(cm(60)),
+    ],
+    colorize(
+      materials.Furniture.color,
+      box(normalize(cm(100)), normalize(cm(5)), normalize(cm(60))),
+    ),
+  );
+
+  /*
+  translate(
+          [
+            normalize(ikea.measurements.shelfs.Kallax.depth),
+            2 * normalize(ikea.measurements.shelfs.Kallax.height),
+            0,
+          ],
+          rotate(
+            [0, -Math.PI / 2, 0],
+            ikea.shelfs.Kallax({ rows: 5, columns: 1 }),
+          ),
+        ),
+        */
+
+  const kallaxTower = colorize(
+    materials.Furniture.color,
+    translate(
+      [
+        0,
+        0,
+        normalize(cm(10)) +
+          normalize(ikea.measurements.cabinets.Pax.width) * 1.5,
+      ],
+      [
+        ikea.shelfs.Kallax({ rows: 2, columns: 1 }),
+        translate(
+          [normalize(ikea.measurements.shelfs.Kallax.depth), 0, 0],
+          ikea.shelfs.Kallax({ rows: 2, columns: 1 }),
+        ),
+        translate(
+          [
+            2 * normalize(ikea.measurements.shelfs.Kallax.depth),
+            2 * normalize(ikea.measurements.shelfs.Kallax.height),
+            0,
+          ],
+          rotate(
+            [0, -Math.PI / 2, 0],
+            ikea.shelfs.Kallax({ rows: 1, columns: 2 }),
+          ),
+        ),
+        translate(
+          [0, 3 * normalize(ikea.measurements.shelfs.Kallax.height), 0],
+          [
+            ikea.shelfs.Kallax({ rows: 2, columns: 1 }),
+            translate(
+              [normalize(ikea.measurements.shelfs.Kallax.depth), 0, 0],
+              ikea.shelfs.Kallax({ rows: 2, columns: 1 }),
+            ),
+          ],
+        ),
+        translate(
+          [
+            2 * normalize(ikea.measurements.shelfs.Kallax.depth),
+            5 * normalize(ikea.measurements.shelfs.Kallax.height),
+            0,
+          ],
+          rotate(
+            [0, -Math.PI / 2, 0],
+            ikea.shelfs.Kallax({ rows: 1, columns: 2 }),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  const armrestSize = cm(14);
+  const couch = translate(
+    [
+      0,
+      0,
+      normalised.room.depth -
+        normalize(general.measurements.Mattress.depth) -
+        2 * normalize(armrestSize),
+    ],
+    colorize(materials.Furniture.color, [
+      // back rest
+      box(
+        normalize(armrestSize),
+        normalize(cm(90)),
+        normalize(general.measurements.Mattress.depth) +
+          2 * normalize(armrestSize),
+      ),
+      translate(
+        [normalize(armrestSize), 0, 0],
+        [
+          // left armrest
+          box(
+            normalize(general.measurements.Mattress.width),
+            normalize(cm(72)),
+            normalize(armrestSize),
+          ),
+          // box
+          translate(
+            [0, 0, normalize(armrestSize)],
+            box(
+              normalize(general.measurements.Mattress.width),
+              normalize(cm(45)),
+              normalize(general.measurements.Mattress.depth),
+            ),
+          ),
+          // mattress
+          translate(
+            [0, normalize(cm(45)), normalize(armrestSize)],
+            general.mattress,
+          ),
+          // right armrest
+          translate(
+            [
+              0,
+              0,
+              normalize(armrestSize) +
+                normalize(general.measurements.Mattress.depth),
+            ],
+            box(
+              normalize(general.measurements.Mattress.width),
+              normalize(cm(72)),
+              normalize(armrestSize),
+            ),
+          ),
+        ],
+      ),
+    ]),
+  );
+
+  return translate(
+    [
+      normalised.wall.thickness,
+      normalised.wall.thickness,
+      normalised.wall.thickness,
+    ],
+    [closet, cabinet, ...kallaxTower, ...bed, couch, desk],
+  );
+}
+
 function room() {
   const t = normalize(measurements.wall.thickness);
   const W = normalize(measurements.room.width);
@@ -235,10 +556,10 @@ function room() {
   const floor = colorize(materials.Wall.color, box(W + 2 * t, t, D + 2 * t));
 
   // --- Ceiling ---
-  /*const ceiling = translate(
+  const ceiling = translate(
     [0, H + t, 0],
     colorize(materials.Wall.color, box(W + 2 * t, t, D + 2 * t)),
-  );*/
+  );
 
-  return [frontWall, backWall, leftWall, rightWall, floor /*ceiling*/];
+  return [frontWall, backWall, leftWall, rightWall, floor, ceiling];
 }
