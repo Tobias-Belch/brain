@@ -64,7 +64,15 @@ export type State = {
     variant: "closed" | "opened";
   };
   desk: {
-    variant: "closed" | "opened";
+    variant: "closed" | "partially" | "fully";
+  };
+  surfaces: {
+    frontWall: boolean;
+    backWall: boolean;
+    leftWall: boolean;
+    rightWall: boolean;
+    floor: boolean;
+    ceiling: boolean;
   };
 };
 
@@ -80,6 +88,14 @@ const defaultState = {
   desk: {
     variant: "closed",
   },
+  surfaces: {
+    frontWall: true,
+    backWall: true,
+    leftWall: true,
+    rightWall: true,
+    floor: true,
+    ceiling: true,
+  },
 } satisfies State;
 
 const DEBUG = false;
@@ -94,7 +110,7 @@ export function MilasRoom({ state = defaultState }: { state?: State } = {}) {
     ? [translate([t, t, t], colorize(materials.Debug.color, box(W, H, D)))]
     : [];
 
-  const models = [room(), ...debugElements];
+  const models = [room(state), ...debugElements];
 
   switch (state.variant) {
     case "brimnesBillyPax":
@@ -343,29 +359,13 @@ function highbedCouch(state: State) {
 
   const desk = translate(
     [
-      normalised.room.width - normalize(cm(100)),
-      normalize(cm(70)),
-      normalised.room.depth - normalize(cm(60)),
+      normalised.room.width -
+        normalize(ikea.measurements.desks.Norden.closed.width),
+      0,
+      normalised.room.depth - normalize(ikea.measurements.desks.Norden.depth),
     ],
-    colorize(
-      materials.Furniture.color,
-      box(normalize(cm(100)), normalize(cm(5)), normalize(cm(60))),
-    ),
+    colorize(materials.Furniture.color, ikea.desks.Nordern(state.desk)),
   );
-
-  /*
-  translate(
-          [
-            normalize(ikea.measurements.shelfs.Kallax.depth),
-            2 * normalize(ikea.measurements.shelfs.Kallax.height),
-            0,
-          ],
-          rotate(
-            [0, -Math.PI / 2, 0],
-            ikea.shelfs.Kallax({ rows: 5, columns: 1 }),
-          ),
-        ),
-        */
 
   const kallaxTower = colorize(
     materials.Furniture.color,
@@ -487,7 +487,7 @@ function highbedCouch(state: State) {
   );
 }
 
-function room() {
+function room(state: State) {
   const t = normalize(measurements.wall.thickness);
   const W = normalize(measurements.room.width);
   const H = normalize(measurements.room.height);
@@ -513,53 +513,63 @@ function room() {
   const dRight = normalize(measurements.room.door.right);
   const dBottom = normalize(measurements.room.door.bottom);
 
+  const surfaces = state.surfaces;
+
   // --- Front wall (Z = 0 to t), full width, with door cutout ---
-  const frontWall = translate(
-    [0, t, 0],
-    colorize(
-      materials.Wall.color,
-      subtract(
-        box(W + 2 * t, H, t),
-        translate([t + dRight, dBottom, t - dD], box(dW, dH, dD)),
-      ),
-    ),
-  );
+  const frontWall = surfaces.frontWall
+    ? translate(
+        [0, t, 0],
+        colorize(
+          materials.Wall.color,
+          subtract(
+            box(W + 2 * t, H, t),
+            translate([t + dRight, dBottom, t - dD], box(dW, dH, dD)),
+          ),
+        ),
+      )
+    : null;
 
   // --- Back wall (Z = D - t to D), full width, with window cutout ---
-  const backWall = translate(
-    [0, t, D + t],
-    colorize(
-      materials.Wall.color,
-      union(
-        subtract(
-          box(W + 2 * t, H, t),
-          translate([t + wRight, wBottom, 0], box(wW, wH, wD)),
+  const backWall = surfaces.backWall
+    ? translate(
+        [0, t, D + t],
+        colorize(
+          materials.Wall.color,
+          union(
+            subtract(
+              box(W + 2 * t, H, t),
+              translate([t + wRight, wBottom, 0], box(wW, wH, wD)),
+            ),
+            translate([t + wbRight, wbBottom, -wbD], box(wbW, wbH, wbD)),
+          ),
         ),
-        translate([t + wbRight, wbBottom, -wbD], box(wbW, wbH, wbD)),
-      ),
-    ),
-  );
+      )
+    : null;
 
-  // --- Left wall (X = 0 to t), between front and back walls ---
-  const leftWall = translate(
-    [0, t, t],
-    colorize(materials.Wall.color, box(t, H, D)),
-  );
+  // --- Right wall (X = 0 to t), between front and back walls ---
+  const rightWall = surfaces.rightWall
+    ? translate([0, t, t], colorize(materials.Wall.color, box(t, H, D)))
+    : null;
 
-  // --- Right wall (X = W - t to W), between front and back walls ---
-  const rightWall = translate(
-    [t + W, t, t],
-    colorize(materials.Wall.color, box(t, H, D)),
-  );
+  // --- Left wall (X = W - t to W), between front and back walls ---
+  const leftWall = surfaces.leftWall
+    ? translate([t + W, t, t], colorize(materials.Wall.color, box(t, H, D)))
+    : null;
 
   // --- Floor ---
-  const floor = colorize(materials.Wall.color, box(W + 2 * t, t, D + 2 * t));
+  const floor = surfaces.floor
+    ? colorize(materials.Wall.color, box(W + 2 * t, t, D + 2 * t))
+    : null;
 
   // --- Ceiling ---
-  const ceiling = translate(
-    [0, H + t, 0],
-    colorize(materials.Wall.color, box(W + 2 * t, t, D + 2 * t)),
-  );
+  const ceiling = surfaces.ceiling
+    ? translate(
+        [0, H + t, 0],
+        colorize(materials.Wall.color, box(W + 2 * t, t, D + 2 * t)),
+      )
+    : null;
 
-  return [frontWall, backWall, leftWall, rightWall, floor, ceiling];
+  return [frontWall, backWall, leftWall, rightWall, floor, ceiling].filter(
+    Boolean,
+  );
 }

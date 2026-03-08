@@ -141,6 +141,27 @@ export const measurements = {
         depth: cm(112.4),
       },
     },
+    // https://www.ikea.com/de/de/p/norden-klapptisch-weiss-10423886/
+    Norden: {
+      storage: l(6 * calculateVolume(cm(20), cm(25), cm(38)).value),
+      height: cm(74),
+      depth: cm(80),
+      closed: {
+        width: cm(29),
+      },
+      opened: {
+        partially: {
+          width: cm(89),
+        },
+        fully: {
+          width: cm(152),
+        },
+      },
+      boards: {
+        thickness: cm(2),
+        width: cm(73),
+      },
+    },
   },
   shelfs: {
     // https://www.ikea.com/de/de/p/billy-buecherregal-weiss-30263844/
@@ -500,7 +521,7 @@ export const cabinets = {
 };
 
 export const desks = {
-  Billy: (state: { variant: "closed" | "opened" }) => {
+  Billy: (state: { variant: "closed" | "partially" | "fully" }) => {
     const outer = [
       // right
       box(
@@ -557,7 +578,7 @@ export const desks = {
       [
         normalize(measurements.desks.Billy.boards.thickness),
         0,
-        state.variant === "opened"
+        state.variant === "fully" || state.variant === "partially"
           ? normalize(measurements.desks.Billy.boards.desk.depth)
           : 0,
       ],
@@ -629,7 +650,7 @@ export const desks = {
     );
 
     const desk =
-      state.variant === "opened"
+      state.variant === "fully" || state.variant === "partially"
         ? [
             translate(
               [
@@ -647,6 +668,75 @@ export const desks = {
         : [];
 
     return [...outer, ...inner, ...desk];
+  },
+  Nordern: (state: { variant: "closed" | "partially" | "fully" }) => {
+    // cabinet
+    const cabinet = box(
+      normalize(measurements.desks.Norden.closed.width),
+      normalize(measurements.desks.Norden.height),
+      normalize(measurements.desks.Norden.depth),
+    );
+
+    const board = box(
+      normalize(measurements.desks.Norden.boards.width),
+      normalize(measurements.desks.Norden.boards.thickness),
+      normalize(measurements.desks.Norden.depth),
+    );
+
+    const boards = [];
+    switch (state.variant) {
+      case "partially":
+        boards.push(
+          translate(
+            [
+              -normalize(measurements.desks.Norden.boards.width),
+              normalize(measurements.desks.Norden.height) -
+                normalize(measurements.desks.Norden.boards.thickness),
+              0,
+            ],
+            board,
+          ),
+        );
+        break;
+      case "fully":
+        boards.push(
+          translate(
+            [
+              -normalize(measurements.desks.Norden.boards.width),
+              normalize(measurements.desks.Norden.height) -
+                normalize(measurements.desks.Norden.boards.thickness),
+              0,
+            ],
+            board,
+          ),
+        );
+        boards.push(
+          translate(
+            [
+              normalize(measurements.desks.Norden.closed.width),
+              normalize(measurements.desks.Norden.height) -
+                normalize(measurements.desks.Norden.boards.thickness),
+              0,
+            ],
+            board,
+          ),
+        );
+        break;
+    }
+
+    const desk = [cabinet, ...boards];
+
+    return translate(
+      [
+        normalize(measurements.desks.Norden.closed.width),
+        0,
+        state.variant === "fully"
+          ? -normalize(measurements.desks.Norden.closed.width)
+          : normalize(measurements.desks.Norden.boards.width) -
+            normalize(measurements.desks.Norden.closed.width),
+      ],
+      rotate([0, -Math.PI / 2, 0], desk),
+    );
   },
 };
 
