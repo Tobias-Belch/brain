@@ -48,7 +48,17 @@ import { materials } from "./models/materials";
 | | Measurements (WxHxD) | Storage |
 |-|----------------------|--------:|
 | Closet: IKEA Pax | {ikea.measurements.cabinets.Pax.width} x {ikea.measurements.cabinets.Pax.height} x {ikea.measurements.cabinets.Pax.closed.depth} / {ikea.measurements.cabinets.Pax.opened.depth} | {ikea.measurements.cabinets.Pax.storage} |
-| Cabinet: IKEA Pax | {ikea.measurements.cabinets.Pax.width} x {ikea.measurements.cabinets.Pax.height} x {ikea.measurements.cabinets.Pax.closed.depth} / {ikea.measurements.cabinets.Pax.opened.depth} | {l(0.5 * ikea.measurements.cabinets.Pax.storage.value)} |
+| Cabinet: IKEA Pax (0.5) | {ikea.measurements.cabinets.Pax.width} x {ikea.measurements.cabinets.Pax.height} x {ikea.measurements.cabinets.Pax.closed.depth} / {ikea.measurements.cabinets.Pax.opened.depth} | {l(0.5 * ikea.measurements.cabinets.Pax.storage.value)} |
 | Shelf: IKEA Kallax | {ikea.measurements.shelfs.Kallax.width} x {ikea.measurements.shelfs.Kallax.height} x {ikea.measurements.shelfs.Kallax.depth} (12x) | {l(ikea.measurements.shelfs.Kallax.storage.value * 12)} |
-| Desk: IKEA Norden | {ikea.measurements.desks.Norden.width} x {ikea.measurements.desks.Norden.height} x {ikea.measurements.desks.Norden.closed.depth} / {ikea.measurements.desks.Norden.opened.partially.width} / {ikea.measurements.desks.Norden.opened.fully.width} | {ikea.measurements.desks.Norden.storage} |
+| Desk: IKEA Norden | {ikea.measurements.desks.Norden.closed.width} / {ikea.measurements.desks.Norden.opened.partially.width} / {ikea.measurements.desks.Norden.opened.fully.width} x {ikea.measurements.desks.Norden.height} x {ikea.measurements.desks.Norden.depth} | {ikea.measurements.desks.Norden.storage} |
 | Total | | {l(1.5 * ikea.measurements.cabinets.Pax.storage.value + ikea.measurements.shelfs.Kallax.storage.value * 12 + ikea.measurements.desks.Norden.storage.value)} |
+
+## Variant: High Bed, 2 PAX, NORDEN Desk & Couch
+
+| | Measurements (WxHxD) | Storage |
+|-|----------------------|--------:|
+| Closet: IKEA Pax | {ikea.measurements.cabinets.Pax.width} x {ikea.measurements.cabinets.Pax.height} x {ikea.measurements.cabinets.Pax.closed.depth} / {ikea.measurements.cabinets.Pax.opened.depth} | {ikea.measurements.cabinets.Pax.storage} |
+| Cabinet: IKEA Pax | {ikea.measurements.cabinets.Pax.width} x {ikea.measurements.cabinets.Pax.height} x {ikea.measurements.cabinets.Pax.closed.depth} / {ikea.measurements.cabinets.Pax.opened.depth} | {ikea.measurements.cabinets.Pax.storage} |
+| Desk: IKEA Norden | {ikea.measurements.desks.Norden.closed.width} / {ikea.measurements.desks.Norden.opened.partially.width} / {ikea.measurements.desks.Norden.opened.fully.width} x {ikea.measurements.desks.Norden.height} x {ikea.measurements.desks.Norden.depth} | {ikea.measurements.desks.Norden.storage} |
+| Total | | {l(2 * ikea.measurements.cabinets.Pax.storage.value + ikea.measurements.desks.Norden.storage.value)} |
+

@@ -49,7 +49,8 @@ export const measurements = {
 export const variants = {
   brimnesBillyPax: "BRIMNES Bed, BILLY Desk & 1 PAX",
   highbedKallaxWall: "High Bed, 2 PAX, Desk & KALLAX Wall",
-  highbedCouch: "High Bed, 2 PAX, Desk & Couch",
+  highbedCouch: "High Bed, 1.5 PAX, KALLAX Tower, NORDEN Desk & Couch",
+  highbed2Pax: "High Bed, 2 PAX, NORDEN Desk & Couch",
 };
 
 export type Variant = keyof typeof variants;
@@ -121,6 +122,9 @@ export function MilasRoom({ state = defaultState }: { state?: State } = {}) {
       break;
     case "highbedCouch":
       models.push(...highbedCouch(state));
+      break;
+    case "highbed2Pax":
+      models.push(...highbed2Pax(state));
       break;
   }
 
@@ -484,6 +488,143 @@ function highbedCouch(state: State) {
       normalised.wall.thickness,
     ],
     [closet, cabinet, ...kallaxTower, ...bed, couch, desk],
+  );
+}
+
+function highbed2Pax(state: State) {
+  const normalised = {
+    wall: {
+      thickness: normalize(measurements.wall.thickness),
+    },
+    room: {
+      width: normalize(measurements.room.width),
+      height: normalize(measurements.room.height),
+      depth: normalize(measurements.room.depth),
+    },
+  };
+
+  const closets = [
+    translate(
+      [
+        0,
+        0,
+        normalize(cm(10)) + normalize(ikea.measurements.cabinets.Pax.width),
+      ],
+      rotate(
+        [0, Math.PI / 2, 0],
+        colorize(materials.Furniture.color, ikea.cabinets.Pax(state.cabinet)),
+      ),
+    ),
+    translate(
+      [
+        normalize(ikea.measurements.cabinets.Pax.width) +
+          normalize(ikea.measurements.cabinets.Pax.closed.depth),
+        0,
+        normalize(cm(10)) +
+          normalize(ikea.measurements.cabinets.Pax.width) +
+          normalize(ikea.measurements.cabinets.Pax.closed.depth),
+      ],
+      rotate(
+        [0, Math.PI, 0],
+        colorize(materials.Furniture.color, ikea.cabinets.Pax(state.cabinet)),
+      ),
+    ),
+  ];
+
+  const { model: bedModel } = general.Bed({
+    guards: { right: cm(0), cutout: "bottom-left" },
+    padding: { right: cm(10) },
+  });
+
+  const bed = [
+    translate(
+      [
+        0,
+        normalize(cm(160)),
+        normalize(cm(10)) +
+          normalize(ikea.measurements.cabinets.Pax.width) +
+          normalize(ikea.measurements.cabinets.Pax.width),
+      ],
+      colorize(materials.Furniture.color, bedModel),
+    ),
+  ];
+
+  const desk = translate(
+    [
+      normalised.room.width -
+        normalize(ikea.measurements.desks.Norden.closed.width),
+      0,
+      normalised.room.depth - normalize(ikea.measurements.desks.Norden.depth),
+    ],
+    colorize(materials.Furniture.color, ikea.desks.Nordern(state.desk)),
+  );
+
+  const armrestSize = cm(14);
+  const couch = translate(
+    [
+      0,
+      0,
+      normalised.room.depth -
+        normalize(general.measurements.Mattress.depth) -
+        2 * normalize(armrestSize),
+    ],
+    colorize(materials.Furniture.color, [
+      // back rest
+      box(
+        normalize(armrestSize),
+        normalize(cm(90)),
+        normalize(general.measurements.Mattress.depth) +
+          2 * normalize(armrestSize),
+      ),
+      translate(
+        [normalize(armrestSize), 0, 0],
+        [
+          // left armrest
+          box(
+            normalize(general.measurements.Mattress.width),
+            normalize(cm(72)),
+            normalize(armrestSize),
+          ),
+          // box
+          translate(
+            [0, 0, normalize(armrestSize)],
+            box(
+              normalize(general.measurements.Mattress.width),
+              normalize(cm(45)),
+              normalize(general.measurements.Mattress.depth),
+            ),
+          ),
+          // mattress
+          translate(
+            [0, normalize(cm(45)), normalize(armrestSize)],
+            general.mattress,
+          ),
+          // right armrest
+          translate(
+            [
+              0,
+              0,
+              normalize(armrestSize) +
+                normalize(general.measurements.Mattress.depth),
+            ],
+            box(
+              normalize(general.measurements.Mattress.width),
+              normalize(cm(72)),
+              normalize(armrestSize),
+            ),
+          ),
+        ],
+      ),
+    ]),
+  );
+
+  return translate(
+    [
+      normalised.wall.thickness,
+      normalised.wall.thickness,
+      normalised.wall.thickness,
+    ],
+    [...closets, ...bed, couch, desk],
   );
 }
 
