@@ -49,6 +49,13 @@ export const measurements = {
     },
   },
   cabinets: {
+    // https://www.ikea.com/de/de/p/besta-schrankkombination-fuer-wandmontage-weiss-lappviken-weiss-s19431858/
+    Besta: {
+      width: cm(60),
+      height: cm(64),
+      depth: cm(42),
+      storage: calculateVolume(cm(60), cm(64), cm(42)),
+    },
     // https://www.ikea.com/de/de/p/pax-forsand-kleiderschrank-weiss-weiss-s49502665/
     Pax: {
       storage: calculateVolume(cm(96), cm(200), cm(58)),
@@ -412,6 +419,13 @@ export const beds = {
 };
 
 export const cabinets = {
+  Besta: () => {
+    return box(
+      normalize(measurements.cabinets.Besta.depth),
+      normalize(measurements.cabinets.Besta.height),
+      normalize(measurements.cabinets.Besta.width),
+    );
+  },
   Pax: (state: { variant: "closed" | "opened" }) => {
     const corpus = [
       // back

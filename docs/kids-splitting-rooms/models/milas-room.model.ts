@@ -148,7 +148,7 @@ function brimnesBillyPax(state: State) {
       normalised.wall.thickness,
       normalised.wall.thickness,
       normalised.wall.thickness +
-        normalize(cm(10)) +
+        normalize(cm(8)) +
         normalize(ikea.measurements.cabinets.Pax.width),
     ],
     rotate(
@@ -162,9 +162,9 @@ function brimnesBillyPax(state: State) {
       normalised.wall.thickness,
       normalised.wall.thickness,
       normalised.wall.thickness +
-        normalize(cm(10)) +
+        normalize(cm(8)) +
         normalize(ikea.measurements.cabinets.Pax.width) +
-        normalize(cm(5)) +
+        normalize(cm(3)) +
         normalize(ikea.measurements.desks.Billy.width),
     ],
     rotate(
@@ -177,18 +177,47 @@ function brimnesBillyPax(state: State) {
     [
       normalised.wall.thickness,
       normalised.wall.thickness +
-        normalize(ikea.measurements.desks.Billy.height) +
-        normalize(cm(24)),
+        normalize(ikea.measurements.cabinets.Pax.height) -
+        normalize(ikea.measurements.shelfs.Billy.height),
       normalised.wall.thickness +
-        normalize(cm(10)) +
+        normalize(cm(8)) +
         normalize(ikea.measurements.cabinets.Pax.width) +
-        normalize(cm(5)) +
+        normalize(cm(3)) +
         normalize(ikea.measurements.desks.Billy.width),
     ],
     rotate(
       [0, Math.PI / 2, 0],
       colorize(materials.Furniture.color, ikea.shelfs.Billy()),
     ),
+  );
+
+  const cabinets = translate(
+    [
+      normalised.wall.thickness,
+      normalised.wall.thickness +
+        normalize(ikea.measurements.cabinets.Pax.height) -
+        normalize(ikea.measurements.cabinets.Besta.height),
+      normalised.wall.thickness +
+        normalize(cm(8)) +
+        normalize(ikea.measurements.cabinets.Pax.width) +
+        normalize(cm(3)) +
+        normalize(ikea.measurements.desks.Billy.width),
+    ],
+    colorize(materials.Furniture.color, [
+      ikea.cabinets.Besta(),
+      translate(
+        [0, 0, normalize(ikea.measurements.cabinets.Besta.width)],
+        ikea.cabinets.Besta(),
+      ),
+      translate(
+        [0, 0, 2 * normalize(ikea.measurements.cabinets.Besta.width)],
+        ikea.cabinets.Besta(),
+      ),
+      translate(
+        [0, 0, 3 * normalize(ikea.measurements.cabinets.Besta.width)],
+        ikea.cabinets.Besta(),
+      ),
+    ]),
   );
 
   const bed = translate(
@@ -203,7 +232,7 @@ function brimnesBillyPax(state: State) {
     colorize(materials.Furniture.color, ikea.beds.Brimnes(state.bed)),
   );
 
-  return [bed, closet, desk, shelfOverDesk];
+  return [bed, closet, desk, shelfOverDesk, cabinets];
 }
 
 function highbedKallaxWall(state: State) {
