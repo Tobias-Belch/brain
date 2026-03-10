@@ -1,11 +1,9 @@
-import modeling from "@jscad/modeling";
-import { calculateVolume, cm, l, m, mm } from "@pocs/values";
+import { calculateVolume, l } from "@pocs/values";
+import { createBuilder, cm, toCm, mm, type JscadObject } from "@jscad/builder";
 import * as general from "./general";
-import { box, normalize } from "./utils";
+import { group } from "./utils";
 
-const {
-  transforms: { rotate, translate },
-} = modeling;
+const { cuboid, translate, rotate } = createBuilder({ coordinateUnit: "cm" });
 
 export const measurements = {
   beds: {
@@ -215,116 +213,62 @@ export const measurements = {
   },
 };
 
+// ─── Brimnes bed pieces ───────────────────────────────────────────────────────
+
+const b = measurements.beds.Brimnes;
+const bT = () => toCm(b.boards.thickness).value;
+
 const brimnesBed = {
-  back: translate(
-    [
-      normalize(measurements.beds.Brimnes.boards.thickness),
-      0,
-      normalize(measurements.beds.Brimnes.depth) -
-        normalize(measurements.beds.Brimnes.boards.thickness),
-    ],
-    box(
-      normalize(measurements.beds.Brimnes.boards.back.width),
-      normalize(measurements.beds.Brimnes.boards.back.height),
-      normalize(measurements.beds.Brimnes.boards.thickness),
-    ),
+  back: translate([b.boards.thickness, cm(0), cm(toCm(b.depth).value - bT())])(
+    cuboid({ size: [b.boards.back.width, b.boards.back.height, b.boards.thickness] }),
   ),
-  right: translate(
-    [0, 0, 0],
-    box(
-      normalize(measurements.beds.Brimnes.boards.thickness),
-      normalize(measurements.beds.Brimnes.boards.side.height),
-      normalize(measurements.beds.Brimnes.boards.side.depth),
-    ),
+  right: cuboid({ size: [b.boards.thickness, b.boards.side.height, b.boards.side.depth] }),
+  left: translate([cm(bT() + toCm(b.boards.back.width).value), cm(0), cm(0)])(
+    cuboid({ size: [b.boards.thickness, b.boards.side.height, b.boards.side.depth] }),
   ),
-  left: translate(
-    [
-      normalize(measurements.beds.Brimnes.boards.thickness) +
-        normalize(measurements.beds.Brimnes.boards.back.width),
-      0,
-      0,
-    ],
-    box(
-      normalize(measurements.beds.Brimnes.boards.thickness),
-      normalize(measurements.beds.Brimnes.boards.side.height),
-      normalize(measurements.beds.Brimnes.boards.side.depth),
-    ),
-  ),
-  front: translate(
-    [normalize(measurements.beds.Brimnes.boards.thickness), 0, 0],
-    [
-      // front
-      box(
-        normalize(measurements.beds.Brimnes.boards.front.width),
-        normalize(measurements.beds.Brimnes.boards.front.height),
-        normalize(measurements.beds.Brimnes.boards.thickness),
-      ),
-      // right
-      box(
-        normalize(measurements.beds.Brimnes.boards.thickness),
-        normalize(measurements.beds.Brimnes.boards.front.height) -
-          normalize(cm(3)),
-        normalize(general.measurements.Mattress.width),
-      ),
-      // left
-      translate(
-        [
-          normalize(measurements.beds.Brimnes.boards.front.width) -
-            normalize(measurements.beds.Brimnes.boards.thickness),
-          0,
-          0,
+  front: translate([b.boards.thickness, cm(0), cm(0)])(
+    group(
+      // front board
+      cuboid({ size: [b.boards.front.width, b.boards.front.height, b.boards.thickness] }),
+      // right inner
+      cuboid({
+        size: [
+          b.boards.thickness,
+          cm(toCm(b.boards.front.height).value - 3),
+          general.measurements.Mattress.width,
         ],
-        box(
-          normalize(measurements.beds.Brimnes.boards.thickness),
-          normalize(measurements.beds.Brimnes.boards.front.height) -
-            normalize(cm(3)),
-          normalize(general.measurements.Mattress.width),
-        ),
+      }),
+      // left inner
+      translate([cm(toCm(b.boards.front.width).value - bT()), cm(0), cm(0)])(
+        cuboid({
+          size: [
+            b.boards.thickness,
+            cm(toCm(b.boards.front.height).value - 3),
+            general.measurements.Mattress.width,
+          ],
+        }),
       ),
-    ],
+    ),
   ),
-  drawer: translate(
-    [0, 0, 0],
-    [
-      // front
-      box(
-        normalize(measurements.beds.Brimnes.drawer.boards.front.width),
-        normalize(measurements.beds.Brimnes.drawer.boards.front.height),
-        normalize(measurements.beds.Brimnes.drawer.boards.thickness),
-      ),
-      // right
-      translate(
-        [0, 0, normalize(measurements.beds.Brimnes.drawer.boards.thickness)],
-        box(
-          normalize(measurements.beds.Brimnes.drawer.boards.thickness),
-          normalize(measurements.beds.Brimnes.drawer.boards.height),
-          normalize(measurements.beds.Brimnes.drawer.boards.side.depth),
-        ),
-      ),
-      // left
-      translate(
-        [
-          normalize(measurements.beds.Brimnes.drawer.boards.front.width) -
-            normalize(measurements.beds.Brimnes.drawer.boards.thickness),
-          0,
-          normalize(measurements.beds.Brimnes.drawer.boards.thickness),
-        ],
-        box(
-          normalize(measurements.beds.Brimnes.drawer.boards.thickness),
-          normalize(measurements.beds.Brimnes.drawer.boards.height),
-          normalize(measurements.beds.Brimnes.drawer.boards.side.depth),
-        ),
-      ),
-      // bottom
-      translate(
-        [0, 0, normalize(measurements.beds.Brimnes.drawer.boards.thickness)],
-        box(
-          normalize(measurements.beds.Brimnes.drawer.boards.front.width),
-          normalize(measurements.beds.Brimnes.drawer.boards.thickness),
-          normalize(measurements.beds.Brimnes.drawer.boards.side.depth),
-        ),
-      ),
-    ],
+  drawer: group(
+    // front
+    cuboid({ size: [b.drawer.boards.front.width, b.drawer.boards.front.height, b.drawer.boards.thickness] }),
+    // right
+    translate([cm(0), cm(0), b.drawer.boards.thickness])(
+      cuboid({ size: [b.drawer.boards.thickness, b.drawer.boards.height, b.drawer.boards.side.depth] }),
+    ),
+    // left
+    translate([
+      cm(toCm(b.drawer.boards.front.width).value - toCm(b.drawer.boards.thickness).value),
+      cm(0),
+      b.drawer.boards.thickness,
+    ])(
+      cuboid({ size: [b.drawer.boards.thickness, b.drawer.boards.height, b.drawer.boards.side.depth] }),
+    ),
+    // bottom
+    translate([cm(0), cm(0), b.drawer.boards.thickness])(
+      cuboid({ size: [b.drawer.boards.front.width, b.drawer.boards.thickness, b.drawer.boards.side.depth] }),
+    ),
   ),
 };
 
@@ -332,572 +276,323 @@ export const beds = {
   Brimnes: (state: {
     drawers: "closed" | "opened";
     variant: "single" | "double";
-  }) => {
-    const frontDepthCorrection =
-      state.variant === "double"
-        ? -normalize(general.measurements.Mattress.width)
-        : 0;
+  }): JscadObject => {
+    const mW = toCm(general.measurements.Mattress.width).value;
+    const mH = toCm(general.measurements.Mattress.height).value;
+    const frontBoardH = toCm(b.boards.front.height).value;
+    const boardT = bT();
+    const frontW = toCm(b.boards.front.width).value;
+    const drawerFrontW = toCm(b.drawer.boards.front.width).value;
 
-    const box = [
+    const frontDepthCorrection =
+      state.variant === "double" ? -mW : 0;
+
+    const frame = group(
       brimnesBed.back,
       brimnesBed.right,
       brimnesBed.left,
-      translate([0, 0, frontDepthCorrection], brimnesBed.front),
-    ];
+      translate([cm(0), cm(0), cm(frontDepthCorrection)])(brimnesBed.front),
+    );
 
     const drawerGap =
-      (normalize(measurements.beds.Brimnes.boards.front.width) -
-        2 * normalize(measurements.beds.Brimnes.drawer.boards.front.width)) /
-      3;
+      (frontW - 2 * drawerFrontW) / 3;
 
     const drawerDepthCorrection =
-      state.drawers === "opened" ? -normalize(cm(50)) : 0;
+      state.drawers === "opened" ? -50 : 0;
 
-    const drawers = translate(
-      [drawerGap, drawerGap, frontDepthCorrection + drawerDepthCorrection],
-      [
+    const drawers = translate([
+      cm(drawerGap),
+      cm(drawerGap),
+      cm(frontDepthCorrection + drawerDepthCorrection),
+    ])(
+      group(
         brimnesBed.drawer,
-        translate(
-          [
-            normalize(measurements.beds.Brimnes.drawer.boards.front.width) +
-              drawerGap,
-            0,
-            0,
-          ],
-          brimnesBed.drawer,
-        ),
-      ],
+        translate([cm(drawerFrontW + drawerGap), cm(0), cm(0)])(brimnesBed.drawer),
+      ),
     );
+
+    const mattressBase: [number, number, number] = [
+      boardT,
+      frontBoardH - 3,
+      boardT + mW,
+    ];
 
     const mattresses =
       state.variant === "double"
-        ? [
-            translate(
-              [
-                normalize(measurements.beds.Brimnes.boards.thickness),
-                normalize(measurements.beds.Brimnes.boards.front.height) -
-                  normalize(cm(3)),
-                normalize(measurements.beds.Brimnes.boards.thickness) +
-                  normalize(general.measurements.Mattress.width),
-              ],
-              rotate(
-                [0, Math.PI / 2, 0],
-                [
-                  general.mattress,
-                  translate(
-                    [normalize(general.measurements.Mattress.width), 0, 0],
-                    general.mattress,
-                  ),
-                ],
+        ? // Two mattresses side-by-side (rotated 90° around Y at corner)
+          translate([cm(mattressBase[0]), cm(mattressBase[1]), cm(mattressBase[2])])(
+            rotate([0, Math.PI / 2, 0], { around: "corner" })(
+              group(
+                general.mattress,
+                translate([cm(mW), cm(0), cm(0)])(general.mattress),
               ),
             ),
-          ]
-        : [
-            translate(
-              [
-                normalize(measurements.beds.Brimnes.boards.thickness),
-                normalize(measurements.beds.Brimnes.boards.front.height) -
-                  normalize(cm(3)),
-                normalize(measurements.beds.Brimnes.boards.thickness) +
-                  normalize(general.measurements.Mattress.width),
-              ],
-              rotate(
-                [0, Math.PI / 2, 0],
-                [
-                  general.mattress,
-                  translate(
-                    [0, normalize(general.measurements.Mattress.height), 0],
-                    general.mattress,
-                  ),
-                ],
+          )
+        : // Single mattress + pillow offset
+          translate([cm(mattressBase[0]), cm(mattressBase[1]), cm(mattressBase[2])])(
+            rotate([0, Math.PI / 2, 0], { around: "corner" })(
+              group(
+                general.mattress,
+                translate([cm(0), cm(mH), cm(0)])(general.mattress),
               ),
             ),
-          ];
+          );
 
-    return [...box, drawers, ...mattresses];
+    return group(frame, drawers, mattresses);
   },
 };
 
 export const cabinets = {
-  Besta: () => {
-    return box(
-      normalize(measurements.cabinets.Besta.depth),
-      normalize(measurements.cabinets.Besta.height),
-      normalize(measurements.cabinets.Besta.width),
-    );
+  Besta: (): JscadObject => {
+    const p = measurements.cabinets.Besta;
+    return cuboid({ size: [p.depth, p.height, p.width] });
   },
-  Pax: (state: { variant: "closed" | "opened" }) => {
-    const corpus = [
+
+  Pax: (state: { variant: "closed" | "opened" }): JscadObject => {
+    const p = measurements.cabinets.Pax;
+    const pT = toCm(p.boards.thickness).value;
+    const sideH = toCm(p.boards.side.height).value;
+    const sideD = toCm(p.boards.side.depth).value;
+    const backW = toCm(p.boards.back.width).value;
+    const btW = toCm(p.boards.bottomTop.width).value;
+    const doorW = toCm(p.boards.door.width).value;
+    const doorH = toCm(p.boards.door.height).value;
+
+    const corpus = group(
       // back
-      box(
-        normalize(measurements.cabinets.Pax.boards.back.width),
-        normalize(measurements.cabinets.Pax.boards.back.height),
-        normalize(measurements.cabinets.Pax.boards.back.thickness),
-      ),
+      cuboid({ size: [p.boards.back.width, p.boards.back.height, p.boards.back.thickness] }),
       // right
-      translate(
-        [0, normalize(measurements.cabinets.Pax.boards.thickness), 0],
-        box(
-          normalize(measurements.cabinets.Pax.boards.thickness),
-          normalize(measurements.cabinets.Pax.boards.side.height),
-          normalize(measurements.cabinets.Pax.boards.side.depth),
-        ),
+      translate([cm(0), p.boards.thickness, cm(0)])(
+        cuboid({ size: [p.boards.thickness, p.boards.side.height, p.boards.side.depth] }),
       ),
       // left
-      translate(
-        [
-          normalize(measurements.cabinets.Pax.boards.back.width) -
-            normalize(measurements.cabinets.Pax.boards.thickness),
-          normalize(measurements.cabinets.Pax.boards.thickness),
-          0,
-        ],
-        box(
-          normalize(measurements.cabinets.Pax.boards.thickness),
-          normalize(measurements.cabinets.Pax.boards.side.height),
-          normalize(measurements.cabinets.Pax.boards.side.depth),
-        ),
+      translate([cm(backW - pT), p.boards.thickness, cm(0)])(
+        cuboid({ size: [p.boards.thickness, p.boards.side.height, p.boards.side.depth] }),
       ),
       // bottom
-      translate(
-        [0, 0, 0],
-        box(
-          normalize(measurements.cabinets.Pax.boards.bottomTop.width),
-          normalize(measurements.cabinets.Pax.boards.thickness),
-          normalize(measurements.cabinets.Pax.boards.bottomTop.depth),
-        ),
-      ),
+      cuboid({ size: [p.boards.bottomTop.width, p.boards.thickness, p.boards.bottomTop.depth] }),
       // top
-      translate(
-        [
-          0,
-          normalize(measurements.cabinets.Pax.boards.side.height) +
-            normalize(measurements.cabinets.Pax.boards.thickness),
-          0,
-        ],
-        box(
-          normalize(measurements.cabinets.Pax.boards.bottomTop.width),
-          normalize(measurements.cabinets.Pax.boards.thickness),
-          normalize(measurements.cabinets.Pax.boards.bottomTop.depth),
-        ),
-      ),
-    ];
-
-    const rightDoor = translate(
-      [
-        normalize(measurements.cabinets.Pax.boards.door.width) +
-          (state.variant === "opened"
-            ? normalize(measurements.cabinets.Pax.boards.door.width)
-            : 0),
-        0,
-        0,
-      ],
-      rotate(
-        [0, state.variant === "opened" ? -Math.PI / 2 : 0, 0],
-        box(
-          normalize(measurements.cabinets.Pax.boards.door.width),
-          normalize(measurements.cabinets.Pax.boards.door.height),
-          normalize(measurements.cabinets.Pax.boards.thickness),
-        ),
+      translate([cm(0), cm(sideH + pT), cm(0)])(
+        cuboid({ size: [p.boards.bottomTop.width, p.boards.thickness, p.boards.bottomTop.depth] }),
       ),
     );
 
-    const leftDoor = translate(
-      [
-        state.variant === "opened"
-          ? normalize(measurements.cabinets.Pax.boards.thickness)
-          : 0,
-        0,
-        0,
-      ],
-      rotate(
-        [0, state.variant === "opened" ? -Math.PI / 2 : 0, 0],
-        box(
-          normalize(measurements.cabinets.Pax.boards.door.width),
-          normalize(measurements.cabinets.Pax.boards.door.height),
-          normalize(measurements.cabinets.Pax.boards.thickness),
-        ),
+    const doorBox = cuboid({ size: [p.boards.door.width, p.boards.door.height, p.boards.thickness] });
+
+    const rightDoor = translate([
+      cm(doorW + (state.variant === "opened" ? doorW : 0)),
+      cm(0),
+      cm(0),
+    ])(
+      rotate([0, state.variant === "opened" ? -Math.PI / 2 : 0, 0], { around: "corner" })(
+        doorBox,
       ),
     );
 
-    const doors = translate(
-      [
-        0,
-        2 * normalize(measurements.cabinets.Pax.boards.thickness) +
-          normalize(measurements.cabinets.Pax.boards.side.height) -
-          normalize(measurements.cabinets.Pax.boards.door.height),
-        normalize(measurements.cabinets.Pax.boards.side.depth),
-      ],
-      [leftDoor, rightDoor],
+    const leftDoor = translate([
+      cm(state.variant === "opened" ? pT : 0),
+      cm(0),
+      cm(0),
+    ])(
+      rotate([0, state.variant === "opened" ? -Math.PI / 2 : 0, 0], { around: "corner" })(
+        doorBox,
+      ),
     );
 
-    return [...corpus, doors];
+    const doors = translate([
+      cm(0),
+      cm(2 * pT + sideH - doorH),
+      cm(sideD),
+    ])(group(leftDoor, rightDoor));
+
+    return group(corpus, doors);
   },
 };
 
 export const desks = {
-  Billy: (state: { variant: "closed" | "partially" | "fully" }) => {
-    const outer = [
+  Billy: (state: { variant: "closed" | "partially" | "fully" }): JscadObject => {
+    const d = measurements.desks.Billy;
+    const bdsT = toCm(d.boards.thickness).value;
+    const outerSideH = toCm(d.boards.outer.side.height).value;
+    const outerShelfW = toCm(d.boards.outer.shelf.width).value;
+    const innerSideH = toCm(d.boards.inner.side.height).value;
+    const innerShelfW = toCm(d.boards.inner.shelf.width).value;
+    const innerFromTop = toCm(d.boards.inner.shelf.fromTop).value;
+    const innerFromBot = toCm(d.boards.inner.shelf.fromBottom).value;
+    const deskDepth = toCm(d.boards.desk.depth).value;
+
+    const outer = group(
       // right
-      box(
-        normalize(measurements.desks.Billy.boards.thickness),
-        normalize(measurements.desks.Billy.boards.outer.side.height),
-        normalize(measurements.desks.Billy.boards.outer.side.depth),
-      ),
+      cuboid({ size: [d.boards.thickness, d.boards.outer.side.height, d.boards.outer.side.depth] }),
       // left
-      translate(
-        [
-          normalize(measurements.desks.Billy.boards.outer.shelf.width) +
-            normalize(measurements.desks.Billy.boards.thickness),
-          0,
-          0,
-        ],
-        box(
-          normalize(measurements.desks.Billy.boards.thickness),
-          normalize(measurements.desks.Billy.boards.outer.side.height),
-          normalize(measurements.desks.Billy.boards.outer.side.depth),
-        ),
+      translate([cm(outerShelfW + bdsT), cm(0), cm(0)])(
+        cuboid({ size: [d.boards.thickness, d.boards.outer.side.height, d.boards.outer.side.depth] }),
       ),
       // top
-      translate(
-        [
-          normalize(measurements.desks.Billy.boards.thickness),
-          normalize(measurements.desks.Billy.boards.outer.side.height) -
-            normalize(measurements.desks.Billy.boards.thickness),
-          0,
-        ],
-        box(
-          normalize(measurements.desks.Billy.boards.outer.shelf.width),
-          normalize(measurements.desks.Billy.boards.thickness),
-          normalize(measurements.desks.Billy.boards.outer.shelf.depth),
-        ),
+      translate([d.boards.thickness, cm(outerSideH - bdsT), cm(0)])(
+        cuboid({ size: [d.boards.outer.shelf.width, d.boards.thickness, d.boards.outer.shelf.depth] }),
       ),
       // shelf
-      translate(
-        [
-          normalize(measurements.desks.Billy.boards.thickness),
-          normalize(measurements.desks.Billy.boards.outer.side.height) -
-            normalize(measurements.desks.Billy.boards.thickness) -
-            normalize(measurements.desks.Billy.boards.outer.shelf.fromTop),
-          0,
-        ],
-        box(
-          normalize(measurements.desks.Billy.boards.outer.shelf.width),
-          normalize(measurements.desks.Billy.boards.thickness),
-          normalize(measurements.desks.Billy.boards.outer.shelf.depth),
-        ),
+      translate([d.boards.thickness, cm(outerSideH - bdsT - toCm(d.boards.outer.shelf.fromTop).value), cm(0)])(
+        cuboid({ size: [d.boards.outer.shelf.width, d.boards.thickness, d.boards.outer.shelf.depth] }),
       ),
-    ];
+    );
 
-    const inner = translate(
-      [
-        normalize(measurements.desks.Billy.boards.thickness),
-        0,
-        state.variant === "fully" || state.variant === "partially"
-          ? normalize(measurements.desks.Billy.boards.desk.depth)
-          : 0,
-      ],
-      [
-        //back
-        box(
-          normalize(measurements.desks.Billy.boards.inner.back.width),
-          normalize(measurements.desks.Billy.boards.inner.back.height),
-          normalize(measurements.desks.Billy.boards.inner.back.thickness),
-        ),
+    const innerZOffset =
+      state.variant === "fully" || state.variant === "partially" ? deskDepth : 0;
+
+    const inner = translate([d.boards.thickness, cm(0), cm(innerZOffset)])(
+      group(
+        // back
+        cuboid({ size: [d.boards.inner.back.width, d.boards.inner.back.height, d.boards.inner.back.thickness] }),
         // right
-        box(
-          normalize(measurements.desks.Billy.boards.thickness),
-          normalize(measurements.desks.Billy.boards.inner.side.height),
-          normalize(measurements.desks.Billy.boards.inner.side.depth),
-        ),
+        cuboid({ size: [d.boards.thickness, d.boards.inner.side.height, d.boards.inner.side.depth] }),
         // left
-        translate(
-          [
-            normalize(measurements.desks.Billy.boards.inner.shelf.width) +
-              normalize(measurements.desks.Billy.boards.thickness),
-            0,
-            0,
-          ],
-          box(
-            normalize(measurements.desks.Billy.boards.thickness),
-            normalize(measurements.desks.Billy.boards.inner.side.height),
-            normalize(measurements.desks.Billy.boards.inner.side.depth),
-          ),
+        translate([cm(innerShelfW + bdsT), cm(0), cm(0)])(
+          cuboid({ size: [d.boards.thickness, d.boards.inner.side.height, d.boards.inner.side.depth] }),
         ),
         // top
-        translate(
-          [0, normalize(measurements.desks.Billy.boards.inner.side.height), 0],
-          box(
-            normalize(measurements.desks.Billy.boards.inner.top.width),
-            normalize(measurements.desks.Billy.boards.thickness),
-            normalize(measurements.desks.Billy.boards.inner.top.depth),
-          ),
+        translate([cm(0), cm(innerSideH), cm(0)])(
+          cuboid({ size: [d.boards.inner.top.width, d.boards.thickness, d.boards.inner.top.depth] }),
         ),
-        // shelf
-        translate(
-          [
-            normalize(measurements.desks.Billy.boards.thickness),
-            normalize(measurements.desks.Billy.boards.inner.side.height) -
-              normalize(measurements.desks.Billy.boards.thickness) -
-              normalize(measurements.desks.Billy.boards.inner.shelf.fromTop),
-            0,
-          ],
-          box(
-            normalize(measurements.desks.Billy.boards.inner.shelf.width),
-            normalize(measurements.desks.Billy.boards.thickness),
-            normalize(measurements.desks.Billy.boards.inner.shelf.depth),
-          ),
+        // shelf top
+        translate([d.boards.thickness, cm(innerSideH - bdsT - innerFromTop), cm(0)])(
+          cuboid({ size: [d.boards.inner.shelf.width, d.boards.thickness, d.boards.inner.shelf.depth] }),
         ),
         // shelf bottom
-        translate(
-          [
-            normalize(measurements.desks.Billy.boards.thickness),
-            normalize(measurements.desks.Billy.boards.inner.shelf.fromBottom),
-            0,
-          ],
-          box(
-            normalize(measurements.desks.Billy.boards.inner.shelf.width),
-            normalize(measurements.desks.Billy.boards.thickness),
-            normalize(measurements.desks.Billy.boards.inner.shelf.depth),
-          ),
+        translate([d.boards.thickness, cm(innerFromBot), cm(0)])(
+          cuboid({ size: [d.boards.inner.shelf.width, d.boards.thickness, d.boards.inner.shelf.depth] }),
         ),
-      ],
+      ),
     );
 
     const desk =
       state.variant === "fully" || state.variant === "partially"
         ? [
-            translate(
-              [
-                normalize(measurements.desks.Billy.boards.thickness),
-                normalize(measurements.desks.Billy.boards.inner.side.height),
-                0,
-              ],
-              box(
-                normalize(measurements.desks.Billy.boards.desk.width),
-                normalize(measurements.desks.Billy.boards.thickness),
-                normalize(measurements.desks.Billy.boards.desk.depth),
-              ),
+            translate([d.boards.thickness, cm(innerSideH), cm(0)])(
+              cuboid({ size: [d.boards.desk.width, d.boards.thickness, d.boards.desk.depth] }),
             ),
           ]
         : [];
 
-    return [...outer, ...inner, ...desk];
+    return group(outer, inner, ...desk);
   },
-  Nordern: (state: { variant: "closed" | "partially" | "fully" }) => {
-    // cabinet
-    const cabinet = box(
-      normalize(measurements.desks.Norden.closed.width),
-      normalize(measurements.desks.Norden.height),
-      normalize(measurements.desks.Norden.depth),
-    );
 
-    const board = box(
-      normalize(measurements.desks.Norden.boards.width),
-      normalize(measurements.desks.Norden.boards.thickness),
-      normalize(measurements.desks.Norden.depth),
-    );
+  Nordern: (state: { variant: "closed" | "partially" | "fully" }): JscadObject => {
+    const n = measurements.desks.Norden;
+    const closedW = toCm(n.closed.width).value;
+    const boardW = toCm(n.boards.width).value;
 
-    const boards = [];
+    const cabinet = cuboid({ size: [n.closed.width, n.height, n.depth] });
+    const board = cuboid({ size: [n.boards.width, n.boards.thickness, n.depth] });
+
+    const boards: JscadObject[] = [];
     switch (state.variant) {
       case "partially":
         boards.push(
-          translate(
-            [
-              -normalize(measurements.desks.Norden.boards.width),
-              normalize(measurements.desks.Norden.height) -
-                normalize(measurements.desks.Norden.boards.thickness),
-              0,
-            ],
-            board,
-          ),
+          translate([
+            cm(-boardW),
+            cm(toCm(n.height).value - toCm(n.boards.thickness).value),
+            cm(0),
+          ])(board),
         );
         break;
       case "fully":
         boards.push(
-          translate(
-            [
-              -normalize(measurements.desks.Norden.boards.width),
-              normalize(measurements.desks.Norden.height) -
-                normalize(measurements.desks.Norden.boards.thickness),
-              0,
-            ],
-            board,
-          ),
+          translate([
+            cm(-boardW),
+            cm(toCm(n.height).value - toCm(n.boards.thickness).value),
+            cm(0),
+          ])(board),
         );
         boards.push(
-          translate(
-            [
-              normalize(measurements.desks.Norden.closed.width),
-              normalize(measurements.desks.Norden.height) -
-                normalize(measurements.desks.Norden.boards.thickness),
-              0,
-            ],
-            board,
-          ),
+          translate([
+            n.closed.width,
+            cm(toCm(n.height).value - toCm(n.boards.thickness).value),
+            cm(0),
+          ])(board),
         );
         break;
     }
 
-    const desk = [cabinet, ...boards];
+    const deskGroup = group(cabinet, ...boards);
 
-    return translate(
-      [
-        normalize(measurements.desks.Norden.closed.width),
-        0,
-        state.variant === "fully"
-          ? -normalize(measurements.desks.Norden.closed.width)
-          : normalize(measurements.desks.Norden.boards.width) -
-            normalize(measurements.desks.Norden.closed.width),
-      ],
-      rotate([0, -Math.PI / 2, 0], desk),
+    const zOffset =
+      state.variant === "fully"
+        ? -closedW
+        : boardW - closedW;
+
+    return translate([n.closed.width, cm(0), cm(zOffset)])(
+      rotate([0, -Math.PI / 2, 0], { around: "corner" })(deskGroup),
     );
   },
 };
 
 export const shelfs = {
-  Billy: () => {
-    return [
+  Billy: (): JscadObject => {
+    const s = measurements.shelfs.Billy;
+    const sT = toCm(s.boards.thickness).value;
+    const backW = toCm(s.boards.back.width).value;
+    const sideH = toCm(s.boards.side.height).value;
+
+    return group(
       // back
-      box(
-        normalize(measurements.shelfs.Billy.boards.back.width),
-        normalize(measurements.shelfs.Billy.boards.back.height),
-        normalize(measurements.shelfs.Billy.boards.back.thickness),
-      ),
+      cuboid({ size: [s.boards.back.width, s.boards.back.height, s.boards.back.thickness] }),
       // right
-      box(
-        normalize(measurements.shelfs.Billy.boards.thickness),
-        normalize(measurements.shelfs.Billy.boards.side.height),
-        normalize(measurements.shelfs.Billy.boards.side.depth),
-      ),
+      cuboid({ size: [s.boards.thickness, s.boards.side.height, s.boards.side.depth] }),
       // left
-      translate(
-        [
-          normalize(measurements.shelfs.Billy.boards.back.width) -
-            normalize(measurements.shelfs.Billy.boards.thickness),
-          0,
-          0,
-        ],
-        box(
-          normalize(measurements.shelfs.Billy.boards.thickness),
-          normalize(measurements.shelfs.Billy.boards.side.height),
-          normalize(measurements.shelfs.Billy.boards.side.depth),
-        ),
+      translate([cm(backW - sT), cm(0), cm(0)])(
+        cuboid({ size: [s.boards.thickness, s.boards.side.height, s.boards.side.depth] }),
       ),
-      // bottom
-      translate(
-        [
-          normalize(measurements.shelfs.Billy.boards.thickness),
-          normalize(cm(5)),
-          0,
-        ],
-        box(
-          normalize(measurements.shelfs.Billy.boards.shelf.width),
-          normalize(measurements.shelfs.Billy.boards.thickness),
-          normalize(measurements.shelfs.Billy.boards.shelf.depth),
-        ),
+      // bottom shelf
+      translate([s.boards.thickness, cm(5), cm(0)])(
+        cuboid({ size: [s.boards.shelf.width, s.boards.thickness, s.boards.shelf.depth] }),
       ),
-      translate(
-        [
-          normalize(measurements.shelfs.Billy.boards.thickness),
-          normalize(cm(38)),
-          0,
-        ],
-        box(
-          normalize(measurements.shelfs.Billy.boards.shelf.width),
-          normalize(measurements.shelfs.Billy.boards.thickness),
-          normalize(measurements.shelfs.Billy.boards.shelf.depth),
-        ),
+      // mid shelf
+      translate([s.boards.thickness, cm(38), cm(0)])(
+        cuboid({ size: [s.boards.shelf.width, s.boards.thickness, s.boards.shelf.depth] }),
       ),
-      translate(
-        [
-          normalize(measurements.shelfs.Billy.boards.thickness),
-          normalize(cm(72)),
-          0,
-        ],
-        box(
-          normalize(measurements.shelfs.Billy.boards.shelf.width),
-          normalize(measurements.shelfs.Billy.boards.thickness),
-          normalize(measurements.shelfs.Billy.boards.shelf.depth),
-        ),
+      // upper shelf
+      translate([s.boards.thickness, cm(72), cm(0)])(
+        cuboid({ size: [s.boards.shelf.width, s.boards.thickness, s.boards.shelf.depth] }),
       ),
       // top
-      translate(
-        [
-          normalize(measurements.shelfs.Billy.boards.thickness),
-          normalize(measurements.shelfs.Billy.boards.side.height) -
-            normalize(measurements.shelfs.Billy.boards.thickness),
-          0,
-        ],
-        box(
-          normalize(measurements.shelfs.Billy.boards.shelf.width),
-          normalize(measurements.shelfs.Billy.boards.thickness),
-          normalize(measurements.shelfs.Billy.boards.shelf.depth),
-        ),
+      translate([s.boards.thickness, cm(sideH - sT), cm(0)])(
+        cuboid({ size: [s.boards.shelf.width, s.boards.thickness, s.boards.shelf.depth] }),
       ),
-    ];
+    );
   },
+
   Kallax: (
-    { rows, columns }: { rows?: number; columns?: number } = {
-      rows: 1,
-      columns: 1,
-    },
-  ) => {
-    const bottom = box(
-      normalize(measurements.shelfs.Kallax.boards.bottomTop.depth),
-      normalize(measurements.shelfs.Kallax.boards.thickness),
-      normalize(measurements.shelfs.Kallax.boards.bottomTop.width),
+    { rows = 1, columns = 1 }: { rows?: number; columns?: number } = {},
+  ): JscadObject => {
+    const k = measurements.shelfs.Kallax;
+    const kT = toCm(k.boards.thickness).value;
+    const sideH = toCm(k.boards.side.height).value;
+    const btW = toCm(k.boards.bottomTop.width).value;
+    const kH = toCm(k.height).value;
+    const kD = toCm(k.depth).value;
+
+    const bottom = cuboid({ size: [k.boards.bottomTop.depth, k.boards.thickness, k.boards.bottomTop.width] });
+    const left = translate([cm(0), k.boards.thickness, cm(0)])(
+      cuboid({ size: [k.boards.side.depth, k.boards.side.height, k.boards.thickness] }),
+    );
+    const right = translate([cm(0), k.boards.thickness, cm(btW - kT)])(
+      cuboid({ size: [k.boards.side.depth, k.boards.side.height, k.boards.thickness] }),
+    );
+    const top = translate([cm(0), cm(kT + sideH), cm(0)])(
+      cuboid({ size: [k.boards.bottomTop.depth, k.boards.thickness, k.boards.bottomTop.width] }),
     );
 
-    const left = translate(
-      [0, normalize(measurements.shelfs.Kallax.boards.thickness), 0],
-      box(
-        normalize(measurements.shelfs.Kallax.boards.side.depth),
-        normalize(measurements.shelfs.Kallax.boards.side.height),
-        normalize(measurements.shelfs.Kallax.boards.thickness),
-      ),
-    );
+    const kallax = group(bottom, left, right, top);
 
-    const right = translate(
-      [
-        0,
-        normalize(measurements.shelfs.Kallax.boards.thickness),
-        normalize(measurements.shelfs.Kallax.boards.bottomTop.width) -
-          normalize(measurements.shelfs.Kallax.boards.thickness),
-      ],
-      box(
-        normalize(measurements.shelfs.Kallax.boards.side.depth),
-        normalize(measurements.shelfs.Kallax.boards.side.height),
-        normalize(measurements.shelfs.Kallax.boards.thickness),
-      ),
-    );
+    const cells: JscadObject[] = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < columns; c++) {
+        cells.push(translate([cm(0), cm(r * kH), cm(c * kD)])(kallax));
+      }
+    }
 
-    const top = translate(
-      [
-        0,
-        normalize(measurements.shelfs.Kallax.boards.thickness) +
-          normalize(measurements.shelfs.Kallax.boards.side.height),
-        0,
-      ],
-      box(
-        normalize(measurements.shelfs.Kallax.boards.bottomTop.depth),
-        normalize(measurements.shelfs.Kallax.boards.thickness),
-        normalize(measurements.shelfs.Kallax.boards.bottomTop.width),
-      ),
-    );
-
-    const kallax = [bottom, left, right, top];
-
-    return Array.from({ length: rows }, (_, i) => i).flatMap((r) =>
-      Array.from({ length: columns }, (_, j) => j).map((c) => {
-        return translate(
-          [
-            0,
-            r * normalize(measurements.shelfs.Kallax.height),
-            c * normalize(measurements.shelfs.Kallax.depth),
-          ],
-          kallax,
-        );
-      }),
-    );
+    return group(...cells);
   },
 };

@@ -1,11 +1,7 @@
-import modeling from "@jscad/modeling";
-import { cm, isNumberWithUnit, type NumberWithUnit, toCm } from "@pocs/values";
-import { box, normalize } from "./utils";
+import { createBuilder, cm, toCm, isMeasure, type Length, type Dim, type JscadObject } from "@jscad/builder";
+import { group } from "./utils";
 
-const {
-  booleans: { subtract },
-  transforms: { translate },
-} = modeling;
+const { cuboid, translate, subtract, pipe } = createBuilder({ coordinateUnit: "cm" });
 
 export const measurements = {
   Mattress: {
@@ -15,11 +11,9 @@ export const measurements = {
   },
 };
 
-export const mattress = box(
-  normalize(measurements.Mattress.width),
-  normalize(measurements.Mattress.height),
-  normalize(measurements.Mattress.depth),
-);
+export const mattress = cuboid({
+  size: [measurements.Mattress.width, measurements.Mattress.height, measurements.Mattress.depth],
+});
 
 export function Bed({
   platform = { thickness: cm(3) },
@@ -32,15 +26,15 @@ export function Bed({
   },
   padding = { top: cm(0), bottom: cm(0), left: cm(0), right: cm(0) },
 }: {
-  platform?: { thickness: NumberWithUnit };
+  platform?: { thickness: Length };
   guards?:
-    | NumberWithUnit
+    | Length
     | {
-        top?: NumberWithUnit;
-        bottom?: NumberWithUnit;
-        left?: NumberWithUnit;
-        right?: NumberWithUnit;
-        thickness?: NumberWithUnit;
+        top?: Length;
+        bottom?: Length;
+        left?: Length;
+        right?: Length;
+        thickness?: Length;
         cutout?:
           | "bottom"
           | "bottom-right"
@@ -50,15 +44,15 @@ export function Bed({
           | "top-left";
       };
   padding?:
-    | NumberWithUnit
+    | Length
     | {
-        top?: NumberWithUnit;
-        bottom?: NumberWithUnit;
-        left?: NumberWithUnit;
-        right?: NumberWithUnit;
+        top?: Length;
+        bottom?: Length;
+        left?: Length;
+        right?: Length;
       };
 } = {}) {
-  const normalisedGuards = isNumberWithUnit(guards)
+  const normalisedGuards = isMeasure(guards)
     ? {
         top: guards,
         bottom: guards,
@@ -102,7 +96,7 @@ export function Bed({
       break;
   }
 
-  const normalisedPadding = isNumberWithUnit(padding)
+  const normalisedPadding = isMeasure(padding)
     ? { top: padding, bottom: padding, left: padding, right: padding }
     : {
         top: padding.top ?? cm(0),
@@ -111,44 +105,34 @@ export function Bed({
         right: padding.right ?? cm(0),
       };
 
+  // All arithmetic on physical values uses .value in cm
+  const gT = toCm(normalisedGuards.thickness).value;
+  const pL = toCm(normalisedPadding.left).value;
+  const pR = toCm(normalisedPadding.right).value;
+  const pT = toCm(normalisedPadding.top).value;
+  const pB = toCm(normalisedPadding.bottom).value;
+  const mW = toCm(measurements.Mattress.width).value;
+  const mH = toCm(measurements.Mattress.height).value;
+  const mD = toCm(measurements.Mattress.depth).value;
+  const pltT = toCm(platform.thickness).value;
+  const gTop = toCm(normalisedGuards.top).value;
+  const gBot = toCm(normalisedGuards.bottom).value;
+
   const bedMeasurements = {
-    width: cm(
-      toCm(normalisedGuards.thickness).value +
-        toCm(normalisedPadding.left).value +
-        toCm(measurements.Mattress.width).value +
-        toCm(normalisedPadding.right).value +
-        toCm(normalisedGuards.thickness).value,
-    ),
-    height: cm(
-      toCm(platform.thickness).value +
-        Math.max(
-          toCm(measurements.Mattress.height).value,
-          toCm(normalisedGuards.top).value,
-          toCm(normalisedGuards.bottom).value,
-          toCm(normalisedPadding.top).value,
-          toCm(normalisedPadding.bottom).value,
-        ),
-    ),
-    depth: cm(
-      toCm(normalisedGuards.thickness).value +
-        toCm(normalisedPadding.bottom).value +
-        toCm(measurements.Mattress.depth).value +
-        toCm(normalisedPadding.top).value +
-        toCm(normalisedGuards.thickness).value,
-    ),
+    width: cm(gT + pL + mW + pR + gT),
+    height: cm(pltT + Math.max(mH, gTop, gBot, pT, pB)),
+    depth: cm(gT + pB + mD + pT + gT),
   };
 
-  const model = [
+  const bW = toCm(bedMeasurements.width).value;
+  const bD = toCm(bedMeasurements.depth).value;
+
+  const model = group(
     // platform
-    box(
-      normalize(bedMeasurements.width),
-      normalize(platform.thickness),
-      normalize(bedMeasurements.depth),
-    ),
+    cuboid({ size: [bedMeasurements.width, platform.thickness, bedMeasurements.depth] }),
     // guards
-    translate(
-      [0, normalize(platform.thickness), 0],
-      [
+    translate([0, platform.thickness, 0])(
+      group(
         // bottom
         BedGuard({
           width: bedMeasurements.width,
@@ -164,13 +148,7 @@ export function Bed({
           cutout: cutout.guard === "right" ? cutout.position : undefined,
         }),
         // left
-        translate(
-          [
-            normalize(bedMeasurements.width) -
-              normalize(normalisedGuards.thickness),
-            0,
-            0,
-          ],
+        translate([cm(bW - gT), cm(0), cm(0)])(
           BedGuard({
             width: normalisedGuards.thickness,
             height: normalisedGuards.left,
@@ -179,13 +157,7 @@ export function Bed({
           }),
         ),
         // top
-        translate(
-          [
-            0,
-            0,
-            normalize(bedMeasurements.depth) -
-              normalize(normalisedGuards.thickness),
-          ],
+        translate([cm(0), cm(0), cm(bD - gT)])(
           BedGuard({
             width: bedMeasurements.width,
             height: normalisedGuards.top,
@@ -193,75 +165,62 @@ export function Bed({
             cutout: cutout.guard === "top" ? cutout.position : undefined,
           }),
         ),
-      ],
+      ),
     ),
     // mattress
-    translate(
-      [
-        normalize(normalisedGuards.thickness) +
-          normalize(normalisedPadding.right),
-        normalize(platform.thickness),
-        normalize(normalisedGuards.thickness) +
-          normalize(normalisedPadding.bottom),
-      ],
-      mattress,
-    ),
-  ];
+    translate([cm(gT + pL), platform.thickness, cm(gT + pB)])(mattress),
+  );
 
   function BedGuard({
     width,
     height,
     depth,
-    cutout,
+    cutout: c,
   }: {
-    width: NumberWithUnit;
-    height: NumberWithUnit;
-    depth: NumberWithUnit;
+    width: Length;
+    height: Length;
+    depth: Length;
     cutout?: "left" | "center" | "right";
-  }) {
-    if (!cutout) {
-      return box(normalize(width), normalize(height), normalize(depth));
+  }): JscadObject {
+    if (!c) {
+      return cuboid({ size: [width, height, depth] });
     }
 
-    const depthIsThickness = normalize(depth) < normalize(width);
+    const wVal = toCm(width).value;
+    const dVal = toCm(depth).value;
+    const depthIsThickness = dVal < wVal;
     const w = depthIsThickness ? width : depth;
     const t = depthIsThickness ? depth : width;
 
-    const coutoutMeasurements = {
+    const cutoutMeasurements = {
       width: depthIsThickness ? cm(40) : t,
       height,
       depth: depthIsThickness ? t : cm(40),
     };
 
+    const wDim = toCm(w).value;
     let cutoutOffset = 0;
-    switch (cutout) {
+    switch (c) {
       case "left":
-        cutoutOffset = normalize(w) - 2 * normalize(cm(40));
+        cutoutOffset = wDim - 2 * 40;
         break;
       case "center":
-        cutoutOffset = (normalize(w) - normalize(cm(40))) / 2;
+        cutoutOffset = (wDim - 40) / 2;
         break;
       case "right":
-        cutoutOffset = normalize(cm(40));
+        cutoutOffset = 40;
         break;
     }
 
-    const offset = [
-      depthIsThickness ? cutoutOffset : 0,
-      0,
-      depthIsThickness ? 0 : cutoutOffset,
+    const offset: [Dim, Dim, Dim] = [
+      depthIsThickness ? cm(cutoutOffset) : cm(0),
+      cm(0),
+      depthIsThickness ? cm(0) : cm(cutoutOffset),
     ];
 
-    return subtract(
-      box(normalize(width), normalize(height), normalize(depth)),
-      translate(
-        offset,
-        box(
-          normalize(coutoutMeasurements.width),
-          normalize(coutoutMeasurements.height),
-          normalize(coutoutMeasurements.depth),
-        ),
-      ),
+    return pipe(
+      cuboid({ size: [width, height, depth] }),
+      subtract(translate(offset)(cuboid({ size: [cutoutMeasurements.width, cutoutMeasurements.height, cutoutMeasurements.depth] }))),
     );
   }
 

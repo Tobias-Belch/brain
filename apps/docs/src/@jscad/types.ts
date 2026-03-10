@@ -8,8 +8,9 @@ import {
 } from "three";
 import type { RGB, RGBA } from "@jscad/modeling/src/colors";
 import type { Geom3 } from "@jscad/modeling/src/geometries/types";
+import type { AnyGeom } from "@jscad/builder/types";
 
-export type JscadModel = Geom3 | Geom3[] | (Geom3 | Geom3[])[];
+export type JscadModel = AnyGeom | AnyGeom[];
 
 export type Outline = RGB | RGBA | { color: RGB | RGBA; thickness: number };
 
