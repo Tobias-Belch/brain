@@ -2,7 +2,7 @@ import modeling from "@jscad/modeling";
 import type Geom3 from "@jscad/modeling/src/geometries/geom3/type";
 import type Geom2 from "@jscad/modeling/src/geometries/geom2/type";
 import type Path2 from "@jscad/modeling/src/geometries/path2/type";
-import type { Bounds, Dim, JscadObject, AnyGeom } from "./types";
+import type { Bounds, Origin, Dim, Vec3, Vec2, JscadObject, AnyGeom } from "./types";
 import {
   isLength,
   toCm,
@@ -50,6 +50,9 @@ const {
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
+
+/** Canonical zero origin — shared by all freshly-constructed primitives. */
+const ZERO_ORIGIN: Origin = { x: 0, y: 0, z: 0 };
 
 /**
  * Remove keys with `undefined` values from an object so that JSCAD's
@@ -205,10 +208,26 @@ export function mergeBounds(a: Bounds, b: Bounds): Bounds {
  */
 export function fromGeom(geom: AnyGeom | AnyGeom[]): JscadObject {
   const geoms = Array.isArray(geom) ? geom : [geom];
+  const bounds = boundsFromGeom(geoms);
   return {
     geom: geoms,
-    bounds: boundsFromGeom(geoms),
+    bounds,
+    origin: { x: bounds.min[0], y: bounds.min[1], z: bounds.min[2] },
   };
+}
+
+// ---------------------------------------------------------------------------
+// Internal Vec3/Vec2 resolution helpers
+// ---------------------------------------------------------------------------
+
+/** Resolve a Vec3 (named 3D dim vector) to a [number, number, number] tuple. */
+function resolveVec3(v: Vec3, resolve: DimResolver, def = 0): [number, number, number] {
+  return [resolve(v.x ?? def), resolve(v.y ?? def), resolve(v.z ?? def)];
+}
+
+/** Resolve a Vec2 (named 2D dim vector) to a [number, number] tuple. */
+function resolveVec2(v: Vec2, resolve: DimResolver, def = 0): [number, number] {
+  return [resolve(v.x ?? def), resolve(v.y ?? def)];
 }
 
 // ---------------------------------------------------------------------------
@@ -216,26 +235,28 @@ export function fromGeom(geom: AnyGeom | AnyGeom[]): JscadObject {
 // ---------------------------------------------------------------------------
 
 /**
- * Create a cuboid (box). Origin is at the bottom-left-front corner.
+ * Create a cuboid (box). Origin is at the bottom-left-front corner by default.
  * The JSCAD function is `cuboid` — this matches that name exactly.
  *
- * @param size - [width, height, depth] in the builder's coordinate unit
+ * @param size   - { x?, y?, z? } width/height/depth in the builder's coordinate unit
+ * @param center - optional { x?, y?, z? } center override
  *
  * @example
  * const { cuboid } = createBuilder({ coordinateUnit: 'mm' })
- * cuboid({ size: [50, 100, 30] })
+ * cuboid({ size: { x: 50, y: 100, z: 30 } })
  */
 export function makeCuboid(resolve: DimResolver) {
-  return function cuboid(opts: { size: [Dim, Dim, Dim]; center?: [Dim, Dim, Dim] }): JscadObject {
-    const [w, h, d] = opts.size.map(resolve) as [number, number, number];
-    const cx = opts.center ? resolve(opts.center[0]) : w / 2;
-    const cy = opts.center ? resolve(opts.center[1]) : h / 2;
-    const cz = opts.center ? resolve(opts.center[2]) : d / 2;
+  return function cuboid(opts: { size: Vec3; center?: Vec3 }): JscadObject {
+    const [w, h, d] = resolveVec3(opts.size, resolve);
+    const cx = opts.center ? resolve(opts.center.x ?? w / 2) : w / 2;
+    const cy = opts.center ? resolve(opts.center.y ?? h / 2) : h / 2;
+    const cz = opts.center ? resolve(opts.center.z ?? d / 2) : d / 2;
     const geom = jscadCuboid({ size: [w, h, d], center: [cx, cy, cz] });
     const halfW = w / 2, halfH = h / 2, halfD = d / 2;
     return {
       geom: [geom],
       bounds: { min: [cx - halfW, cy - halfH, cz - halfD], max: [cx + halfW, cy + halfH, cz + halfD] },
+      origin: ZERO_ORIGIN,
     };
   };
 }
@@ -249,16 +270,17 @@ export function makeCuboid(resolve: DimResolver) {
  * cube({ size: 50 })
  */
 export function makeCube(resolve: DimResolver) {
-  return function cube(opts?: { size?: Dim; center?: [Dim, Dim, Dim] }): JscadObject {
+  return function cube(opts?: { size?: Dim; center?: Vec3 }): JscadObject {
     const s = resolve(opts?.size ?? 1);
-    const cx = opts?.center ? resolve(opts.center[0]) : s / 2;
-    const cy = opts?.center ? resolve(opts.center[1]) : s / 2;
-    const cz = opts?.center ? resolve(opts.center[2]) : s / 2;
+    const cx = opts?.center ? resolve(opts.center.x ?? s / 2) : s / 2;
+    const cy = opts?.center ? resolve(opts.center.y ?? s / 2) : s / 2;
+    const cz = opts?.center ? resolve(opts.center.z ?? s / 2) : s / 2;
     const geom = jscadCube({ size: s, center: [cx, cy, cz] });
     const half = s / 2;
     return {
       geom: [geom],
       bounds: { min: [cx - half, cy - half, cz - half], max: [cx + half, cy + half, cz + half] },
+      origin: ZERO_ORIGIN,
     };
   };
 }
@@ -275,20 +297,21 @@ export function makeCube(resolve: DimResolver) {
  */
 export function makeCylinder(resolve: DimResolver) {
   return function cylinder(opts?: {
-    center?: [Dim, Dim, Dim];
+    center?: Vec3;
     height?: Dim;
     radius?: Dim;
     segments?: number;
   }): JscadObject {
     const h = resolve(opts?.height ?? 1);
     const r = resolve(opts?.radius ?? 1);
-    const cx = opts?.center ? resolve(opts.center[0]) : 0;
-    const cy = opts?.center ? resolve(opts.center[1]) : 0;
-    const cz = opts?.center ? resolve(opts.center[2]) : 0;
+    const cx = opts?.center ? resolve(opts.center.x ?? 0) : 0;
+    const cy = opts?.center ? resolve(opts.center.y ?? 0) : 0;
+    const cz = opts?.center ? resolve(opts.center.z ?? 0) : 0;
     const geom = jscadCylinder(compact({ height: h, radius: r, segments: opts?.segments, center: [cx, cy, cz] }) as any);
     return {
       geom: [geom],
       bounds: boundsFromGeom3(geom),
+      origin: ZERO_ORIGIN,
     };
   };
 }
@@ -297,24 +320,24 @@ export function makeCylinder(resolve: DimResolver) {
  * Create an elliptic cylinder (optionally tapered — can produce a cone).
  *
  * @example
- * cylinderElliptic({ height: 100, startRadius: [20, 20], endRadius: [10, 10] })
+ * cylinderElliptic({ height: 100, startRadius: { x: 20, y: 20 }, endRadius: { x: 10, y: 10 } })
  */
 export function makeCylinderElliptic(resolve: DimResolver) {
   return function cylinderElliptic(opts?: {
-    center?: [Dim, Dim, Dim];
+    center?: Vec3;
     height?: Dim;
-    startRadius?: [Dim, Dim];
-    endRadius?: [Dim, Dim];
+    startRadius?: Vec2;
+    endRadius?: Vec2;
     startAngle?: number;
     endAngle?: number;
     segments?: number;
   }): JscadObject {
     const h = resolve(opts?.height ?? 1);
-    const sr = opts?.startRadius ? [resolve(opts.startRadius[0]), resolve(opts.startRadius[1])] as [number, number] : [1, 1] as [number, number];
-    const er = opts?.endRadius   ? [resolve(opts.endRadius[0]),   resolve(opts.endRadius[1])]   as [number, number] : [1, 1] as [number, number];
-    const cx = opts?.center ? resolve(opts.center[0]) : 0;
-    const cy = opts?.center ? resolve(opts.center[1]) : 0;
-    const cz = opts?.center ? resolve(opts.center[2]) : 0;
+    const sr = opts?.startRadius ? resolveVec2(opts.startRadius, resolve) : [1, 1] as [number, number];
+    const er = opts?.endRadius   ? resolveVec2(opts.endRadius, resolve)   : [1, 1] as [number, number];
+    const cx = opts?.center ? resolve(opts.center.x ?? 0) : 0;
+    const cy = opts?.center ? resolve(opts.center.y ?? 0) : 0;
+    const cz = opts?.center ? resolve(opts.center.z ?? 0) : 0;
     const geom = jscadCylinderElliptic(compact({
       height: h,
       startRadius: sr,
@@ -324,32 +347,32 @@ export function makeCylinderElliptic(resolve: DimResolver) {
       segments: opts?.segments,
       center: [cx, cy, cz],
     }) as any);
-    return { geom: [geom], bounds: boundsFromGeom3(geom) };
+    return { geom: [geom], bounds: boundsFromGeom3(geom), origin: ZERO_ORIGIN };
   };
 }
 
 /**
  * Create an ellipsoid.
  *
- * @param opts.radius - [rx, ry, rz] radii
+ * @param opts.radius - { x?, y?, z? } radii
  *
  * @example
- * ellipsoid({ radius: [50, 30, 20] })
+ * ellipsoid({ radius: { x: 50, y: 30, z: 20 } })
  */
 export function makeEllipsoid(resolve: DimResolver) {
   return function ellipsoid(opts?: {
-    center?: [Dim, Dim, Dim];
-    radius?: [Dim, Dim, Dim];
+    center?: Vec3;
+    radius?: Vec3;
     segments?: number;
   }): JscadObject {
     const r = opts?.radius
-      ? (opts.radius.map(resolve) as [number, number, number])
+      ? resolveVec3(opts.radius, resolve)
       : ([1, 1, 1] as [number, number, number]);
-    const cx = opts?.center ? resolve(opts.center[0]) : 0;
-    const cy = opts?.center ? resolve(opts.center[1]) : 0;
-    const cz = opts?.center ? resolve(opts.center[2]) : 0;
+    const cx = opts?.center ? resolve(opts.center.x ?? 0) : 0;
+    const cy = opts?.center ? resolve(opts.center.y ?? 0) : 0;
+    const cz = opts?.center ? resolve(opts.center.z ?? 0) : 0;
     const geom = jscadEllipsoid(compact({ radius: r, segments: opts?.segments, center: [cx, cy, cz] }) as any);
-    return { geom: [geom], bounds: boundsFromGeom3(geom) };
+    return { geom: [geom], bounds: boundsFromGeom3(geom), origin: ZERO_ORIGIN };
   };
 }
 
@@ -369,12 +392,13 @@ export function makeGeodesicSphere(resolve: DimResolver) {
   }): JscadObject {
     const r = resolve(opts?.radius ?? 1);
     const geom = jscadGeodesicSphere({ radius: r, frequency: opts?.frequency });
-    return { geom: [geom], bounds: boundsFromGeom3(geom) };
+    return { geom: [geom], bounds: boundsFromGeom3(geom), origin: ZERO_ORIGIN };
   };
 }
 
 /**
  * Create a polyhedron from explicit points and faces.
+ * Points are still passed as `[Dim, Dim, Dim]` tuples (raw coordinate triplets).
  *
  * @example
  * polyhedron({
@@ -396,40 +420,40 @@ export function makePolyhedron(resolve: DimResolver) {
       colors: opts.colors as any,
       orientation: opts.orientation,
     });
-    return { geom: [geom], bounds: boundsFromGeom3(geom) };
+    return { geom: [geom], bounds: boundsFromGeom3(geom), origin: ZERO_ORIGIN };
   };
 }
 
 /**
  * Create a rounded cuboid (box with rounded edges).
  *
- * @param opts.size        - [width, height, depth]
+ * @param opts.size        - { x?, y?, z? } width/height/depth
  * @param opts.roundRadius - radius of the edge rounding
  * @param opts.segments    - number of facets for rounding
  *
  * @example
- * roundedCuboid({ size: [50, 50, 50], roundRadius: 5 })
+ * roundedCuboid({ size: { x: 50, y: 50, z: 50 }, roundRadius: 5 })
  */
 export function makeRoundedCuboid(resolve: DimResolver) {
   return function roundedCuboid(opts?: {
-    center?: [Dim, Dim, Dim];
-    size?: [Dim, Dim, Dim];
+    center?: Vec3;
+    size?: Vec3;
     roundRadius?: Dim;
     segments?: number;
   }): JscadObject {
     const s = opts?.size
-      ? (opts.size.map(resolve) as [number, number, number])
+      ? resolveVec3(opts.size, resolve)
       : ([1, 1, 1] as [number, number, number]);
-    const cx = opts?.center ? resolve(opts.center[0]) : 0;
-    const cy = opts?.center ? resolve(opts.center[1]) : 0;
-    const cz = opts?.center ? resolve(opts.center[2]) : 0;
+    const cx = opts?.center ? resolve(opts.center.x ?? 0) : 0;
+    const cy = opts?.center ? resolve(opts.center.y ?? 0) : 0;
+    const cz = opts?.center ? resolve(opts.center.z ?? 0) : 0;
     const geom = jscadRoundedCuboid(compact({
       size: s,
       roundRadius: opts?.roundRadius !== undefined ? resolve(opts.roundRadius) : undefined,
       segments: opts?.segments,
       center: [cx, cy, cz],
     }) as any);
-    return { geom: [geom], bounds: boundsFromGeom3(geom) };
+    return { geom: [geom], bounds: boundsFromGeom3(geom), origin: ZERO_ORIGIN };
   };
 }
 
@@ -441,7 +465,7 @@ export function makeRoundedCuboid(resolve: DimResolver) {
  */
 export function makeRoundedCylinder(resolve: DimResolver) {
   return function roundedCylinder(opts?: {
-    center?: [Dim, Dim, Dim];
+    center?: Vec3;
     height?: Dim;
     radius?: Dim;
     roundRadius?: Dim;
@@ -449,9 +473,9 @@ export function makeRoundedCylinder(resolve: DimResolver) {
   }): JscadObject {
     const h = resolve(opts?.height ?? 1);
     const r = resolve(opts?.radius ?? 1);
-    const cx = opts?.center ? resolve(opts.center[0]) : 0;
-    const cy = opts?.center ? resolve(opts.center[1]) : 0;
-    const cz = opts?.center ? resolve(opts.center[2]) : 0;
+    const cx = opts?.center ? resolve(opts.center.x ?? 0) : 0;
+    const cy = opts?.center ? resolve(opts.center.y ?? 0) : 0;
+    const cz = opts?.center ? resolve(opts.center.z ?? 0) : 0;
     const geom = jscadRoundedCylinder(compact({
       height: h,
       radius: r,
@@ -459,7 +483,7 @@ export function makeRoundedCylinder(resolve: DimResolver) {
       segments: opts?.segments,
       center: [cx, cy, cz],
     }) as any);
-    return { geom: [geom], bounds: boundsFromGeom3(geom) };
+    return { geom: [geom], bounds: boundsFromGeom3(geom), origin: ZERO_ORIGIN };
   };
 }
 
@@ -474,16 +498,16 @@ export function makeRoundedCylinder(resolve: DimResolver) {
  */
 export function makeSphere(resolve: DimResolver) {
   return function sphere(opts?: {
-    center?: [Dim, Dim, Dim];
+    center?: Vec3;
     radius?: Dim;
     segments?: number;
   }): JscadObject {
     const r = resolve(opts?.radius ?? 1);
-    const cx = opts?.center ? resolve(opts.center[0]) : 0;
-    const cy = opts?.center ? resolve(opts.center[1]) : 0;
-    const cz = opts?.center ? resolve(opts.center[2]) : 0;
+    const cx = opts?.center ? resolve(opts.center.x ?? 0) : 0;
+    const cy = opts?.center ? resolve(opts.center.y ?? 0) : 0;
+    const cz = opts?.center ? resolve(opts.center.z ?? 0) : 0;
     const geom = jscadSphere(compact({ radius: r, segments: opts?.segments, center: [cx, cy, cz] }) as any);
-    return { geom: [geom], bounds: boundsFromGeom3(geom) };
+    return { geom: [geom], bounds: boundsFromGeom3(geom), origin: ZERO_ORIGIN };
   };
 }
 
@@ -515,7 +539,7 @@ export function makeTorus(resolve: DimResolver) {
       outerRotation: opts?.outerRotation,
       startAngle: opts?.startAngle,
     }) as any);
-    return { geom: [geom], bounds: boundsFromGeom3(geom) };
+    return { geom: [geom], bounds: boundsFromGeom3(geom), origin: ZERO_ORIGIN };
   };
 }
 
@@ -531,17 +555,17 @@ export function makeTorus(resolve: DimResolver) {
  */
 export function makeCircle(resolve: DimResolver) {
   return function circle(opts?: {
-    center?: [Dim, Dim];
+    center?: Vec2;
     radius?: Dim;
     startAngle?: number;
     endAngle?: number;
     segments?: number;
   }): JscadObject {
     const r = resolve(opts?.radius ?? 1);
-    const cx = opts?.center ? resolve(opts.center[0]) : 0;
-    const cy = opts?.center ? resolve(opts.center[1]) : 0;
+    const cx = opts?.center ? resolve(opts.center.x ?? 0) : 0;
+    const cy = opts?.center ? resolve(opts.center.y ?? 0) : 0;
     const geom = jscadCircle(compact({ radius: r, center: [cx, cy], startAngle: opts?.startAngle, endAngle: opts?.endAngle, segments: opts?.segments }) as any);
-    return { geom: [geom], bounds: boundsFromGeom2(geom) };
+    return { geom: [geom], bounds: boundsFromGeom2(geom), origin: ZERO_ORIGIN };
   };
 }
 
@@ -549,28 +573,29 @@ export function makeCircle(resolve: DimResolver) {
  * Create a 2D ellipse.
  *
  * @example
- * ellipse({ radius: [50, 30] })
+ * ellipse({ radius: { x: 50, y: 30 } })
  */
 export function makeEllipse(resolve: DimResolver) {
   return function ellipse(opts?: {
-    center?: [Dim, Dim];
-    radius?: [Dim, Dim];
+    center?: Vec2;
+    radius?: Vec2;
     startAngle?: number;
     endAngle?: number;
     segments?: number;
   }): JscadObject {
     const r = opts?.radius
-      ? ([resolve(opts.radius[0]), resolve(opts.radius[1])] as [number, number])
+      ? resolveVec2(opts.radius, resolve)
       : ([1, 1] as [number, number]);
-    const cx = opts?.center ? resolve(opts.center[0]) : 0;
-    const cy = opts?.center ? resolve(opts.center[1]) : 0;
+    const cx = opts?.center ? resolve(opts.center.x ?? 0) : 0;
+    const cy = opts?.center ? resolve(opts.center.y ?? 0) : 0;
     const geom = jscadEllipse(compact({ radius: r, center: [cx, cy], startAngle: opts?.startAngle, endAngle: opts?.endAngle, segments: opts?.segments }) as any);
-    return { geom: [geom], bounds: boundsFromGeom2(geom) };
+    return { geom: [geom], bounds: boundsFromGeom2(geom), origin: ZERO_ORIGIN };
   };
 }
 
 /**
  * Create a 2D polygon from an array of points (or multiple contours).
+ * Points are still passed as `[Dim, Dim]` tuples (raw coordinate pairs).
  *
  * @example
  * polygon({ points: [[0,0],[10,0],[5,10]] })
@@ -582,13 +607,13 @@ export function makePolygon(resolve: DimResolver) {
     orientation?: "counterclockwise" | "clockwise";
   }): JscadObject {
     // Resolve all points regardless of single-contour or multi-contour format
-    const resolvedPoints = (opts.points as [Dim, Dim][][]).map((p) =>
+    const resolvedPoints = (opts.points as unknown as [Dim, Dim][][]).map((p) =>
       Array.isArray(p[0])
         ? (p as [Dim, Dim][]).map(([x, y]) => [resolve(x), resolve(y)] as [number, number])
-        : ([resolve(p[0] as Dim), resolve(p[1] as Dim)] as [number, number])
+        : ([resolve((p as unknown as [Dim, Dim])[0]), resolve((p as unknown as [Dim, Dim])[1])] as [number, number])
     );
     const geom = jscadPolygon({ points: resolvedPoints as any, paths: opts.paths as any, orientation: opts.orientation });
-    return { geom: [geom], bounds: boundsFromGeom2(geom) };
+    return { geom: [geom], bounds: boundsFromGeom2(geom), origin: ZERO_ORIGIN };
   };
 }
 
@@ -596,20 +621,20 @@ export function makePolygon(resolve: DimResolver) {
  * Create a 2D rectangle.
  *
  * @example
- * rectangle({ size: [50, 30] })
+ * rectangle({ size: { x: 50, y: 30 } })
  */
 export function makeRectangle(resolve: DimResolver) {
   return function rectangle(opts?: {
-    center?: [Dim, Dim];
-    size?: [Dim, Dim];
+    center?: Vec2;
+    size?: Vec2;
   }): JscadObject {
     const s = opts?.size
-      ? ([resolve(opts.size[0]), resolve(opts.size[1])] as [number, number])
+      ? resolveVec2(opts.size, resolve)
       : ([1, 1] as [number, number]);
-    const cx = opts?.center ? resolve(opts.center[0]) : 0;
-    const cy = opts?.center ? resolve(opts.center[1]) : 0;
+    const cx = opts?.center ? resolve(opts.center.x ?? 0) : 0;
+    const cy = opts?.center ? resolve(opts.center.y ?? 0) : 0;
     const geom = jscadRectangle({ size: s, center: [cx, cy] });
-    return { geom: [geom], bounds: boundsFromGeom2(geom) };
+    return { geom: [geom], bounds: boundsFromGeom2(geom), origin: ZERO_ORIGIN };
   };
 }
 
@@ -617,27 +642,27 @@ export function makeRectangle(resolve: DimResolver) {
  * Create a 2D rectangle with rounded corners.
  *
  * @example
- * roundedRectangle({ size: [50, 30], roundRadius: 5 })
+ * roundedRectangle({ size: { x: 50, y: 30 }, roundRadius: 5 })
  */
 export function makeRoundedRectangle(resolve: DimResolver) {
   return function roundedRectangle(opts?: {
-    center?: [Dim, Dim];
-    size?: [Dim, Dim];
+    center?: Vec2;
+    size?: Vec2;
     roundRadius?: Dim;
     segments?: number;
   }): JscadObject {
     const s = opts?.size
-      ? ([resolve(opts.size[0]), resolve(opts.size[1])] as [number, number])
+      ? resolveVec2(opts.size, resolve)
       : ([1, 1] as [number, number]);
-    const cx = opts?.center ? resolve(opts.center[0]) : 0;
-    const cy = opts?.center ? resolve(opts.center[1]) : 0;
+    const cx = opts?.center ? resolve(opts.center.x ?? 0) : 0;
+    const cy = opts?.center ? resolve(opts.center.y ?? 0) : 0;
     const geom = jscadRoundedRectangle(compact({
       size: s,
       center: [cx, cy],
       roundRadius: opts?.roundRadius !== undefined ? resolve(opts.roundRadius) : undefined,
       segments: opts?.segments,
     }) as any);
-    return { geom: [geom], bounds: boundsFromGeom2(geom) };
+    return { geom: [geom], bounds: boundsFromGeom2(geom), origin: ZERO_ORIGIN };
   };
 }
 
@@ -649,14 +674,14 @@ export function makeRoundedRectangle(resolve: DimResolver) {
  */
 export function makeSquare(resolve: DimResolver) {
   return function square(opts?: {
-    center?: [Dim, Dim];
+    center?: Vec2;
     size?: Dim;
   }): JscadObject {
     const s = resolve(opts?.size ?? 1);
-    const cx = opts?.center ? resolve(opts.center[0]) : 0;
-    const cy = opts?.center ? resolve(opts.center[1]) : 0;
+    const cx = opts?.center ? resolve(opts.center.x ?? 0) : 0;
+    const cy = opts?.center ? resolve(opts.center.y ?? 0) : 0;
     const geom = jscadSquare({ size: s, center: [cx, cy] });
-    return { geom: [geom], bounds: boundsFromGeom2(geom) };
+    return { geom: [geom], bounds: boundsFromGeom2(geom), origin: ZERO_ORIGIN };
   };
 }
 
@@ -668,15 +693,15 @@ export function makeSquare(resolve: DimResolver) {
  */
 export function makeStar(resolve: DimResolver) {
   return function star(opts?: {
-    center?: [Dim, Dim];
+    center?: Vec2;
     vertices?: number;
     density?: number;
     outerRadius?: Dim;
     innerRadius?: Dim;
     startAngle?: number;
   }): JscadObject {
-    const cx = opts?.center ? resolve(opts.center[0]) : 0;
-    const cy = opts?.center ? resolve(opts.center[1]) : 0;
+    const cx = opts?.center ? resolve(opts.center.x ?? 0) : 0;
+    const cy = opts?.center ? resolve(opts.center.y ?? 0) : 0;
     const geom = jscadStar(compact({
       center: [cx, cy],
       vertices: opts?.vertices,
@@ -685,7 +710,7 @@ export function makeStar(resolve: DimResolver) {
       innerRadius: opts?.innerRadius !== undefined ? resolve(opts.innerRadius) : undefined,
       startAngle: opts?.startAngle,
     }) as any);
-    return { geom: [geom], bounds: boundsFromGeom2(geom) };
+    return { geom: [geom], bounds: boundsFromGeom2(geom), origin: ZERO_ORIGIN };
   };
 }
 
@@ -704,7 +729,7 @@ export function makeTriangle() {
     values?: [number, number, number];
   }): JscadObject {
     const geom = jscadTriangle({ type: opts?.type, values: opts?.values });
-    return { geom: [geom], bounds: boundsFromGeom2(geom) };
+    return { geom: [geom], bounds: boundsFromGeom2(geom), origin: ZERO_ORIGIN };
   };
 }
 
@@ -720,7 +745,7 @@ export function makeTriangle() {
  */
 export function makeArc(resolve: DimResolver) {
   return function arc(opts?: {
-    center?: [Dim, Dim];
+    center?: Vec2;
     radius?: Dim;
     startAngle?: number;
     endAngle?: number;
@@ -728,15 +753,16 @@ export function makeArc(resolve: DimResolver) {
     makeTangent?: boolean;
   }): JscadObject {
     const r = resolve(opts?.radius ?? 1);
-    const cx = opts?.center ? resolve(opts.center[0]) : 0;
-    const cy = opts?.center ? resolve(opts.center[1]) : 0;
+    const cx = opts?.center ? resolve(opts.center.x ?? 0) : 0;
+    const cy = opts?.center ? resolve(opts.center.y ?? 0) : 0;
     const geom = jscadArc(compact({ radius: r, center: [cx, cy], startAngle: opts?.startAngle, endAngle: opts?.endAngle, segments: opts?.segments, makeTangent: opts?.makeTangent }) as any);
-    return { geom: [geom], bounds: boundsFromGeom(geom) };
+    return { geom: [geom], bounds: boundsFromGeom(geom), origin: ZERO_ORIGIN };
   };
 }
 
 /**
  * Create a 2D straight line path from an ordered array of 2D points.
+ * Points are still passed as `[Dim, Dim]` tuples (raw coordinate pairs).
  *
  * @example
  * line([[0, 0], [50, 50], [100, 0]])
@@ -745,6 +771,6 @@ export function makeLine(resolve: DimResolver) {
   return function line(points: [Dim, Dim][]): JscadObject {
     const resolved = points.map(([x, y]) => [resolve(x), resolve(y)] as [number, number]);
     const geom = jscadLine(resolved);
-    return { geom: [geom], bounds: boundsFromGeom(geom) };
+    return { geom: [geom], bounds: boundsFromGeom(geom), origin: ZERO_ORIGIN };
   };
 }

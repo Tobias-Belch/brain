@@ -3,10 +3,13 @@ import { type JscadObject, type AnyGeom } from "@jscad/builder";
 /**
  * Merge multiple JscadObjects into one by concatenating their geometry arrays
  * and expanding bounds. No boolean CSG — each piece stays a separate solid.
+ *
+ * The origin of the group is inherited from the first child, which is the
+ * logical anchor for the whole assembly.
  */
 export function group(...objs: JscadObject[]): JscadObject {
   if (objs.length === 0) {
-    return { geom: [], bounds: { min: [0, 0, 0], max: [0, 0, 0] } };
+    return { geom: [], bounds: { min: [0, 0, 0], max: [0, 0, 0] }, origin: { x: 0, y: 0, z: 0 } };
   }
   return {
     geom: ([] as AnyGeom[]).concat(...objs.map((o) => o.geom)),
@@ -25,5 +28,6 @@ export function group(...objs: JscadObject[]): JscadObject {
       }),
       objs[0].bounds,
     ),
+    origin: objs[0].origin,
   };
 }

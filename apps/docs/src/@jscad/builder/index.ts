@@ -27,7 +27,7 @@ export { createBuilder } from "./factory";
 export type { BuilderConfig, Builder } from "./factory";
 
 // Types
-export type { Dim, Bounds, JscadObject, AnyGeom } from "./types";
+export type { Dim, Bounds, JscadObject, AnyGeom, Origin } from "./types";
 export type { PlaceOptions } from "./place";
 export type { DimResolver } from "./primitives";
 

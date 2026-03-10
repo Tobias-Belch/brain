@@ -30,7 +30,7 @@ export function makeUnion() {
         (acc, o) => mergeBounds(acc, o.bounds),
         base.bounds,
       );
-      return { geom: [jscadUnion(allGeoms as any) as AnyGeom], bounds };
+      return { geom: [jscadUnion(allGeoms as any) as AnyGeom], bounds, origin: base.origin };
     };
   };
 }
@@ -54,6 +54,7 @@ export function makeSubtract() {
       return {
         geom: [jscadSubtract([...base.geom, ...allCutouts] as any) as AnyGeom],
         bounds: base.bounds,
+        origin: base.origin,
       };
     };
   };
@@ -87,7 +88,7 @@ export function makeIntersect() {
           Math.min(base.bounds.max[2], ...others.map((o) => o.bounds.max[2])),
         ],
       };
-      return { geom: [jscadIntersect(allGeoms as any) as AnyGeom], bounds };
+      return { geom: [jscadIntersect(allGeoms as any) as AnyGeom], bounds, origin: base.origin };
     };
   };
 }

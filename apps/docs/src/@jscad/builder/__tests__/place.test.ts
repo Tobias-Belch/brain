@@ -5,13 +5,13 @@ import { cm } from "../measure";
 const { cuboid, translate, place } = createBuilder({ coordinateUnit: "cm" });
 
 describe("place()", () => {
-  // A reference object sitting at [10, 0, 20] → [60, 100, 50]
-  const ref = translate([10, 0, 20])(cuboid({ size: [50, 100, 30] }));
+  // A reference object sitting at {x:10, z:20} → [60, 100, 50]
+  const ref = translate({ x: 10, z: 20 })(cuboid({ size: { x: 50, y: 100, z: 30 } }));
 
   describe("at: absolute positioning", () => {
     it("places object min corner at the given position", () => {
-      const obj = cuboid({ size: [20, 20, 20] });
-      const placed = place({ at: [cm(5), cm(10), cm(15)] })(obj);
+      const obj = cuboid({ size: { x: 20, y: 20, z: 20 } });
+      const placed = place({ at: { x: cm(5), y: cm(10), z: cm(15) } })(obj);
 
       expect(placed.bounds.min[0]).toBeCloseTo(5);
       expect(placed.bounds.min[1]).toBeCloseTo(10);
@@ -19,8 +19,8 @@ describe("place()", () => {
     });
 
     it("null axis values leave that axis unchanged", () => {
-      const obj = translate([5, 5, 5])(cuboid({ size: [20, 20, 20] }));
-      const placed = place({ at: [cm(99), null, null] })(obj);
+      const obj = translate({ x: 5, y: 5, z: 5 })(cuboid({ size: { x: 20, y: 20, z: 20 } }));
+      const placed = place({ at: { x: cm(99) } })(obj);
 
       expect(placed.bounds.min[0]).toBeCloseTo(99);
       expect(placed.bounds.min[1]).toBeCloseTo(5); // unchanged
@@ -30,7 +30,7 @@ describe("place()", () => {
 
   describe("after: Z+ relative", () => {
     it("places object flush at ref.max[2]", () => {
-      const obj = cuboid({ size: [20, 20, 10] });
+      const obj = cuboid({ size: { x: 20, y: 20, z: 10 } });
       const placed = place({ after: ref })(obj);
 
       expect(placed.bounds.min[2]).toBeCloseTo(ref.bounds.max[2]);
@@ -38,7 +38,7 @@ describe("place()", () => {
     });
 
     it("respects gap", () => {
-      const obj = cuboid({ size: [20, 20, 10] });
+      const obj = cuboid({ size: { x: 20, y: 20, z: 10 } });
       const placed = place({ after: ref, gap: cm(5) })(obj);
 
       expect(placed.bounds.min[2]).toBeCloseTo(ref.bounds.max[2] + 5);
@@ -47,14 +47,14 @@ describe("place()", () => {
 
   describe("before: Z- relative", () => {
     it("places object immediately before ref", () => {
-      const obj = cuboid({ size: [20, 20, 10] });
+      const obj = cuboid({ size: { x: 20, y: 20, z: 10 } });
       const placed = place({ before: ref })(obj);
 
       expect(placed.bounds.max[2]).toBeCloseTo(ref.bounds.min[2]);
     });
 
     it("respects gap", () => {
-      const obj = cuboid({ size: [20, 20, 10] });
+      const obj = cuboid({ size: { x: 20, y: 20, z: 10 } });
       const placed = place({ before: ref, gap: cm(3) })(obj);
 
       expect(placed.bounds.max[2]).toBeCloseTo(ref.bounds.min[2] - 3);
@@ -63,14 +63,14 @@ describe("place()", () => {
 
   describe("above: Y+ relative", () => {
     it("places object immediately above ref", () => {
-      const obj = cuboid({ size: [20, 20, 20] });
+      const obj = cuboid({ size: { x: 20, y: 20, z: 20 } });
       const placed = place({ above: ref })(obj);
 
       expect(placed.bounds.min[1]).toBeCloseTo(ref.bounds.max[1]);
     });
 
     it("respects gap", () => {
-      const obj = cuboid({ size: [20, 20, 20] });
+      const obj = cuboid({ size: { x: 20, y: 20, z: 20 } });
       const placed = place({ above: ref, gap: cm(2) })(obj);
 
       expect(placed.bounds.min[1]).toBeCloseTo(ref.bounds.max[1] + 2);
@@ -79,7 +79,7 @@ describe("place()", () => {
 
   describe("below: Y- relative", () => {
     it("places object immediately below ref", () => {
-      const obj = cuboid({ size: [20, 20, 20] });
+      const obj = cuboid({ size: { x: 20, y: 20, z: 20 } });
       const placed = place({ below: ref })(obj);
 
       expect(placed.bounds.max[1]).toBeCloseTo(ref.bounds.min[1]);
@@ -88,7 +88,7 @@ describe("place()", () => {
 
   describe("beside: X+ relative", () => {
     it("places object immediately beside ref", () => {
-      const obj = cuboid({ size: [20, 20, 20] });
+      const obj = cuboid({ size: { x: 20, y: 20, z: 20 } });
       const placed = place({ beside: ref })(obj);
 
       expect(placed.bounds.min[0]).toBeCloseTo(ref.bounds.max[0]);
@@ -97,7 +97,7 @@ describe("place()", () => {
 
   describe("leftOf: X- relative", () => {
     it("places object to the left of ref", () => {
-      const obj = cuboid({ size: [20, 20, 20] });
+      const obj = cuboid({ size: { x: 20, y: 20, z: 20 } });
       const placed = place({ leftOf: ref })(obj);
 
       expect(placed.bounds.max[0]).toBeCloseTo(ref.bounds.min[0]);
@@ -106,14 +106,14 @@ describe("place()", () => {
 
   describe("align", () => {
     it("align y: 'end' — aligns top edges of obj and ref", () => {
-      const obj = cuboid({ size: [20, 50, 20] });
+      const obj = cuboid({ size: { x: 20, y: 50, z: 20 } });
       const placed = place({ after: ref, align: { y: "end" } })(obj);
 
       expect(placed.bounds.max[1]).toBeCloseTo(ref.bounds.max[1]);
     });
 
     it("align y: 'center' — centers obj vertically within ref", () => {
-      const obj = cuboid({ size: [20, 50, 20] });
+      const obj = cuboid({ size: { x: 20, y: 50, z: 20 } });
       const placed = place({ after: ref, align: { y: "center" } })(obj);
 
       const objCenter = (placed.bounds.min[1] + placed.bounds.max[1]) / 2;
@@ -122,7 +122,7 @@ describe("place()", () => {
     });
 
     it("align z: 'start' — aligns z fronts with ref when placed above", () => {
-      const obj = cuboid({ size: [20, 20, 15] });
+      const obj = cuboid({ size: { x: 20, y: 20, z: 15 } });
       const placed = place({ above: ref, align: { z: "start" } })(obj);
 
       expect(placed.bounds.min[2]).toBeCloseTo(ref.bounds.min[2]);
@@ -131,8 +131,8 @@ describe("place()", () => {
 
   describe("bounds are updated correctly", () => {
     it("placed object bounds match expected extents", () => {
-      const obj = cuboid({ size: [cm(20), cm(30), cm(10)] });
-      const placed = place({ at: [cm(5), cm(5), cm(5)] })(obj);
+      const obj = cuboid({ size: { x: cm(20), y: cm(30), z: cm(10) } });
+      const placed = place({ at: { x: cm(5), y: cm(5), z: cm(5) } })(obj);
 
       expect(placed.bounds.min).toEqual([5, 5, 5]);
       expect(placed.bounds.max).toEqual([25, 35, 15]);

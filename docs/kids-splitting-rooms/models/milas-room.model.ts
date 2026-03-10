@@ -1,10 +1,21 @@
-import { createBuilder, cm, m, toCm, type JscadObject, type AnyGeom } from "@jscad/builder";
-import * as general from "./general";
-import * as ikea from "./ikea";
+import {
+  createBuilder,
+  cm,
+  m,
+  toCm,
+  type JscadObject,
+  type AnyGeom,
+} from "@jscad/builder";
 import { materials } from "./materials";
-import { group } from "./utils";
+import { brimnesBillyPax } from "./brimnes-billy-pax.variant";
+import { highbedKallaxWall } from "./highbed-kallax-wall.variant";
+import { highbedCouch } from "./highbed-couch.variant";
+import { highbed2Pax } from "./highbed-2pax.variant";
+import { brimnesBillyPax2 } from "./brimnes-billy-pax.2.variant";
 
-const { cuboid, translate, rotate, subtract, union, colorize, pipe } = createBuilder({ coordinateUnit: "cm" });
+const { cuboid, translate, subtract, union, colorize, pipe } = createBuilder({
+  coordinateUnit: "cm",
+});
 
 export const measurements = {
   wall: {
@@ -42,7 +53,8 @@ export const measurements = {
 };
 
 export const variants = {
-  brimnesBillyPax: "BRIMNES Bed, BILLY Desk & 1 PAX",
+  rimnesBillyPax2: "v2: BRIMNES Bed, BILLY Desk & 1 PAX",
+  brimnesBillyPax: "v1: BRIMNES Bed, BILLY Desk & 1 PAX",
   highbedKallaxWall: "High Bed, 2 PAX, Desk & KALLAX Wall",
   highbedCouch: "High Bed, 1.5 PAX, KALLAX Tower, NORDEN Desk & Couch",
   highbed2Pax: "High Bed, 2 PAX, NORDEN Desk & Couch",
@@ -99,15 +111,21 @@ const DEBUG = false;
 /**
  * Build Mila's room model and return raw JSCAD geometry suitable for the viewer.
  */
-export function MilasRoom({ state = defaultState }: { state?: State } = {}): AnyGeom[] {
+export function MilasRoom({
+  state = defaultState,
+}: { state?: State } = {}): AnyGeom[] {
   const t = toCm(measurements.wall.thickness).value;
   const W = toCm(measurements.room.width).value;
   const H = toCm(measurements.room.height).value;
 
   const debugElements: JscadObject[] = DEBUG
     ? [
-        translate([cm(t), cm(t), cm(t)])(
-          colorize(materials.Debug.color)(cuboid({ size: [cm(W), cm(H), toCm(measurements.room.depth)] })),
+        translate({ x: cm(t), y: cm(t), z: cm(t) })(
+          colorize(materials.Debug.color)(
+            cuboid({
+              size: { x: cm(W), y: cm(H), z: toCm(measurements.room.depth) },
+            }),
+          ),
         ),
       ]
     : [];
@@ -117,333 +135,24 @@ export function MilasRoom({ state = defaultState }: { state?: State } = {}): Any
   let variantPieces: JscadObject[] = [];
   switch (state.variant) {
     case "brimnesBillyPax":
-      variantPieces = brimnesBillyPax(state);
+      variantPieces = brimnesBillyPax(state, measurements);
+      break;
+    case "brimnesBillyPax2":
+      variantPieces = [brimnesBillyPax2(state, measurements)];
       break;
     case "highbedKallaxWall":
-      variantPieces = highbedKallaxWall(state);
+      variantPieces = highbedKallaxWall(state, measurements);
       break;
     case "highbedCouch":
-      variantPieces = highbedCouch(state);
+      variantPieces = highbedCouch(state, measurements);
       break;
     case "highbed2Pax":
-      variantPieces = highbed2Pax(state);
+      variantPieces = highbed2Pax(state, measurements);
       break;
   }
 
   const allPieces = [...roomPieces, ...debugElements, ...variantPieces];
   return ([] as AnyGeom[]).concat(...allPieces.map((o) => o.geom));
-}
-
-// ─── Variant: BRIMNES Bed, BILLY Desk & 1 PAX ────────────────────────────────
-
-function brimnesBillyPax(state: State): JscadObject[] {
-  const wT = toCm(measurements.wall.thickness).value;
-  const paxW = toCm(ikea.measurements.cabinets.Pax.width).value;
-  const paxH = toCm(ikea.measurements.cabinets.Pax.height).value;
-  const billyDeskW = toCm(ikea.measurements.desks.Billy.width).value;
-  const billyShelfH = toCm(ikea.measurements.shelfs.Billy.height).value;
-  const bestaH = toCm(ikea.measurements.cabinets.Besta.height).value;
-  const bestaW = toCm(ikea.measurements.cabinets.Besta.width).value;
-  const brimnesD = toCm(ikea.measurements.beds.Brimnes.depth).value;
-  const roomD = toCm(measurements.room.depth).value;
-
-  const closet = translate([cm(wT), cm(wT), cm(wT + 8 + paxW)])(
-    rotate([0, Math.PI / 2, 0], { around: "corner" })(
-      colorize(materials.Furniture.color)(ikea.cabinets.Pax(state.cabinet)),
-    ),
-  );
-
-  const desk = translate([
-    cm(wT),
-    cm(wT),
-    cm(wT + 8 + paxW + 3 + billyDeskW),
-  ])(
-    rotate([0, Math.PI / 2, 0], { around: "corner" })(
-      colorize(materials.Furniture.color)(ikea.desks.Billy(state.desk)),
-    ),
-  );
-
-  const shelfOverDesk = translate([
-    cm(wT),
-    cm(wT + paxH - billyShelfH),
-    cm(wT + 8 + paxW + 3 + billyDeskW),
-  ])(
-    rotate([0, Math.PI / 2, 0], { around: "corner" })(
-      colorize(materials.Furniture.color)(ikea.shelfs.Billy()),
-    ),
-  );
-
-  const cabinets = translate([
-    cm(wT),
-    cm(wT + paxH - bestaH),
-    cm(wT + 8 + paxW + 3 + billyDeskW),
-  ])(
-    colorize(materials.Furniture.color)(
-      group(
-        ikea.cabinets.Besta(),
-        translate([cm(0), cm(0), cm(bestaW)])(ikea.cabinets.Besta()),
-        translate([cm(0), cm(0), cm(2 * bestaW)])(ikea.cabinets.Besta()),
-        translate([cm(0), cm(0), cm(3 * bestaW)])(ikea.cabinets.Besta()),
-      ),
-    ),
-  );
-
-  const bed = translate([
-    cm(wT),
-    cm(wT),
-    cm(wT + roomD - brimnesD - 10),
-  ])(
-    colorize(materials.Furniture.color)(ikea.beds.Brimnes(state.bed)),
-  );
-
-  return [bed, closet, desk, shelfOverDesk, cabinets];
-}
-
-// ─── Variant: High Bed, 2 PAX, Desk & KALLAX Wall ────────────────────────────
-
-function highbedKallaxWall(state: State): JscadObject[] {
-  const wT = toCm(measurements.wall.thickness).value;
-  const roomW = toCm(measurements.room.width).value;
-  const roomD = toCm(measurements.room.depth).value;
-  const paxW = toCm(ikea.measurements.cabinets.Pax.width).value;
-
-  const closet = translate([cm(0), cm(0), cm(10 + paxW)])(
-    rotate([0, Math.PI / 2, 0], { around: "corner" })(
-      colorize(materials.Furniture.color)(ikea.cabinets.Pax(state.cabinet)),
-    ),
-  );
-
-  const cabinet = translate([cm(0), cm(0), cm(10 + 2 * paxW)])(
-    rotate([0, Math.PI / 2, 0], { around: "corner" })(
-      colorize(materials.Furniture.color)(ikea.cabinets.Pax(state.cabinet)),
-    ),
-  );
-
-  const { model: bedModel } = general.Bed({
-    guards: { right: cm(0), cutout: "bottom-left" },
-    padding: { right: cm(10) },
-  });
-
-  const bed = translate([cm(0), cm(180), cm(10 + 2 * paxW)])(
-    colorize(materials.Furniture.color)(bedModel),
-  );
-
-  const pieces: JscadObject[] = [closet, cabinet, bed];
-
-  if (state.bed.variant === "double") {
-    const mW = toCm(general.measurements.Mattress.width).value;
-    pieces.push(
-      translate([cm(roomW - mW), cm(0), cm(2 * paxW)])(
-        colorize(materials.Furniture.color)(general.mattress),
-      ),
-    );
-  }
-
-  const desk = translate([
-    cm(roomW - 200),
-    cm(70),
-    cm(roomD - 60),
-  ])(
-    colorize(materials.Furniture.color)(cuboid({ size: [cm(200), cm(5), cm(60)] })),
-  );
-
-  const kallaxWall = translate([cm(0), cm(0), cm(10 + 2 * paxW)])(
-    colorize(materials.Furniture.color)(ikea.shelfs.Kallax({ rows: 4, columns: 5 })),
-  );
-
-  pieces.push(desk, kallaxWall);
-
-  return [
-    translate([cm(wT), cm(wT), cm(wT)])(group(...pieces)),
-  ];
-}
-
-// ─── Variant: High Bed, 1.5 PAX, KALLAX Tower, NORDEN Desk & Couch ───────────
-
-function highbedCouch(state: State): JscadObject[] {
-  const wT = toCm(measurements.wall.thickness).value;
-  const roomW = toCm(measurements.room.width).value;
-  const roomD = toCm(measurements.room.depth).value;
-  const paxW = toCm(ikea.measurements.cabinets.Pax.width).value;
-  const nordenW = toCm(ikea.measurements.desks.Norden.closed.width).value;
-  const nordenD = toCm(ikea.measurements.desks.Norden.depth).value;
-  const kH = toCm(ikea.measurements.shelfs.Kallax.height).value;
-  const kD = toCm(ikea.measurements.shelfs.Kallax.depth).value;
-  const mW = toCm(general.measurements.Mattress.width).value;
-  const mD = toCm(general.measurements.Mattress.depth).value;
-  const armrestSize = toCm(cm(14)).value;
-
-  const closet = translate([cm(0), cm(0), cm(10 + paxW)])(
-    rotate([0, Math.PI / 2, 0], { around: "corner" })(
-      colorize(materials.Furniture.color)(ikea.cabinets.Pax(state.cabinet)),
-    ),
-  );
-
-  const cabinet = translate([cm(0), cm(0), cm(10 + paxW * 1.5)])(
-    rotate([0, Math.PI / 2, 0], { around: "corner" })(
-      colorize(materials.Furniture.color)(ikea.cabinets.Pax(state.cabinet)),
-    ),
-  );
-
-  const { model: bedModel } = general.Bed({
-    guards: { right: cm(0), cutout: "bottom-left" },
-    padding: { right: cm(10) },
-  });
-
-  const bed = translate([cm(0), cm(160), cm(10 + 2 * paxW)])(
-    colorize(materials.Furniture.color)(bedModel),
-  );
-
-  const desk = translate([
-    cm(roomW - nordenW),
-    cm(0),
-    cm(roomD - nordenD),
-  ])(
-    colorize(materials.Furniture.color)(ikea.desks.Nordern(state.desk)),
-  );
-
-  const kallaxTower = colorize(materials.Furniture.color)(
-    translate([cm(0), cm(0), cm(10 + paxW * 1.5)])(
-      group(
-        ikea.shelfs.Kallax({ rows: 2, columns: 1 }),
-        translate([cm(kD), cm(0), cm(0)])(
-          ikea.shelfs.Kallax({ rows: 2, columns: 1 }),
-        ),
-        translate([cm(2 * kD), cm(2 * kH), cm(0)])(
-          rotate([0, -Math.PI / 2, 0], { around: "corner" })(
-            ikea.shelfs.Kallax({ rows: 1, columns: 2 }),
-          ),
-        ),
-        translate([cm(0), cm(3 * kH), cm(0)])(
-          group(
-            ikea.shelfs.Kallax({ rows: 2, columns: 1 }),
-            translate([cm(kD), cm(0), cm(0)])(
-              ikea.shelfs.Kallax({ rows: 2, columns: 1 }),
-            ),
-          ),
-        ),
-        translate([cm(2 * kD), cm(5 * kH), cm(0)])(
-          rotate([0, -Math.PI / 2, 0], { around: "corner" })(
-            ikea.shelfs.Kallax({ rows: 1, columns: 2 }),
-          ),
-        ),
-      ),
-    ),
-  );
-
-  const couch = translate([
-    cm(0),
-    cm(0),
-    cm(roomD - mD - 2 * armrestSize),
-  ])(
-    colorize(materials.Furniture.color)(
-      group(
-        // back rest
-        cuboid({ size: [cm(armrestSize), cm(90), cm(mD + 2 * armrestSize)] }),
-        translate([cm(armrestSize), cm(0), cm(0)])(
-          group(
-            // left armrest
-            cuboid({ size: [cm(mW), cm(72), cm(armrestSize)] }),
-            // seat box
-            translate([cm(0), cm(0), cm(armrestSize)])(
-              cuboid({ size: [cm(mW), cm(45), cm(mD)] }),
-            ),
-            // mattress
-            translate([cm(0), cm(45), cm(armrestSize)])(general.mattress),
-            // right armrest
-            translate([cm(0), cm(0), cm(armrestSize + mD)])(
-              cuboid({ size: [cm(mW), cm(72), cm(armrestSize)] }),
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-
-  return [
-    translate([cm(wT), cm(wT), cm(wT)])(
-      group(closet, cabinet, kallaxTower, bed, couch, desk),
-    ),
-  ];
-}
-
-// ─── Variant: High Bed, 2 PAX, NORDEN Desk & Couch ───────────────────────────
-
-function highbed2Pax(state: State): JscadObject[] {
-  const wT = toCm(measurements.wall.thickness).value;
-  const roomW = toCm(measurements.room.width).value;
-  const roomD = toCm(measurements.room.depth).value;
-  const paxW = toCm(ikea.measurements.cabinets.Pax.width).value;
-  const paxD = toCm(ikea.measurements.cabinets.Pax.closed.depth).value;
-  const nordenW = toCm(ikea.measurements.desks.Norden.closed.width).value;
-  const nordenD = toCm(ikea.measurements.desks.Norden.depth).value;
-  const mW = toCm(general.measurements.Mattress.width).value;
-  const mD = toCm(general.measurements.Mattress.depth).value;
-  const armrestSize = toCm(cm(14)).value;
-
-  const closet1 = translate([cm(0), cm(0), cm(10 + paxW)])(
-    rotate([0, Math.PI / 2, 0], { around: "corner" })(
-      colorize(materials.Furniture.color)(ikea.cabinets.Pax(state.cabinet)),
-    ),
-  );
-
-  const closet2 = translate([cm(paxW + paxD), cm(0), cm(10 + paxW + paxD)])(
-    rotate([0, Math.PI, 0], { around: "corner" })(
-      colorize(materials.Furniture.color)(ikea.cabinets.Pax(state.cabinet)),
-    ),
-  );
-
-  const { model: bedModel } = general.Bed({
-    guards: { right: cm(0), cutout: "bottom-left" },
-    padding: { right: cm(10) },
-  });
-
-  const bed = translate([cm(0), cm(160), cm(10 + 2 * paxW)])(
-    colorize(materials.Furniture.color)(bedModel),
-  );
-
-  const desk = translate([
-    cm(roomW - nordenW),
-    cm(0),
-    cm(roomD - nordenD),
-  ])(
-    colorize(materials.Furniture.color)(ikea.desks.Nordern(state.desk)),
-  );
-
-  const couch = translate([
-    cm(0),
-    cm(0),
-    cm(roomD - mD - 2 * armrestSize),
-  ])(
-    colorize(materials.Furniture.color)(
-      group(
-        // back rest
-        cuboid({ size: [cm(armrestSize), cm(90), cm(mD + 2 * armrestSize)] }),
-        translate([cm(armrestSize), cm(0), cm(0)])(
-          group(
-            // left armrest
-            cuboid({ size: [cm(mW), cm(72), cm(armrestSize)] }),
-            // seat box
-            translate([cm(0), cm(0), cm(armrestSize)])(
-              cuboid({ size: [cm(mW), cm(45), cm(mD)] }),
-            ),
-            // mattress
-            translate([cm(0), cm(45), cm(armrestSize)])(general.mattress),
-            // right armrest
-            translate([cm(0), cm(0), cm(armrestSize + mD)])(
-              cuboid({ size: [cm(mW), cm(72), cm(armrestSize)] }),
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-
-  return [
-    translate([cm(wT), cm(wT), cm(wT)])(
-      group(closet1, closet2, bed, couch, desk),
-    ),
-  ];
 }
 
 // ─── Room geometry ────────────────────────────────────────────────────────────
@@ -479,13 +188,13 @@ function room(state: State): JscadObject[] {
   // Front wall (Z = 0 to t) with door cutout
   if (surfaces.frontWall) {
     result.push(
-      translate([cm(t), cm(0), cm(0)])(
+      translate({ x: cm(t) })(
         colorize(materials.Wall.color)(
           pipe(
-            cuboid({ size: [cm(W), cm(H + t), cm(t)] }),
+            cuboid({ size: { x: cm(W), y: cm(H + t), z: cm(t) } }),
             subtract(
-              translate([cm(dRight), cm(0), cm(t - dD)])(
-                cuboid({ size: [cm(dW), cm(dH), cm(dD)] }),
+              translate({ x: cm(dRight), z: cm(t - dD) })(
+                cuboid({ size: { x: cm(dW), y: cm(dH), z: cm(dD) } }),
               ),
             ),
           ),
@@ -497,18 +206,18 @@ function room(state: State): JscadObject[] {
   // Back wall (Z = D + t to D + 2t) with window cutout
   if (surfaces.backWall) {
     result.push(
-      translate([cm(t), cm(0), cm(D + t)])(
+      translate({ x: cm(t), z: cm(D + t) })(
         colorize(materials.Wall.color)(
           pipe(
-            cuboid({ size: [cm(W), cm(H + t), cm(t)] }),
+            cuboid({ size: { x: cm(W), y: cm(H + t), z: cm(t) } }),
             subtract(
-              translate([cm(wRight), cm(wBottom), cm(0)])(
-                cuboid({ size: [cm(wW), cm(wH), cm(wD)] }),
+              translate({ x: cm(wRight), y: cm(wBottom) })(
+                cuboid({ size: { x: cm(wW), y: cm(wH), z: cm(wD) } }),
               ),
             ),
             union(
-              translate([cm(wbRight), cm(wbBottom), cm(-wbD)])(
-                cuboid({ size: [cm(wbW), cm(wbH), cm(wbD)] }),
+              translate({ x: cm(wbRight), y: cm(wbBottom), z: cm(-wbD) })(
+                cuboid({ size: { x: cm(wbW), y: cm(wbH), z: cm(wbD) } }),
               ),
             ),
           ),
@@ -520,15 +229,19 @@ function room(state: State): JscadObject[] {
   // Right wall (X = 0 to t)
   if (surfaces.rightWall) {
     result.push(
-        colorize(materials.Wall.color)(cuboid({ size: [cm(t), cm(H + t), cm(D + 2 * t)] })),
+      colorize(materials.Wall.color)(
+        cuboid({ size: { x: cm(t), y: cm(H + t), z: cm(D + 2 * t) } }),
+      ),
     );
   }
 
   // Left wall (X = W + t to W + 2t)
   if (surfaces.leftWall) {
     result.push(
-      translate([cm(t + W), cm(0), cm(0)])(
-      colorize(materials.Wall.color)(cuboid({ size: [cm(t), cm(H + t), cm(D + 2 * t)] })),
+      translate({ x: cm(t + W) })(
+        colorize(materials.Wall.color)(
+          cuboid({ size: { x: cm(t), y: cm(H + t), z: cm(D + 2 * t) } }),
+        ),
       ),
     );
   }
@@ -536,8 +249,10 @@ function room(state: State): JscadObject[] {
   // Floor
   if (surfaces.floor) {
     result.push(
-      translate([cm(t), cm(0), cm(t)])(
-        colorize(materials.Wall.color)(cuboid({ size: [cm(W), cm(t), cm(D)] })),
+      translate({ x: cm(t), z: cm(t) })(
+        colorize(materials.Wall.color)(
+          cuboid({ size: { x: cm(W), y: cm(t), z: cm(D) } }),
+        ),
       ),
     );
   }
@@ -545,8 +260,10 @@ function room(state: State): JscadObject[] {
   // Ceiling
   if (surfaces.ceiling) {
     result.push(
-      translate([cm(0), cm(H + t), cm(0)])(
-        colorize(materials.Wall.color)(cuboid({ size: [cm(W + 2 * t), cm(t), cm(D + 2 * t)] })),
+      translate({ y: cm(H + t) })(
+        colorize(materials.Wall.color)(
+          cuboid({ size: { x: cm(W + 2 * t), y: cm(t), z: cm(D + 2 * t) } }),
+        ),
       ),
     );
   }

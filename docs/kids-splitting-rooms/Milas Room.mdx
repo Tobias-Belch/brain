@@ -24,6 +24,16 @@ import { materials } from "./models/materials";
   style={{ width: "100%", height: "70vh", marginBottom: "3rem" }}
 />
 
+## Variant: BRIMNES Bed, BILLY Desk, 2 PAX Overhead Closets & BESTA Wall Cabinets
+
+| | Measurements (WxHxD) | Storage |
+|-|----------------------|--------:|
+| Bed: IKEA Brimnes | {ikea.measurements.beds.Brimnes.width} x {ikea.measurements.beds.Brimnes.height} x {ikea.measurements.beds.Brimnes.depth} / {cm(ikea.measurements.beds.Brimnes.depth.value + cm(50).value)} / {cm(ikea.measurements.beds.Brimnes.depth.value + general.measurements.Mattress.width.value)} | {ikea.measurements.beds.Brimnes.storage} |
+| Closets: IKEA Pax (2x) | {ikea.measurements.cabinets.Pax.width} x {ikea.measurements.cabinets.Pax.height} x {ikea.measurements.cabinets.Pax.closed.depth} / {ikea.measurements.cabinets.Pax.opened.depth} | {l(2 * ikea.measurements.cabinets.Pax.storage.value)} |
+| Desk: IKEA Billy | {ikea.measurements.desks.Billy.width} x {ikea.measurements.desks.Billy.height} x {ikea.measurements.desks.Billy.closed.depth} / {ikea.measurements.desks.Billy.opened.depth} | {ikea.measurements.desks.Billy.storage} |
+| Wall Cabinets: IKEA Besta (3x) | {ikea.measurements.cabinets.Besta.width} x {ikea.measurements.cabinets.Besta.height} x {ikea.measurements.cabinets.Besta.depth} | {l(3 * ikea.measurements.cabinets.Besta.storage.value)} |
+| Total | | {l(ikea.measurements.beds.Brimnes.storage.value + 2 * ikea.measurements.cabinets.Pax.storage.value + ikea.measurements.desks.Billy.storage.value + 3 * ikea.measurements.cabinets.Besta.storage.value)} |
+
 ## Variant: BRIMNES Bed, BILLY Desk, 1 PAX Closet & BESTA Wall Cabinets
 
 | | Measurements (WxHxD) | Storage |

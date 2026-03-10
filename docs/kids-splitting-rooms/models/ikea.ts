@@ -219,55 +219,54 @@ const b = measurements.beds.Brimnes;
 const bT = () => toCm(b.boards.thickness).value;
 
 const brimnesBed = {
-  back: translate([b.boards.thickness, cm(0), cm(toCm(b.depth).value - bT())])(
-    cuboid({ size: [b.boards.back.width, b.boards.back.height, b.boards.thickness] }),
+  back: translate({ x: b.boards.thickness, z: cm(toCm(b.depth).value - bT()) })(
+    cuboid({ size: { x: b.boards.back.width, y: b.boards.back.height, z: b.boards.thickness } }),
   ),
-  right: cuboid({ size: [b.boards.thickness, b.boards.side.height, b.boards.side.depth] }),
-  left: translate([cm(bT() + toCm(b.boards.back.width).value), cm(0), cm(0)])(
-    cuboid({ size: [b.boards.thickness, b.boards.side.height, b.boards.side.depth] }),
+  right: cuboid({ size: { x: b.boards.thickness, y: b.boards.side.height, z: b.boards.side.depth } }),
+  left: translate({ x: cm(bT() + toCm(b.boards.back.width).value) })(
+    cuboid({ size: { x: b.boards.thickness, y: b.boards.side.height, z: b.boards.side.depth } }),
   ),
-  front: translate([b.boards.thickness, cm(0), cm(0)])(
+  front: translate({ x: b.boards.thickness })(
     group(
       // front board
-      cuboid({ size: [b.boards.front.width, b.boards.front.height, b.boards.thickness] }),
+      cuboid({ size: { x: b.boards.front.width, y: b.boards.front.height, z: b.boards.thickness } }),
       // right inner
       cuboid({
-        size: [
-          b.boards.thickness,
-          cm(toCm(b.boards.front.height).value - 3),
-          general.measurements.Mattress.width,
-        ],
+        size: {
+          x: b.boards.thickness,
+          y: cm(toCm(b.boards.front.height).value - 3),
+          z: general.measurements.Mattress.width,
+        },
       }),
       // left inner
-      translate([cm(toCm(b.boards.front.width).value - bT()), cm(0), cm(0)])(
+      translate({ x: cm(toCm(b.boards.front.width).value - bT()) })(
         cuboid({
-          size: [
-            b.boards.thickness,
-            cm(toCm(b.boards.front.height).value - 3),
-            general.measurements.Mattress.width,
-          ],
+          size: {
+            x: b.boards.thickness,
+            y: cm(toCm(b.boards.front.height).value - 3),
+            z: general.measurements.Mattress.width,
+          },
         }),
       ),
     ),
   ),
   drawer: group(
     // front
-    cuboid({ size: [b.drawer.boards.front.width, b.drawer.boards.front.height, b.drawer.boards.thickness] }),
+    cuboid({ size: { x: b.drawer.boards.front.width, y: b.drawer.boards.front.height, z: b.drawer.boards.thickness } }),
     // right
-    translate([cm(0), cm(0), b.drawer.boards.thickness])(
-      cuboid({ size: [b.drawer.boards.thickness, b.drawer.boards.height, b.drawer.boards.side.depth] }),
+    translate({ z: b.drawer.boards.thickness })(
+      cuboid({ size: { x: b.drawer.boards.thickness, y: b.drawer.boards.height, z: b.drawer.boards.side.depth } }),
     ),
     // left
-    translate([
-      cm(toCm(b.drawer.boards.front.width).value - toCm(b.drawer.boards.thickness).value),
-      cm(0),
-      b.drawer.boards.thickness,
-    ])(
-      cuboid({ size: [b.drawer.boards.thickness, b.drawer.boards.height, b.drawer.boards.side.depth] }),
+    translate({
+      x: cm(toCm(b.drawer.boards.front.width).value - toCm(b.drawer.boards.thickness).value),
+      z: b.drawer.boards.thickness,
+    })(
+      cuboid({ size: { x: b.drawer.boards.thickness, y: b.drawer.boards.height, z: b.drawer.boards.side.depth } }),
     ),
     // bottom
-    translate([cm(0), cm(0), b.drawer.boards.thickness])(
-      cuboid({ size: [b.drawer.boards.front.width, b.drawer.boards.thickness, b.drawer.boards.side.depth] }),
+    translate({ z: b.drawer.boards.thickness })(
+      cuboid({ size: { x: b.drawer.boards.front.width, y: b.drawer.boards.thickness, z: b.drawer.boards.side.depth } }),
     ),
   ),
 };
@@ -291,7 +290,7 @@ export const beds = {
       brimnesBed.back,
       brimnesBed.right,
       brimnesBed.left,
-      translate([cm(0), cm(0), cm(frontDepthCorrection)])(brimnesBed.front),
+      translate({ z: cm(frontDepthCorrection) })(brimnesBed.front),
     );
 
     const drawerGap =
@@ -300,40 +299,40 @@ export const beds = {
     const drawerDepthCorrection =
       state.drawers === "opened" ? -50 : 0;
 
-    const drawers = translate([
-      cm(drawerGap),
-      cm(drawerGap),
-      cm(frontDepthCorrection + drawerDepthCorrection),
-    ])(
+    const drawers = translate({
+      x: cm(drawerGap),
+      y: cm(drawerGap),
+      z: cm(frontDepthCorrection + drawerDepthCorrection),
+    })(
       group(
         brimnesBed.drawer,
-        translate([cm(drawerFrontW + drawerGap), cm(0), cm(0)])(brimnesBed.drawer),
+        translate({ x: cm(drawerFrontW + drawerGap) })(brimnesBed.drawer),
       ),
     );
 
-    const mattressBase: [number, number, number] = [
-      boardT,
-      frontBoardH - 3,
-      boardT + mW,
-    ];
+    const mattressBase = {
+      x: boardT,
+      y: frontBoardH - 3,
+      z: boardT + mW,
+    };
 
     const mattresses =
       state.variant === "double"
         ? // Two mattresses side-by-side (rotated 90° around Y at corner)
-          translate([cm(mattressBase[0]), cm(mattressBase[1]), cm(mattressBase[2])])(
-            rotate([0, Math.PI / 2, 0], { around: "corner" })(
+          translate({ x: cm(mattressBase.x), y: cm(mattressBase.y), z: cm(mattressBase.z) })(
+            rotate({ y: Math.PI / 2 }, { around: "corner" })(
               group(
                 general.mattress,
-                translate([cm(mW), cm(0), cm(0)])(general.mattress),
+                translate({ x: cm(mW) })(general.mattress),
               ),
             ),
           )
         : // Single mattress + pillow offset
-          translate([cm(mattressBase[0]), cm(mattressBase[1]), cm(mattressBase[2])])(
-            rotate([0, Math.PI / 2, 0], { around: "corner" })(
+          translate({ x: cm(mattressBase.x), y: cm(mattressBase.y), z: cm(mattressBase.z) })(
+            rotate({ y: Math.PI / 2 }, { around: "corner" })(
               group(
                 general.mattress,
-                translate([cm(0), cm(mH), cm(0)])(general.mattress),
+                translate({ y: cm(mH) })(general.mattress),
               ),
             ),
           );
@@ -345,7 +344,7 @@ export const beds = {
 export const cabinets = {
   Besta: (): JscadObject => {
     const p = measurements.cabinets.Besta;
-    return cuboid({ size: [p.depth, p.height, p.width] });
+    return cuboid({ size: { x: p.depth, y: p.height, z: p.width } });
   },
 
   Pax: (state: { variant: "closed" | "opened" }): JscadObject => {
@@ -360,50 +359,46 @@ export const cabinets = {
 
     const corpus = group(
       // back
-      cuboid({ size: [p.boards.back.width, p.boards.back.height, p.boards.back.thickness] }),
+      cuboid({ size: { x: p.boards.back.width, y: p.boards.back.height, z: p.boards.back.thickness } }),
       // right
-      translate([cm(0), p.boards.thickness, cm(0)])(
-        cuboid({ size: [p.boards.thickness, p.boards.side.height, p.boards.side.depth] }),
+      translate({ y: p.boards.thickness })(
+        cuboid({ size: { x: p.boards.thickness, y: p.boards.side.height, z: p.boards.side.depth } }),
       ),
       // left
-      translate([cm(backW - pT), p.boards.thickness, cm(0)])(
-        cuboid({ size: [p.boards.thickness, p.boards.side.height, p.boards.side.depth] }),
+      translate({ x: cm(backW - pT), y: p.boards.thickness })(
+        cuboid({ size: { x: p.boards.thickness, y: p.boards.side.height, z: p.boards.side.depth } }),
       ),
       // bottom
-      cuboid({ size: [p.boards.bottomTop.width, p.boards.thickness, p.boards.bottomTop.depth] }),
+      cuboid({ size: { x: p.boards.bottomTop.width, y: p.boards.thickness, z: p.boards.bottomTop.depth } }),
       // top
-      translate([cm(0), cm(sideH + pT), cm(0)])(
-        cuboid({ size: [p.boards.bottomTop.width, p.boards.thickness, p.boards.bottomTop.depth] }),
+      translate({ y: cm(sideH + pT) })(
+        cuboid({ size: { x: p.boards.bottomTop.width, y: p.boards.thickness, z: p.boards.bottomTop.depth } }),
       ),
     );
 
-    const doorBox = cuboid({ size: [p.boards.door.width, p.boards.door.height, p.boards.thickness] });
+    const doorBox = cuboid({ size: { x: p.boards.door.width, y: p.boards.door.height, z: p.boards.thickness } });
 
-    const rightDoor = translate([
-      cm(doorW + (state.variant === "opened" ? doorW : 0)),
-      cm(0),
-      cm(0),
-    ])(
-      rotate([0, state.variant === "opened" ? -Math.PI / 2 : 0, 0], { around: "corner" })(
+    const rightDoor = translate({
+      x: cm(doorW + (state.variant === "opened" ? doorW : 0)),
+    })(
+      rotate({ y: state.variant === "opened" ? -Math.PI / 2 : 0 }, { around: "corner" })(
         doorBox,
       ),
     );
 
-    const leftDoor = translate([
-      cm(state.variant === "opened" ? pT : 0),
-      cm(0),
-      cm(0),
-    ])(
-      rotate([0, state.variant === "opened" ? -Math.PI / 2 : 0, 0], { around: "corner" })(
+    const leftDoor = translate({
+      x: cm(state.variant === "opened" ? pT : 0),
+    })(
+      rotate({ y: state.variant === "opened" ? -Math.PI / 2 : 0 }, { around: "corner" })(
         doorBox,
       ),
     );
 
-    const doors = translate([
-      cm(0),
-      cm(2 * pT + sideH - doorH),
-      cm(sideD),
-    ])(group(leftDoor, rightDoor));
+    const doors = translate({
+      x: cm(0),
+      y: cm(2 * pT + sideH - doorH),
+      z: cm(sideD),
+    })(group(leftDoor, rightDoor));
 
     return group(corpus, doors);
   },
@@ -423,45 +418,45 @@ export const desks = {
 
     const outer = group(
       // right
-      cuboid({ size: [d.boards.thickness, d.boards.outer.side.height, d.boards.outer.side.depth] }),
+      cuboid({ size: { x: d.boards.thickness, y: d.boards.outer.side.height, z: d.boards.outer.side.depth } }),
       // left
-      translate([cm(outerShelfW + bdsT), cm(0), cm(0)])(
-        cuboid({ size: [d.boards.thickness, d.boards.outer.side.height, d.boards.outer.side.depth] }),
+      translate({ x: cm(outerShelfW + bdsT) })(
+        cuboid({ size: { x: d.boards.thickness, y: d.boards.outer.side.height, z: d.boards.outer.side.depth } }),
       ),
       // top
-      translate([d.boards.thickness, cm(outerSideH - bdsT), cm(0)])(
-        cuboid({ size: [d.boards.outer.shelf.width, d.boards.thickness, d.boards.outer.shelf.depth] }),
+      translate({ x: d.boards.thickness, y: cm(outerSideH - bdsT) })(
+        cuboid({ size: { x: d.boards.outer.shelf.width, y: d.boards.thickness, z: d.boards.outer.shelf.depth } }),
       ),
       // shelf
-      translate([d.boards.thickness, cm(outerSideH - bdsT - toCm(d.boards.outer.shelf.fromTop).value), cm(0)])(
-        cuboid({ size: [d.boards.outer.shelf.width, d.boards.thickness, d.boards.outer.shelf.depth] }),
+      translate({ x: d.boards.thickness, y: cm(outerSideH - bdsT - toCm(d.boards.outer.shelf.fromTop).value) })(
+        cuboid({ size: { x: d.boards.outer.shelf.width, y: d.boards.thickness, z: d.boards.outer.shelf.depth } }),
       ),
     );
 
     const innerZOffset =
       state.variant === "fully" || state.variant === "partially" ? deskDepth : 0;
 
-    const inner = translate([d.boards.thickness, cm(0), cm(innerZOffset)])(
+    const inner = translate({ x: d.boards.thickness, z: cm(innerZOffset) })(
       group(
         // back
-        cuboid({ size: [d.boards.inner.back.width, d.boards.inner.back.height, d.boards.inner.back.thickness] }),
+        cuboid({ size: { x: d.boards.inner.back.width, y: d.boards.inner.back.height, z: d.boards.inner.back.thickness } }),
         // right
-        cuboid({ size: [d.boards.thickness, d.boards.inner.side.height, d.boards.inner.side.depth] }),
+        cuboid({ size: { x: d.boards.thickness, y: d.boards.inner.side.height, z: d.boards.inner.side.depth } }),
         // left
-        translate([cm(innerShelfW + bdsT), cm(0), cm(0)])(
-          cuboid({ size: [d.boards.thickness, d.boards.inner.side.height, d.boards.inner.side.depth] }),
+        translate({ x: cm(innerShelfW + bdsT) })(
+          cuboid({ size: { x: d.boards.thickness, y: d.boards.inner.side.height, z: d.boards.inner.side.depth } }),
         ),
         // top
-        translate([cm(0), cm(innerSideH), cm(0)])(
-          cuboid({ size: [d.boards.inner.top.width, d.boards.thickness, d.boards.inner.top.depth] }),
+        translate({ y: cm(innerSideH) })(
+          cuboid({ size: { x: d.boards.inner.top.width, y: d.boards.thickness, z: d.boards.inner.top.depth } }),
         ),
         // shelf top
-        translate([d.boards.thickness, cm(innerSideH - bdsT - innerFromTop), cm(0)])(
-          cuboid({ size: [d.boards.inner.shelf.width, d.boards.thickness, d.boards.inner.shelf.depth] }),
+        translate({ x: d.boards.thickness, y: cm(innerSideH - bdsT - innerFromTop) })(
+          cuboid({ size: { x: d.boards.inner.shelf.width, y: d.boards.thickness, z: d.boards.inner.shelf.depth } }),
         ),
         // shelf bottom
-        translate([d.boards.thickness, cm(innerFromBot), cm(0)])(
-          cuboid({ size: [d.boards.inner.shelf.width, d.boards.thickness, d.boards.inner.shelf.depth] }),
+        translate({ x: d.boards.thickness, y: cm(innerFromBot) })(
+          cuboid({ size: { x: d.boards.inner.shelf.width, y: d.boards.thickness, z: d.boards.inner.shelf.depth } }),
         ),
       ),
     );
@@ -469,8 +464,8 @@ export const desks = {
     const desk =
       state.variant === "fully" || state.variant === "partially"
         ? [
-            translate([d.boards.thickness, cm(innerSideH), cm(0)])(
-              cuboid({ size: [d.boards.desk.width, d.boards.thickness, d.boards.desk.depth] }),
+            translate({ x: d.boards.thickness, y: cm(innerSideH) })(
+              cuboid({ size: { x: d.boards.desk.width, y: d.boards.thickness, z: d.boards.desk.depth } }),
             ),
           ]
         : [];
@@ -483,34 +478,31 @@ export const desks = {
     const closedW = toCm(n.closed.width).value;
     const boardW = toCm(n.boards.width).value;
 
-    const cabinet = cuboid({ size: [n.closed.width, n.height, n.depth] });
-    const board = cuboid({ size: [n.boards.width, n.boards.thickness, n.depth] });
+    const cabinet = cuboid({ size: { x: n.closed.width, y: n.height, z: n.depth } });
+    const board = cuboid({ size: { x: n.boards.width, y: n.boards.thickness, z: n.depth } });
 
     const boards: JscadObject[] = [];
     switch (state.variant) {
       case "partially":
         boards.push(
-          translate([
-            cm(-boardW),
-            cm(toCm(n.height).value - toCm(n.boards.thickness).value),
-            cm(0),
-          ])(board),
+          translate({
+            x: cm(-boardW),
+            y: cm(toCm(n.height).value - toCm(n.boards.thickness).value),
+          })(board),
         );
         break;
       case "fully":
         boards.push(
-          translate([
-            cm(-boardW),
-            cm(toCm(n.height).value - toCm(n.boards.thickness).value),
-            cm(0),
-          ])(board),
+          translate({
+            x: cm(-boardW),
+            y: cm(toCm(n.height).value - toCm(n.boards.thickness).value),
+          })(board),
         );
         boards.push(
-          translate([
-            n.closed.width,
-            cm(toCm(n.height).value - toCm(n.boards.thickness).value),
-            cm(0),
-          ])(board),
+          translate({
+            x: n.closed.width,
+            y: cm(toCm(n.height).value - toCm(n.boards.thickness).value),
+          })(board),
         );
         break;
     }
@@ -522,8 +514,8 @@ export const desks = {
         ? -closedW
         : boardW - closedW;
 
-    return translate([n.closed.width, cm(0), cm(zOffset)])(
-      rotate([0, -Math.PI / 2, 0], { around: "corner" })(deskGroup),
+    return translate({ x: n.closed.width, z: cm(zOffset) })(
+      rotate({ y: -Math.PI / 2 }, { around: "corner" })(deskGroup),
     );
   },
 };
@@ -537,28 +529,28 @@ export const shelfs = {
 
     return group(
       // back
-      cuboid({ size: [s.boards.back.width, s.boards.back.height, s.boards.back.thickness] }),
+      cuboid({ size: { x: s.boards.back.width, y: s.boards.back.height, z: s.boards.back.thickness } }),
       // right
-      cuboid({ size: [s.boards.thickness, s.boards.side.height, s.boards.side.depth] }),
+      cuboid({ size: { x: s.boards.thickness, y: s.boards.side.height, z: s.boards.side.depth } }),
       // left
-      translate([cm(backW - sT), cm(0), cm(0)])(
-        cuboid({ size: [s.boards.thickness, s.boards.side.height, s.boards.side.depth] }),
+      translate({ x: cm(backW - sT) })(
+        cuboid({ size: { x: s.boards.thickness, y: s.boards.side.height, z: s.boards.side.depth } }),
       ),
       // bottom shelf
-      translate([s.boards.thickness, cm(5), cm(0)])(
-        cuboid({ size: [s.boards.shelf.width, s.boards.thickness, s.boards.shelf.depth] }),
+      translate({ x: s.boards.thickness, y: cm(5) })(
+        cuboid({ size: { x: s.boards.shelf.width, y: s.boards.thickness, z: s.boards.shelf.depth } }),
       ),
       // mid shelf
-      translate([s.boards.thickness, cm(38), cm(0)])(
-        cuboid({ size: [s.boards.shelf.width, s.boards.thickness, s.boards.shelf.depth] }),
+      translate({ x: s.boards.thickness, y: cm(38) })(
+        cuboid({ size: { x: s.boards.shelf.width, y: s.boards.thickness, z: s.boards.shelf.depth } }),
       ),
       // upper shelf
-      translate([s.boards.thickness, cm(72), cm(0)])(
-        cuboid({ size: [s.boards.shelf.width, s.boards.thickness, s.boards.shelf.depth] }),
+      translate({ x: s.boards.thickness, y: cm(72) })(
+        cuboid({ size: { x: s.boards.shelf.width, y: s.boards.thickness, z: s.boards.shelf.depth } }),
       ),
       // top
-      translate([s.boards.thickness, cm(sideH - sT), cm(0)])(
-        cuboid({ size: [s.boards.shelf.width, s.boards.thickness, s.boards.shelf.depth] }),
+      translate({ x: s.boards.thickness, y: cm(sideH - sT) })(
+        cuboid({ size: { x: s.boards.shelf.width, y: s.boards.thickness, z: s.boards.shelf.depth } }),
       ),
     );
   },
@@ -573,15 +565,15 @@ export const shelfs = {
     const kH = toCm(k.height).value;
     const kD = toCm(k.depth).value;
 
-    const bottom = cuboid({ size: [k.boards.bottomTop.depth, k.boards.thickness, k.boards.bottomTop.width] });
-    const left = translate([cm(0), k.boards.thickness, cm(0)])(
-      cuboid({ size: [k.boards.side.depth, k.boards.side.height, k.boards.thickness] }),
+    const bottom = cuboid({ size: { x: k.boards.bottomTop.depth, y: k.boards.thickness, z: k.boards.bottomTop.width } });
+    const left = translate({ y: k.boards.thickness })(
+      cuboid({ size: { x: k.boards.side.depth, y: k.boards.side.height, z: k.boards.thickness } }),
     );
-    const right = translate([cm(0), k.boards.thickness, cm(btW - kT)])(
-      cuboid({ size: [k.boards.side.depth, k.boards.side.height, k.boards.thickness] }),
+    const right = translate({ y: k.boards.thickness, z: cm(btW - kT) })(
+      cuboid({ size: { x: k.boards.side.depth, y: k.boards.side.height, z: k.boards.thickness } }),
     );
-    const top = translate([cm(0), cm(kT + sideH), cm(0)])(
-      cuboid({ size: [k.boards.bottomTop.depth, k.boards.thickness, k.boards.bottomTop.width] }),
+    const top = translate({ y: cm(kT + sideH) })(
+      cuboid({ size: { x: k.boards.bottomTop.depth, y: k.boards.thickness, z: k.boards.bottomTop.width } }),
     );
 
     const kallax = group(bottom, left, right, top);
@@ -589,7 +581,7 @@ export const shelfs = {
     const cells: JscadObject[] = [];
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < columns; c++) {
-        cells.push(translate([cm(0), cm(r * kH), cm(c * kD)])(kallax));
+        cells.push(translate({ y: cm(r * kH), z: cm(c * kD) })(kallax));
       }
     }
 

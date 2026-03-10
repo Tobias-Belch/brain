@@ -27,9 +27,9 @@ describe("pipe()", () => {
 
   it("works with builder functions", () => {
     const result = pipe(
-      cuboid({ size: [cm(50), cm(200), cm(30)] }),
-      rotate([0, Math.PI / 2, 0]),
-      translate([cm(10), cm(0), cm(50)]),
+      cuboid({ size: { x: cm(50), y: cm(200), z: cm(30) } }),
+      rotate({ y: Math.PI / 2 }),
+      translate({ x: cm(10), z: cm(50) }),
     );
 
     expect(result.bounds.min[0]).toBeDefined();
@@ -40,10 +40,10 @@ describe("pipe()", () => {
   });
 
   it("composes builder + place for full relative positioning workflow", () => {
-    const pax = cuboid({ size: [cm(58), cm(236), cm(35)] });
+    const pax = cuboid({ size: { x: cm(58), y: cm(236), z: cm(35) } });
 
     const shelf = pipe(
-      cuboid({ size: [cm(40), cm(30), cm(20)] }),
+      cuboid({ size: { x: cm(40), y: cm(30), z: cm(20) } }),
       place({ after: pax, gap: cm(3) }),
     );
 

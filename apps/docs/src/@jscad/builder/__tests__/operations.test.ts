@@ -15,7 +15,7 @@ const {
 
 describe("expand()", () => {
   it("inflates a 3D solid — bounds grow by delta on all sides", () => {
-    const b = cuboid({ size: [10, 10, 10] });
+    const b = cuboid({ size: { x: 10, y: 10, z: 10 } });
     const expanded = expand({ delta: 2 })(b);
     const w = expanded.bounds.max[0] - expanded.bounds.min[0];
     // JSCAD expand grows each face outward, exact result depends on corners mode,
@@ -24,7 +24,7 @@ describe("expand()", () => {
   });
 
   it("returns a JscadObject with geom", () => {
-    const b = cuboid({ size: [20, 20, 20] });
+    const b = cuboid({ size: { x: 20, y: 20, z: 20 } });
     const expanded = expand({ delta: 1 })(b);
     expect(expanded.geom).toHaveLength(1);
   });
@@ -52,11 +52,11 @@ describe("offset()", () => {
 
 describe("hull()", () => {
   it("hull of two non-overlapping cuboids encloses both", () => {
-    const a = cuboid({ size: [10, 10, 10] });
-    const b = cuboid({ size: [10, 10, 10] });
+    const a = cuboid({ size: { x: 10, y: 10, z: 10 } });
+    const b = cuboid({ size: { x: 10, y: 10, z: 10 } });
     // translate b far from origin by creating a builder translate
     const { translate } = createBuilder({ coordinateUnit: "mm" });
-    const bMoved = translate([50, 0, 0])(b);
+    const bMoved = translate({ x: 50 })(b);
 
     const h = hull(bMoved)(a);
     // Hull should span from a's min to bMoved's max along X
@@ -65,8 +65,8 @@ describe("hull()", () => {
   });
 
   it("returns a single geom", () => {
-    const a = cuboid({ size: [10, 10, 10] });
-    const b = cuboid({ size: [10, 10, 10] });
+    const a = cuboid({ size: { x: 10, y: 10, z: 10 } });
+    const b = cuboid({ size: { x: 10, y: 10, z: 10 } });
     const h = hull(b)(a);
     expect(h.geom).toHaveLength(1);
   });
@@ -75,9 +75,9 @@ describe("hull()", () => {
 describe("hullChain()", () => {
   it("chains hulls across three objects", () => {
     const { translate } = createBuilder({ coordinateUnit: "mm" });
-    const a = cuboid({ size: [5, 5, 5] });
-    const b = translate([20, 0, 0])(cuboid({ size: [5, 5, 5] }));
-    const c = translate([40, 0, 0])(cuboid({ size: [5, 5, 5] }));
+    const a = cuboid({ size: { x: 5, y: 5, z: 5 } });
+    const b = translate({ x: 20 })(cuboid({ size: { x: 5, y: 5, z: 5 } }));
+    const c = translate({ x: 40 })(cuboid({ size: { x: 5, y: 5, z: 5 } }));
 
     const chain = hullChain(b, c)(a);
     // Should span from a's min to c's max
@@ -93,10 +93,10 @@ describe("hullChain()", () => {
 describe("retessellate()", () => {
   it("returns a JscadObject with the same geometry type", () => {
     // Create a union first to produce coplanar polygons worth retessellating
-    const a = cuboid({ size: [10, 10, 10] });
-    const b = cuboid({ size: [10, 10, 10] });
+    const a = cuboid({ size: { x: 10, y: 10, z: 10 } });
+    const b = cuboid({ size: { x: 10, y: 10, z: 10 } });
     const { translate } = createBuilder({ coordinateUnit: "mm" });
-    const bMoved = translate([5, 0, 0])(b);
+    const bMoved = translate({ x: 5 })(b);
     const merged = union(bMoved)(a);
 
     const retess = retessellate()(merged);
@@ -106,7 +106,7 @@ describe("retessellate()", () => {
 
 describe("generalize()", () => {
   it("returns a JscadObject after generalizing", () => {
-    const b = cuboid({ size: [10, 10, 10] });
+    const b = cuboid({ size: { x: 10, y: 10, z: 10 } });
     const gen = generalize({ snap: true, triangulate: false })(b);
     expect(gen.geom).toHaveLength(1);
   });
@@ -114,7 +114,7 @@ describe("generalize()", () => {
 
 describe("snap()", () => {
   it("returns a JscadObject", () => {
-    const b = cuboid({ size: [10, 10, 10] });
+    const b = cuboid({ size: { x: 10, y: 10, z: 10 } });
     const snapped = snap()(b);
     expect(snapped.geom).toHaveLength(1);
   });

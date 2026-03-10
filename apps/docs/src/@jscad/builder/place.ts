@@ -1,4 +1,4 @@
-import type { Dim, JscadObject } from "./types";
+import type { Dim, Vec3, JscadObject } from "./types";
 import type { DimResolver } from "./primitives";
 
 /**
@@ -17,9 +17,9 @@ export type PlaceOptions = {
    * Absolute position. Pass null for any axis to leave it unchanged.
    * The object's min corner is placed at the given coordinate.
    *
-   * @example place({ at: [mm(10), mm(0), mm(50)] })(shelf)
+   * @example place({ at: { x: mm(10), z: mm(50) } })(shelf)
    */
-  at?: [Dim | null, Dim | null, Dim | null];
+  at?: { x?: Dim | null; y?: Dim | null; z?: Dim | null };
 
   /**
    * Place after `ref` along the Z axis (ref.bounds.max[2] + gap).
@@ -78,7 +78,7 @@ export type PlaceOptions = {
  * analytically correct — no re-measurement needed.
  *
  * @example absolute:
- * place({ at: [mm(10), mm(0), mm(50)] })(shelf)
+ * place({ at: { x: mm(10), z: mm(50) } })(shelf)
  *
  * @example relative — shelf placed immediately after desk on the Z axis:
  * place({ after: desk, gap: mm(3) })(shelf)
@@ -86,11 +86,11 @@ export type PlaceOptions = {
  * @example with pipe:
  * pipe(
  *   box(80, 30, 20),
- *   rotate([0, Math.PI / 2, 0]),
+ *   rotate({ y: Math.PI / 2 }),
  *   place({ after: desk, gap: mm(3), align: { x: 'start', y: 'start' } }),
  * )
  */
-export function makePlace(resolve: DimResolver, translateFn: (v: [number, number, number]) => (obj: JscadObject) => JscadObject) {
+export function makePlace(resolve: DimResolver, translateFn: (v: Vec3) => (obj: JscadObject) => JscadObject) {
   return function place(opts: PlaceOptions): (obj: JscadObject) => JscadObject {
     return (obj) => {
       const gap = opts.gap !== undefined ? resolve(opts.gap) : 0;
@@ -99,17 +99,20 @@ export function makePlace(resolve: DimResolver, translateFn: (v: [number, number
       const objH = obj.bounds.max[1] - obj.bounds.min[1];
       const objD = obj.bounds.max[2] - obj.bounds.min[2];
 
-      // Start from current position (no change unless overridden)
+      // Start from current position (no change unless overridden).
+      // Relative axes use bounds.min; absolute `at` uses origin.
       let tx = obj.bounds.min[0];
       let ty = obj.bounds.min[1];
       let tz = obj.bounds.min[2];
 
-      // --- Absolute positioning (at) ---
+      // --- Absolute positioning (at) — pins origin, not bounds.min ---
       if (opts.at !== undefined) {
-        const [ax, ay, az] = opts.at;
-        if (ax !== null) tx = resolve(ax);
-        if (ay !== null) ty = resolve(ay);
-        if (az !== null) tz = resolve(az);
+        const { x: ax, y: ay, z: az } = opts.at;
+        // dx/dy/dz needed to move origin to the target coordinate:
+        //   new_bounds_min = target - (origin - bounds.min)
+        if (ax != null) tx = resolve(ax) - (obj.origin.x - obj.bounds.min[0]);
+        if (ay != null) ty = resolve(ay) - (obj.origin.y - obj.bounds.min[1]);
+        if (az != null) tz = resolve(az) - (obj.origin.z - obj.bounds.min[2]);
       }
 
       // --- Relative: after (Z+) ---
@@ -179,7 +182,7 @@ export function makePlace(resolve: DimResolver, translateFn: (v: [number, number
       const dy = ty - obj.bounds.min[1];
       const dz = tz - obj.bounds.min[2];
 
-      return translateFn([dx, dy, dz])(obj);
+      return translateFn({ x: dx, y: dy, z: dz })(obj);
     };
   };
 }

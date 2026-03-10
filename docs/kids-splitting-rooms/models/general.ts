@@ -12,7 +12,7 @@ export const measurements = {
 };
 
 export const mattress = cuboid({
-  size: [measurements.Mattress.width, measurements.Mattress.height, measurements.Mattress.depth],
+  size: { x: measurements.Mattress.width, y: measurements.Mattress.height, z: measurements.Mattress.depth },
 });
 
 export function Bed({
@@ -129,9 +129,9 @@ export function Bed({
 
   const model = group(
     // platform
-    cuboid({ size: [bedMeasurements.width, platform.thickness, bedMeasurements.depth] }),
+    cuboid({ size: { x: bedMeasurements.width, y: platform.thickness, z: bedMeasurements.depth } }),
     // guards
-    translate([0, platform.thickness, 0])(
+    translate({ y: platform.thickness })(
       group(
         // bottom
         BedGuard({
@@ -148,7 +148,7 @@ export function Bed({
           cutout: cutout.guard === "right" ? cutout.position : undefined,
         }),
         // left
-        translate([cm(bW - gT), cm(0), cm(0)])(
+        translate({ x: cm(bW - gT) })(
           BedGuard({
             width: normalisedGuards.thickness,
             height: normalisedGuards.left,
@@ -157,7 +157,7 @@ export function Bed({
           }),
         ),
         // top
-        translate([cm(0), cm(0), cm(bD - gT)])(
+        translate({ z: cm(bD - gT) })(
           BedGuard({
             width: bedMeasurements.width,
             height: normalisedGuards.top,
@@ -168,7 +168,7 @@ export function Bed({
       ),
     ),
     // mattress
-    translate([cm(gT + pL), platform.thickness, cm(gT + pB)])(mattress),
+    translate({ x: cm(gT + pL), y: platform.thickness, z: cm(gT + pB) })(mattress),
   );
 
   function BedGuard({
@@ -183,7 +183,7 @@ export function Bed({
     cutout?: "left" | "center" | "right";
   }): JscadObject {
     if (!c) {
-      return cuboid({ size: [width, height, depth] });
+      return cuboid({ size: { x: width, y: height, z: depth } });
     }
 
     const wVal = toCm(width).value;
@@ -212,15 +212,14 @@ export function Bed({
         break;
     }
 
-    const offset: [Dim, Dim, Dim] = [
-      depthIsThickness ? cm(cutoutOffset) : cm(0),
-      cm(0),
-      depthIsThickness ? cm(0) : cm(cutoutOffset),
-    ];
+    const offset = {
+      x: depthIsThickness ? cm(cutoutOffset) : cm(0),
+      z: depthIsThickness ? cm(0) : cm(cutoutOffset),
+    };
 
     return pipe(
-      cuboid({ size: [width, height, depth] }),
-      subtract(translate(offset)(cuboid({ size: [cutoutMeasurements.width, cutoutMeasurements.height, cutoutMeasurements.depth] }))),
+      cuboid({ size: { x: width, y: height, z: depth } }),
+      subtract(translate(offset)(cuboid({ size: { x: cutoutMeasurements.width, y: cutoutMeasurements.height, z: cutoutMeasurements.depth } }))),
     );
   }
 

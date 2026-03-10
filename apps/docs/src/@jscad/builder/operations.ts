@@ -64,7 +64,7 @@ export function makeExtrudeLinear() {
   }): (obj: JscadObject) => JscadObject {
     return (obj) => {
       const extruded = obj.geom.map((g) => jscadExtrudeLinear(opts, g as any) as AnyGeom);
-      return { geom: extruded, bounds: boundsFromGeom(extruded) };
+      return { geom: extruded, bounds: boundsFromGeom(extruded), origin: obj.origin };
     };
   };
 }
@@ -90,7 +90,7 @@ export function makeExtrudeRotate() {
   }): (obj: JscadObject) => JscadObject {
     return (obj) => {
       const extruded = obj.geom.map((g) => jscadExtrudeRotate(opts ?? {}, g as any) as AnyGeom);
-      return { geom: extruded, bounds: boundsFromGeom(extruded) };
+      return { geom: extruded, bounds: boundsFromGeom(extruded), origin: obj.origin };
     };
   };
 }
@@ -118,7 +118,7 @@ export function makeExtrudeRectangular() {
   }): (obj: JscadObject) => JscadObject {
     return (obj) => {
       const extruded = obj.geom.map((g) => jscadExtrudeRectangular(opts ?? {}, g as any) as AnyGeom);
-      return { geom: extruded, bounds: boundsFromGeom(extruded) };
+      return { geom: extruded, bounds: boundsFromGeom(extruded), origin: obj.origin };
     };
   };
 }
@@ -146,7 +146,7 @@ export function makeExtrudeHelical() {
   }): (obj: JscadObject) => JscadObject {
     return (obj) => {
       const extruded = obj.geom.map((g) => jscadExtrudeHelical(opts ?? {}, g as any) as AnyGeom);
-      return { geom: extruded, bounds: boundsFromGeom(extruded) };
+      return { geom: extruded, bounds: boundsFromGeom(extruded), origin: obj.origin };
     };
   };
 }
@@ -179,7 +179,7 @@ export function makeExtrudeFromSlices() {
   }): (obj: JscadObject) => JscadObject {
     return (obj) => {
       const extruded = obj.geom.map((g) => jscadExtrudeFromSlices(opts, g) as AnyGeom);
-      return { geom: extruded, bounds: boundsFromGeom(extruded) };
+      return { geom: extruded, bounds: boundsFromGeom(extruded), origin: obj.origin };
     };
   };
 }
@@ -202,7 +202,7 @@ export function makeProject() {
   }): (obj: JscadObject) => JscadObject {
     return (obj) => {
       const projected = obj.geom.map((g) => jscadProject(opts ?? {}, g as any) as AnyGeom);
-      return { geom: projected, bounds: boundsFromGeom(projected) };
+      return { geom: projected, bounds: boundsFromGeom(projected), origin: obj.origin };
     };
   };
 }
@@ -232,7 +232,7 @@ export function makeExpand() {
   }): (obj: JscadObject) => JscadObject {
     return (obj) => {
       const expanded = obj.geom.map((g) => jscadExpand(opts, g as any) as AnyGeom);
-      return { geom: expanded, bounds: boundsFromGeom(expanded) };
+      return { geom: expanded, bounds: boundsFromGeom(expanded), origin: obj.origin };
     };
   };
 }
@@ -257,7 +257,7 @@ export function makeOffset() {
   }): (obj: JscadObject) => JscadObject {
     return (obj) => {
       const offsetted = obj.geom.map((g) => jscadOffset(opts, g as any) as AnyGeom);
-      return { geom: offsetted, bounds: boundsFromGeom(offsetted) };
+      return { geom: offsetted, bounds: boundsFromGeom(offsetted), origin: obj.origin };
     };
   };
 }
@@ -281,7 +281,7 @@ export function makeHull() {
     return (base) => {
       const allGeoms = [...base.geom, ...others.flatMap((o) => o.geom)];
       const result = [jscadHull(...(allGeoms as any[])) as AnyGeom];
-      return { geom: result, bounds: boundsFromGeom(result) };
+      return { geom: result, bounds: boundsFromGeom(result), origin: base.origin };
     };
   };
 }
@@ -300,7 +300,7 @@ export function makeHullChain() {
     return (base) => {
       const allGeoms = [...base.geom, ...others.flatMap((o) => o.geom)];
       const result = [jscadHullChain(...(allGeoms as any[])) as AnyGeom];
-      return { geom: result, bounds: boundsFromGeom(result) };
+      return { geom: result, bounds: boundsFromGeom(result), origin: base.origin };
     };
   };
 }
@@ -329,7 +329,7 @@ export function makeGeneralize() {
   }): (obj: JscadObject) => JscadObject {
     return (obj) => {
       const cleaned = obj.geom.map((g) => jscadGeneralize(opts, g as any) as AnyGeom);
-      return { geom: cleaned, bounds: obj.bounds };
+      return { geom: cleaned, bounds: obj.bounds, origin: obj.origin };
     };
   };
 }
@@ -347,7 +347,7 @@ export function makeSnap() {
   return function snap(): (obj: JscadObject) => JscadObject {
     return (obj) => {
       const snapped = obj.geom.map((g) => jscadSnap(g as any) as AnyGeom);
-      return { geom: snapped, bounds: obj.bounds };
+      return { geom: snapped, bounds: obj.bounds, origin: obj.origin };
     };
   };
 }
@@ -365,7 +365,7 @@ export function makeRetessellate() {
   return function retessellate(): (obj: JscadObject) => JscadObject {
     return (obj) => {
       const retess = obj.geom.map((g) => jscadRetessellate(g as any) as AnyGeom);
-      return { geom: retess, bounds: obj.bounds };
+      return { geom: retess, bounds: obj.bounds, origin: obj.origin };
     };
   };
 }
@@ -386,10 +386,14 @@ export function makeRetessellate() {
 export function makeScission() {
   return function scission(obj: JscadObject): JscadObject[] {
     const parts = jscadScission(...(obj.geom as any[]));
-    return parts.map((g: AnyGeom) => ({
-      geom: [g],
-      bounds: boundsFromGeom([g]),
-    }));
+    return parts.map((g: AnyGeom) => {
+      const bounds = boundsFromGeom([g]);
+      return {
+        geom: [g],
+        bounds,
+        origin: { x: bounds.min[0], y: bounds.min[1], z: bounds.min[2] },
+      };
+    });
   };
 }
 

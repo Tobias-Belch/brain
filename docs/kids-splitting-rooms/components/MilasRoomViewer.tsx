@@ -40,7 +40,7 @@ type Action =
   | { type: "SET_SURFACES"; value: SurfaceKey[] };
 
 const initialState: State = {
-  variant: "brimnesBillyPax",
+  variant: "brimnesBillyPax2",
   bed: {
     drawers: "closed",
     variant: "single",

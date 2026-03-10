@@ -12,9 +12,27 @@ import type { Length } from "./measure";
  * angle where a length is expected is a compile-time type error.
  *
  * @example
- * cuboid({ size: [50, 100, cm(3)] })   // mix raw and explicit units freely
+ * cuboid({ size: { x: 50, y: 100, z: cm(3) } })   // mix raw and explicit units freely
  */
 export type Dim = number | Length;
+
+/**
+ * Named 3-axis vector where each axis accepts a `Dim` (raw number or tagged Length).
+ * All axes are optional and default to 0 when omitted.
+ *
+ * @example
+ * translate({ x: mm(10), z: cm(5) })(obj)   // y defaults to 0
+ */
+export type Vec3 = { x?: Dim; y?: Dim; z?: Dim };
+
+/**
+ * Named 2-axis vector where each axis accepts a `Dim` (raw number or tagged Length).
+ * All axes are optional and default to 0 when omitted.
+ *
+ * @example
+ * circle({ center: { x: mm(10) } })   // y defaults to 0
+ */
+export type Vec2 = { x?: Dim; y?: Dim };
 
 /**
  * Axis-aligned bounding box stored in the builder's coordinate unit.
@@ -26,6 +44,20 @@ export type Bounds = {
 };
 
 /**
+ * Named logical anchor point of a JscadObject, in the builder's coordinate unit.
+ *
+ * `origin` is the stable reference corner of an object — it is set to `{ x: 0, y: 0, z: 0 }`
+ * when a primitive is first constructed, and is kept in sync with every subsequent
+ * `translate()` and `rotate()` so it always refers to the same physical point on
+ * the object regardless of how it has been transformed.
+ *
+ * `place({ at: ... })` pins `origin` to the target coordinate (not `bounds.min`),
+ * which means absolute placement is stable even when the object's bounding box
+ * shifts due to rotation or state-dependent geometry (e.g. an open vs. closed desk).
+ */
+export type Origin = { x: number; y: number; z: number };
+
+/**
  * The underlying raw JSCAD geometry — 3D solid, 2D shape, or 2D path.
  */
 export type AnyGeom = Geom3 | Geom2 | Path2;
@@ -35,10 +67,14 @@ export type AnyGeom = Geom3 | Geom2 | Path2;
  * - `geom`  : the underlying JSCAD geometry (one or more pieces, any type)
  * - `bounds`: cached bounding box, updated analytically on every operation
  *             so `measureBoundingBox()` is only called at construction time.
+ * - `origin`: stable logical anchor point (named `{ x, y, z }`), set to `{ x: 0, y: 0, z: 0 }`
+ *             at construction and kept in sync by `translate()` and `rotate()`.
+ *             `place({ at: ... })` pins this point, not `bounds.min`.
  *
  * 2D geometries (Geom2, Path2) store z-bounds as [0, 0].
  */
 export type JscadObject = {
   readonly geom: AnyGeom[];
   readonly bounds: Bounds;
+  readonly origin: Origin;
 };

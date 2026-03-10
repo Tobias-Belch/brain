@@ -1,5 +1,5 @@
 import type { Unit, Angle } from "./measure";
-import type { Dim, JscadObject, AnyGeom } from "./types";
+import type { Dim, Vec3, Vec2, JscadObject, AnyGeom } from "./types";
 import type { PlaceOptions } from "./place";
 import {
   createDimResolver,
@@ -19,6 +19,7 @@ import {
   makeCenter, makeCenterX, makeCenterY, makeCenterZ,
   makeAlign, makeTransform,
   makeColorize,
+  type AngleVec3, type ScaleVec3, type NumVec3, type BoolVec3, type NullableNumVec3,
 } from "./transform";
 import { makeUnion, makeSubtract, makeIntersect } from "./boolean";
 import {
@@ -46,10 +47,10 @@ export type BuilderConfig = {
    *
    * @example
    * createBuilder({ coordinateUnit: 'mm' })
-   * // cuboid({ size: [50, 100, 30] }) → 50mm × 100mm × 30mm
+   * // cuboid({ size: { x: 50, y: 100, z: 30 } }) → 50mm × 100mm × 30mm
    *
    * createBuilder({ coordinateUnit: 'inch' })
-   * // cuboid({ size: [2, 4, 1] }) → 2" × 4" × 1"
+   * // cuboid({ size: { x: 2, y: 4, z: 1 } }) → 2" × 4" × 1"
    */
   coordinateUnit: Unit;
 };
@@ -67,52 +68,52 @@ export type Builder = {
   // ---- 3D Primitives ----
 
   /** Axis-aligned box (arbitrary dimensions). Origin at bottom-left-front. */
-  cuboid: (opts: { size: [Dim, Dim, Dim]; center?: [Dim, Dim, Dim] }) => JscadObject;
+  cuboid: (opts: { size: Vec3; center?: Vec3 }) => JscadObject;
   /** Axis-aligned cube (equal side lengths). */
-  cube: (opts?: { size?: Dim; center?: [Dim, Dim, Dim] }) => JscadObject;
+  cube: (opts?: { size?: Dim; center?: Vec3 }) => JscadObject;
   /** Circular cylinder. */
-  cylinder: (opts?: { center?: [Dim, Dim, Dim]; height?: Dim; radius?: Dim; segments?: number }) => JscadObject;
+  cylinder: (opts?: { center?: Vec3; height?: Dim; radius?: Dim; segments?: number }) => JscadObject;
   /** Elliptic (optionally tapered) cylinder. */
-  cylinderElliptic: (opts?: { center?: [Dim, Dim, Dim]; height?: Dim; startRadius?: [Dim, Dim]; endRadius?: [Dim, Dim]; startAngle?: number; endAngle?: number; segments?: number }) => JscadObject;
+  cylinderElliptic: (opts?: { center?: Vec3; height?: Dim; startRadius?: Vec2; endRadius?: Vec2; startAngle?: number; endAngle?: number; segments?: number }) => JscadObject;
   /** Ellipsoid. */
-  ellipsoid: (opts?: { center?: [Dim, Dim, Dim]; radius?: [Dim, Dim, Dim]; segments?: number }) => JscadObject;
+  ellipsoid: (opts?: { center?: Vec3; radius?: Vec3; segments?: number }) => JscadObject;
   /** Geodesic sphere (triangle mesh). */
   geodesicSphere: (opts?: { radius?: Dim; frequency?: number }) => JscadObject;
-  /** Polyhedron from explicit points and faces. */
+  /** Polyhedron from explicit points and faces. Points are raw [Dim, Dim, Dim] tuples. */
   polyhedron: (opts: { points: [Dim, Dim, Dim][]; faces: number[][]; colors?: ([number, number, number] | [number, number, number, number])[]; orientation?: "outward" | "inward" }) => JscadObject;
   /** Box with rounded edges. */
-  roundedCuboid: (opts?: { center?: [Dim, Dim, Dim]; size?: [Dim, Dim, Dim]; roundRadius?: Dim; segments?: number }) => JscadObject;
+  roundedCuboid: (opts?: { center?: Vec3; size?: Vec3; roundRadius?: Dim; segments?: number }) => JscadObject;
   /** Cylinder with rounded (hemispherical) caps. */
-  roundedCylinder: (opts?: { center?: [Dim, Dim, Dim]; height?: Dim; radius?: Dim; roundRadius?: Dim; segments?: number }) => JscadObject;
+  roundedCylinder: (opts?: { center?: Vec3; height?: Dim; radius?: Dim; roundRadius?: Dim; segments?: number }) => JscadObject;
   /** UV sphere. */
-  sphere: (opts?: { center?: [Dim, Dim, Dim]; radius?: Dim; segments?: number }) => JscadObject;
+  sphere: (opts?: { center?: Vec3; radius?: Dim; segments?: number }) => JscadObject;
   /** Torus (donut). */
   torus: (opts?: { innerRadius?: Dim; outerRadius?: Dim; innerSegments?: number; outerSegments?: number; innerRotation?: number; outerRotation?: number; startAngle?: number }) => JscadObject;
 
   // ---- 2D Primitives ----
 
   /** 2D circle. */
-  circle: (opts?: { center?: [Dim, Dim]; radius?: Dim; startAngle?: number; endAngle?: number; segments?: number }) => JscadObject;
+  circle: (opts?: { center?: Vec2; radius?: Dim; startAngle?: number; endAngle?: number; segments?: number }) => JscadObject;
   /** 2D ellipse. */
-  ellipse: (opts?: { center?: [Dim, Dim]; radius?: [Dim, Dim]; startAngle?: number; endAngle?: number; segments?: number }) => JscadObject;
-  /** 2D polygon from points (single or multi-contour). */
+  ellipse: (opts?: { center?: Vec2; radius?: Vec2; startAngle?: number; endAngle?: number; segments?: number }) => JscadObject;
+  /** 2D polygon from points (single or multi-contour). Points are raw [Dim, Dim] tuples. */
   polygon: (opts: { points: [Dim, Dim][] | [Dim, Dim][][]; paths?: number[] | number[][]; orientation?: "counterclockwise" | "clockwise" }) => JscadObject;
   /** 2D rectangle. */
-  rectangle: (opts?: { center?: [Dim, Dim]; size?: [Dim, Dim] }) => JscadObject;
+  rectangle: (opts?: { center?: Vec2; size?: Vec2 }) => JscadObject;
   /** 2D rectangle with rounded corners. */
-  roundedRectangle: (opts?: { center?: [Dim, Dim]; size?: [Dim, Dim]; roundRadius?: Dim; segments?: number }) => JscadObject;
+  roundedRectangle: (opts?: { center?: Vec2; size?: Vec2; roundRadius?: Dim; segments?: number }) => JscadObject;
   /** 2D square (equal side lengths). */
-  square: (opts?: { center?: [Dim, Dim]; size?: Dim }) => JscadObject;
+  square: (opts?: { center?: Vec2; size?: Dim }) => JscadObject;
   /** 2D star polygon. */
-  star: (opts?: { center?: [Dim, Dim]; vertices?: number; density?: number; outerRadius?: Dim; innerRadius?: Dim; startAngle?: number }) => JscadObject;
+  star: (opts?: { center?: Vec2; vertices?: number; density?: number; outerRadius?: Dim; innerRadius?: Dim; startAngle?: number }) => JscadObject;
   /** 2D triangle by construction type (SSS, SAS, etc.). */
   triangle: (opts?: { type?: "AAA" | "AAS" | "ASA" | "SAS" | "SSA" | "SSS"; values?: [number, number, number] }) => JscadObject;
 
   // ---- Path Primitives ----
 
   /** 2D arc path. */
-  arc: (opts?: { center?: [Dim, Dim]; radius?: Dim; startAngle?: number; endAngle?: number; segments?: number; makeTangent?: boolean }) => JscadObject;
-  /** 2D line path from ordered points. */
+  arc: (opts?: { center?: Vec2; radius?: Dim; startAngle?: number; endAngle?: number; segments?: number; makeTangent?: boolean }) => JscadObject;
+  /** 2D line path from ordered points. Points are raw [Dim, Dim] tuples. */
   line: (points: [Dim, Dim][]) => JscadObject;
 
   // ---- Wrap raw JSCAD geometry ----
@@ -122,8 +123,8 @@ export type Builder = {
 
   // ---- Transforms ----
 
-  /** Translate by [dx, dy, dz]. Curried. */
-  translate: (v: [Dim, Dim, Dim]) => (obj: JscadObject) => JscadObject;
+  /** Translate by { x?, y?, z? }. Omitted axes default to 0. Curried. */
+  translate: (v: Vec3) => (obj: JscadObject) => JscadObject;
   /** Translate along X only. Curried. */
   translateX: (d: Dim) => (obj: JscadObject) => JscadObject;
   /** Translate along Y only. Curried. */
@@ -131,8 +132,8 @@ export type Builder = {
   /** Translate along Z only. Curried. */
   translateZ: (d: Dim) => (obj: JscadObject) => JscadObject;
 
-  /** Rotate by [rx, ry, rz]. Accepts raw radians or deg()/rad(). Curried. Default: center. */
-  rotate: (angles: [Angle, Angle, Angle], opts?: RotateOpts) => (obj: JscadObject) => JscadObject;
+  /** Rotate by { x?, y?, z? } angles. Accepts raw radians or deg()/rad(). Omitted axes default to 0. Curried. Default: center. */
+  rotate: (angles: AngleVec3, opts?: RotateOpts) => (obj: JscadObject) => JscadObject;
   /** Rotate around X axis. Curried. Default: center. */
   rotateX: (angle: Angle, opts?: RotateOpts) => (obj: JscadObject) => JscadObject;
   /** Rotate around Y axis. Curried. Default: center. */
@@ -140,8 +141,8 @@ export type Builder = {
   /** Rotate around Z axis. Curried. Default: center. */
   rotateZ: (angle: Angle, opts?: RotateOpts) => (obj: JscadObject) => JscadObject;
 
-  /** Scale by [sx, sy, sz]. Curried. */
-  scale: (v: [number, number, number]) => (obj: JscadObject) => JscadObject;
+  /** Scale by { x?, y?, z? }. Omitted axes default to 1. Curried. */
+  scale: (v: ScaleVec3) => (obj: JscadObject) => JscadObject;
   /** Scale along X only. Curried. */
   scaleX: (factor: number) => (obj: JscadObject) => JscadObject;
   /** Scale along Y only. Curried. */
@@ -150,7 +151,7 @@ export type Builder = {
   scaleZ: (factor: number) => (obj: JscadObject) => JscadObject;
 
   /** Mirror across arbitrary plane. Curried. */
-  mirror: (opts: { origin?: [number, number, number]; normal?: [number, number, number] }) => (obj: JscadObject) => JscadObject;
+  mirror: (opts: { origin?: NumVec3; normal?: NumVec3 }) => (obj: JscadObject) => JscadObject;
   /** Mirror across YZ plane (negate X). Curried (no args). */
   mirrorX: () => (obj: JscadObject) => JscadObject;
   /** Mirror across XZ plane (negate Y). Curried (no args). */
@@ -159,7 +160,7 @@ export type Builder = {
   mirrorZ: () => (obj: JscadObject) => JscadObject;
 
   /** Center on specified axes. Curried. */
-  center: (opts: { axes?: [boolean, boolean, boolean]; relativeTo?: [number, number, number] }) => (obj: JscadObject) => JscadObject;
+  center: (opts: { axes?: BoolVec3; relativeTo?: NumVec3 }) => (obj: JscadObject) => JscadObject;
   /** Center on X axis. Curried (no args). */
   centerX: () => (obj: JscadObject) => JscadObject;
   /** Center on Y axis. Curried (no args). */
@@ -168,7 +169,7 @@ export type Builder = {
   centerZ: () => (obj: JscadObject) => JscadObject;
 
   /** Align on axes using modes (min/max/center/none). Curried. */
-  align: (opts: { modes?: Array<"center" | "max" | "min" | "none">; relativeTo?: [number | null, number | null, number | null]; grouped?: boolean }) => (obj: JscadObject) => JscadObject;
+  align: (opts: { modes?: Array<"center" | "max" | "min" | "none">; relativeTo?: NullableNumVec3; grouped?: boolean }) => (obj: JscadObject) => JscadObject;
 
   /** Apply a raw 4×4 matrix transform. Curried. */
   transform: (matrix: readonly number[]) => (obj: JscadObject) => JscadObject;
@@ -258,10 +259,10 @@ export type Builder = {
  *
  * const { cuboid, cylinder, translate, rotate, pipe } = createBuilder({ coordinateUnit: 'mm' })
  *
- * const desk = cuboid({ size: [1200, 750, 600] })  // 1200mm × 750mm × 600mm
+ * const desk = cuboid({ size: { x: 1200, y: 750, z: 600 } })  // 1200mm × 750mm × 600mm
  * const leg = pipe(
  *   cylinder({ height: 700, radius: 25 }),
- *   translate([25, 0, 25]),
+ *   translate({ x: 25, z: 25 }),
  * )
  */
 export function createBuilder(config: BuilderConfig): Builder {
