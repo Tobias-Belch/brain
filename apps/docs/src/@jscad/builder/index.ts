@@ -11,7 +11,7 @@
  *   Raw numbers passed as dimensions are interpreted as the configured unit.
  *   `Measure` values (`mm()`, `cm()`, `ft()`, etc.) always convert precisely.
  * - Transform functions (translate, rotate, colorize, scale) are curried:
- *     translate([x, y, z])(obj)  — or used directly inside pipe()
+ *     translate({ x, y, z })(obj)  — or used directly inside pipe()
  * - Boolean functions (union, subtract, intersect) are curried the same way.
  * - `rotate()` accepts angles as raw radians or `deg()` / `rad()` `Angle` values.
  *   Length values (`mm()`, `cm()`, etc.) are rejected by the type system there.

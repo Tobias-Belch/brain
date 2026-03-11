@@ -100,19 +100,17 @@ export function makePlace(resolve: DimResolver, translateFn: (v: Vec3) => (obj: 
       const objD = obj.bounds.max[2] - obj.bounds.min[2];
 
       // Start from current position (no change unless overridden).
-      // Relative axes use bounds.min; absolute `at` uses origin.
+      // All modes work in bounds.min space.
       let tx = obj.bounds.min[0];
       let ty = obj.bounds.min[1];
       let tz = obj.bounds.min[2];
 
-      // --- Absolute positioning (at) — pins origin, not bounds.min ---
+      // --- Absolute positioning (at) — pins bounds.min ---
       if (opts.at !== undefined) {
         const { x: ax, y: ay, z: az } = opts.at;
-        // dx/dy/dz needed to move origin to the target coordinate:
-        //   new_bounds_min = target - (origin - bounds.min)
-        if (ax != null) tx = resolve(ax) - (obj.origin.x - obj.bounds.min[0]);
-        if (ay != null) ty = resolve(ay) - (obj.origin.y - obj.bounds.min[1]);
-        if (az != null) tz = resolve(az) - (obj.origin.z - obj.bounds.min[2]);
+        if (ax != null) tx = resolve(ax);
+        if (ay != null) ty = resolve(ay);
+        if (az != null) tz = resolve(az);
       }
 
       // --- Relative: after (Z+) ---

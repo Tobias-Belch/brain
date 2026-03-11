@@ -46,14 +46,11 @@ export type Bounds = {
 /**
  * Named logical anchor point of a JscadObject, in the builder's coordinate unit.
  *
- * `origin` is the stable reference corner of an object — it is set to `{ x: 0, y: 0, z: 0 }`
- * when a primitive is first constructed, and is kept in sync with every subsequent
- * `translate()` and `rotate()` so it always refers to the same physical point on
- * the object regardless of how it has been transformed.
+ * `origin` tracks the object's original reference corner through transforms:
+ * it is set to `{ x: 0, y: 0, z: 0 }` when a primitive is first constructed,
+ * and is kept in sync with every subsequent `translate()` and `rotate()`.
  *
- * `place({ at: ... })` pins `origin` to the target coordinate (not `bounds.min`),
- * which means absolute placement is stable even when the object's bounding box
- * shifts due to rotation or state-dependent geometry (e.g. an open vs. closed desk).
+ * `place({ at: ... })` pins `bounds.min` to the target coordinate, not `origin`.
  */
 export type Origin = { x: number; y: number; z: number };
 
@@ -67,9 +64,10 @@ export type AnyGeom = Geom3 | Geom2 | Path2;
  * - `geom`  : the underlying JSCAD geometry (one or more pieces, any type)
  * - `bounds`: cached bounding box, updated analytically on every operation
  *             so `measureBoundingBox()` is only called at construction time.
- * - `origin`: stable logical anchor point (named `{ x, y, z }`), set to `{ x: 0, y: 0, z: 0 }`
- *             at construction and kept in sync by `translate()` and `rotate()`.
- *             `place({ at: ... })` pins this point, not `bounds.min`.
+ * - `origin`: tracks the original reference corner through transforms; set to
+ *             `{ x: 0, y: 0, z: 0 }` at construction and kept in sync by
+ *             `translate()` and `rotate()`. Not used by `place({ at: ... })`,
+ *             which pins `bounds.min` directly.
  *
  * 2D geometries (Geom2, Path2) store z-bounds as [0, 0].
  */
