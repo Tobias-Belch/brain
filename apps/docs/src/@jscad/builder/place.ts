@@ -145,7 +145,14 @@ export function makePlace(resolve: DimResolver, translateFn: (v: Vec3) => (obj: 
         tx = opts.leftOf.bounds.min[0] - objW - gap;
       }
 
-      // --- Alignment overrides (applied after primary axis is set) ---
+      // --- Reference-object fallback for unspecified axes ---
+      // When a relative positioning key is given, axes that the user did not
+      // explicitly provide (neither via `at` nor via `null`) inherit the
+      // reference object's bounds.min on those axes, so you don't have to
+      // repeat coordinates that are "the same as the reference".
+      //
+      // Explicit `at` values always win. `null` in `at` means "leave as-is"
+      // (current position), which also overrides the fallback.
       const ref =
         opts.after ??
         opts.before ??
@@ -154,6 +161,23 @@ export function makePlace(resolve: DimResolver, translateFn: (v: Vec3) => (obj: 
         opts.beside ??
         opts.leftOf;
 
+      if (ref !== undefined) {
+        const userAt = opts.at ?? {};
+        // X: after/before/above/below don't set X — fall back to ref unless user specified
+        if (opts.beside === undefined && opts.leftOf === undefined) {
+          if (userAt.x === undefined) tx = ref.bounds.min[0];
+        }
+        // Y: after/before/beside/leftOf don't set Y — fall back to ref unless user specified
+        if (opts.above === undefined && opts.below === undefined) {
+          if (userAt.y === undefined) ty = ref.bounds.min[1];
+        }
+        // Z: above/below/beside/leftOf don't set Z — fall back to ref unless user specified
+        if (opts.after === undefined && opts.before === undefined) {
+          if (userAt.z === undefined) tz = ref.bounds.min[2];
+        }
+      }
+
+      // --- Alignment overrides (applied after primary axis is set) ---
       if (ref !== undefined && opts.align !== undefined) {
         const { x: ax, y: ay, z: az } = opts.align;
         const refW = ref.bounds.max[0] - ref.bounds.min[0];

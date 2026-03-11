@@ -28,19 +28,21 @@ export function brimnesBillyPax2(
   const closet1 = pipe(
     ikea.cabinets.Pax(state.cabinet),
     rotate({ y: deg(90) }, { around: "corner" }),
-    place({ at: { x: 0, z: ikea.measurements.cabinets.Pax.width.add(cm(15)) } }),
+    place({
+      at: { x: 0, z: ikea.measurements.cabinets.Pax.width.add(cm(15)) },
+    }),
   );
 
   const closet2 = pipe(
     ikea.cabinets.Pax(state.cabinet),
     rotate({ y: deg(90) }, { around: "corner" }),
-    place({ at: { x: 0 }, after: closet1 }),
+    place({ after: closet1 }),
   );
 
   const bed = pipe(
     ikea.beds.Brimnes(state.bed),
     rotate({ y: deg(-90) }, { around: "corner" }),
-    place({ at: { x: 0 }, after: closet2 }),
+    place({ after: closet2 }),
   );
 
   const cabinet1 = pipe(
@@ -85,7 +87,9 @@ export function brimnesBillyPax2(
     place({
       at: {
         x: measurements.room.width,
-        z: measurements.room.depth.sub(ikea.measurements.desks.Billy.width),
+        z: measurements.room.depth
+          .sub(ikea.measurements.desks.Billy.width)
+          .sub(cm(15)),
       },
     }),
   );
