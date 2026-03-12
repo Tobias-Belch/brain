@@ -53,7 +53,7 @@ export const measurements = {
 };
 
 export const variants = {
-  rimnesBillyPax2: "v2: BRIMNES Bed, BILLY Desk & 1 PAX",
+  brimnesBillyPax2: "v2: BRIMNES Bed, BILLY Desk & 1 PAX",
   brimnesBillyPax: "v1: BRIMNES Bed, BILLY Desk & 1 PAX",
   highbedKallaxWall: "High Bed, 2 PAX, Desk & KALLAX Wall",
   highbedCouch: "High Bed, 1.5 PAX, KALLAX Tower, NORDEN Desk & Couch",
@@ -188,7 +188,7 @@ function room(state: State): JscadObject[] {
   // Front wall (Z = 0 to t) with door cutout
   if (surfaces.frontWall) {
     result.push(
-      translate({ x: cm(t) })(
+      translate({ x: cm(t), y: cm(t) })(
         colorize(materials.Wall.color)(
           pipe(
             cuboid({ size: { x: cm(W), y: cm(H + t), z: cm(t) } }),
@@ -206,7 +206,7 @@ function room(state: State): JscadObject[] {
   // Back wall (Z = D + t to D + 2t) with window cutout
   if (surfaces.backWall) {
     result.push(
-      translate({ x: cm(t), z: cm(D + t) })(
+      translate({ x: cm(t), z: cm(D + t), y: cm(t) })(
         colorize(materials.Wall.color)(
           pipe(
             cuboid({ size: { x: cm(W), y: cm(H + t), z: cm(t) } }),
@@ -229,8 +229,10 @@ function room(state: State): JscadObject[] {
   // Right wall (X = 0 to t)
   if (surfaces.rightWall) {
     result.push(
-      colorize(materials.Wall.color)(
-        cuboid({ size: { x: cm(t), y: cm(H + t), z: cm(D + 2 * t) } }),
+      translate({ y: cm(t) })(
+        colorize(materials.Wall.color)(
+          cuboid({ size: { x: cm(t), y: cm(H + t), z: cm(D + 2 * t) } }),
+        ),
       ),
     );
   }
@@ -238,7 +240,7 @@ function room(state: State): JscadObject[] {
   // Left wall (X = W + t to W + 2t)
   if (surfaces.leftWall) {
     result.push(
-      translate({ x: cm(t + W) })(
+      translate({ x: cm(t + W), y: cm(t) })(
         colorize(materials.Wall.color)(
           cuboid({ size: { x: cm(t), y: cm(H + t), z: cm(D + 2 * t) } }),
         ),

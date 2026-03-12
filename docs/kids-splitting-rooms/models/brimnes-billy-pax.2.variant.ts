@@ -29,7 +29,7 @@ export function brimnesBillyPax2(
     ikea.cabinets.Pax(state.cabinet),
     rotate({ y: deg(90) }, { around: "corner" }),
     place({
-      at: { x: 0, z: ikea.measurements.cabinets.Pax.width.add(cm(15)) },
+      at: { x: 0, z: cm(15) },
     }),
   );
 
@@ -84,13 +84,11 @@ export function brimnesBillyPax2(
   const desk = pipe(
     ikea.desks.Billy(state.desk),
     rotate({ y: deg(-90) }, { around: "corner" }),
-    place({
-      at: {
-        x: measurements.room.width,
-        z: measurements.room.depth
-          .sub(ikea.measurements.desks.Billy.width)
-          .sub(cm(15)),
-      },
+    translate({
+      x: measurements.room.width,
+      z: measurements.room.depth
+        .sub(ikea.measurements.desks.Billy.width)
+        .sub(cm(15)),
     }),
   );
 
