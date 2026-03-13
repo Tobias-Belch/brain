@@ -4,10 +4,10 @@ title: Coat Rack Wardrobe
 
 import { JscadModelViewer } from "@fea-lib/jscad";
 import { cm, inch, mm } from "@fea-lib/jscad";
-import { calculateDimensions } from "./coat-rack-wardrobe/models/calculations";
-import { CoatRackWardrobe } from "./coat-rack-wardrobe/models/coat-rack-wardrobe.model";
-import { DrillJigs } from "./coat-rack-wardrobe/models/drill-jigs.model";
-import { materials } from "./coat-rack-wardrobe/models/materials";
+import { calculateDimensions } from "./models/calculations";
+import { CoatRackWardrobe } from "./models/coat-rack-wardrobe.model";
+import { DrillJigs } from "./models/drill-jigs.model";
+import { materials } from "./models/materials";
 
 export const pub = process.env.NODE_ENV === "production" ? "/ideas/" : "/"
 
