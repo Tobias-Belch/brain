@@ -10,26 +10,8 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ],
-      "@charts/*": [
-        "src/charts/*"
-      ],
       "@components/*": [
         "src/components/*"
-      ],
-      "@jscad/*": [
-        "src/@jscad/*"
-      ],
-      "@pocs/*": [
-        "src/pocs/*"
-      ],
-      "@types/*": [
-        "src/types/*"
-      ],
-      "@utils/*": [
-        "src/utils/*"
       ],
       "@fea-lib/values": [
         "src/@libs/@fea-lib/values/src/index.ts"

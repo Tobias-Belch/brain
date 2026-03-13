@@ -1,4 +1,4 @@
-import { materialId, type Materials } from "@jscad/types";
+import { materialId, type Materials } from "@fea-lib/jscad";
 
 const roomAlpha = 0.7;
 

@@ -3,9 +3,9 @@ title: "Monitor Riser Speakers – Concept Summary"
 ---
 
 import { JscadModelViewer } from "@fea-lib/jscad";
-import { cm, inch, mm, toCm } from "@pocs/values";
-import { materials } from "@pocs/monitor-riser-speaker-model/models/materials";
-import { MonitorRiserSpeakerModel } from "@pocs/monitor-riser-speaker-model/models/MonitorRiserSpeakerModel";
+import { cm, inch, mm } from "@fea-lib/jscad";
+import { materials } from "./models/materials";
+import { MonitorRiserSpeakerModel } from "./models/MonitorRiserSpeakerModel";
 import { 
   volume, 
   internalVolume, 
@@ -30,7 +30,7 @@ import {
   tLead,
   tCastIron,
   requiredThicknessGranite_cm
-} from "@pocs/monitor-riser-speaker-model/analysis";
+} from "./models/analysis";
 
 export const speaker = {
   width: cm(19),

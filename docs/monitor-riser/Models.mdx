@@ -3,15 +3,15 @@ title: "Models"
 ---
 
 import { JscadModelViewer } from "@fea-lib/jscad";
-import { cm, inch, mm, toCm } from "@pocs/values";
-import { BassPort } from "@pocs/monitor-riser-speaker-model/models/BassPort";
-import { Driver } from "@pocs/monitor-riser-speaker-model/models/Driver";
-import { Jack } from "@pocs/monitor-riser-speaker-model/models/Jack";
-import { Led } from "@pocs/monitor-riser-speaker-model/models/Led";
-import { materials } from "@pocs/monitor-riser-speaker-model/models/materials";
-import { MonitorRiserSpeakerModel } from "@pocs/monitor-riser-speaker-model/models/MonitorRiserSpeakerModel";
-import { normaliseUnits } from "@pocs/monitor-riser-speaker-model/models/utils";
-import { VolumeKnob } from "@pocs/monitor-riser-speaker-model/models/VolumeKnob";
+import { cm, inch, mm } from "@fea-lib/jscad";
+import { BassPort } from "./models/BassPort";
+import { Driver } from "./models/Driver";
+import { Jack } from "./models/Jack";
+import { Led } from "./models/Led";
+import { materials } from "./models/materials";
+import { MonitorRiserSpeakerModel } from "./models/MonitorRiserSpeakerModel";
+import { normaliseUnits } from "./models/utils";
+import { VolumeKnob } from "./models/VolumeKnob";
 
 export const speaker = {
   width: cm(19),
