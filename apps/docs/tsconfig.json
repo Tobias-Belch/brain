@@ -1,17 +1,42 @@
 {
   "extends": "astro/tsconfigs/strict",
-  "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist"],
+  "include": [
+    ".astro/types.d.ts",
+    "**/*"
+  ],
+  "exclude": [
+    "dist"
+  ],
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@charts/*": ["src/charts/*"],
-      "@components/*": ["src/components/*"],
-      "@jscad/*": ["src/@jscad/*"],
-      "@pocs/*": ["src/pocs/*"],
-      "@types/*": ["src/types/*"],
-      "@utils/*": ["src/utils/*"]
+      "@/*": [
+        "./*"
+      ],
+      "@charts/*": [
+        "src/charts/*"
+      ],
+      "@components/*": [
+        "src/components/*"
+      ],
+      "@jscad/*": [
+        "src/@jscad/*"
+      ],
+      "@pocs/*": [
+        "src/pocs/*"
+      ],
+      "@types/*": [
+        "src/types/*"
+      ],
+      "@utils/*": [
+        "src/utils/*"
+      ],
+      "@fea-lib/values": [
+        "src/@libs/@fea-lib/values/src/index.ts"
+      ],
+      "@fea-lib/jscad": [
+        "src/@libs/@fea-lib/jscad/src/index.ts"
+      ]
     },
     "jsx": "react-jsx",
     "jsxImportSource": "react"
