@@ -1,10 +1,9 @@
 import {
   createBuilder,
   cm,
-  toCm,
   type JscadObject,
   type Length,
-} from "@jscad/builder";
+} from "@fea-lib/jscad";
 import * as general from "./general";
 import * as ikea from "./ikea";
 import { materials } from "./materials";
@@ -26,16 +25,16 @@ export function highbed2Pax(
   state: State,
   measurements: Measurements,
 ): JscadObject[] {
-  const wT = toCm(measurements.wall.thickness).value;
-  const roomW = toCm(measurements.room.width).value;
-  const roomD = toCm(measurements.room.depth).value;
-  const paxW = toCm(ikea.measurements.cabinets.Pax.width).value;
-  const paxD = toCm(ikea.measurements.cabinets.Pax.closed.depth).value;
-  const nordenW = toCm(ikea.measurements.desks.Norden.closed.width).value;
-  const nordenD = toCm(ikea.measurements.desks.Norden.depth).value;
-  const mW = toCm(general.measurements.Mattress.width).value;
-  const mD = toCm(general.measurements.Mattress.depth).value;
-  const armrestSize = toCm(cm(14)).value;
+  const wT = cm(measurements.wall.thickness).value;
+  const roomW = cm(measurements.room.width).value;
+  const roomD = cm(measurements.room.depth).value;
+  const paxW = cm(ikea.measurements.cabinets.Pax.width).value;
+  const paxD = cm(ikea.measurements.cabinets.Pax.closed.depth).value;
+  const nordenW = cm(ikea.measurements.desks.Norden.closed.width).value;
+  const nordenD = cm(ikea.measurements.desks.Norden.depth).value;
+  const mW = cm(general.measurements.Mattress.width).value;
+  const mD = cm(general.measurements.Mattress.depth).value;
+  const armrestSize = cm(cm(14)).value;
 
   const closet1 = translate({ z: cm(10 + paxW) })(
     rotate({ y: Math.PI / 2 }, { around: "corner" })(

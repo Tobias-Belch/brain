@@ -1,8 +1,8 @@
 import { useReducer } from "react";
 import {
   JscadModelViewer,
-  type Props,
-} from "@jscad/components/react/JscadModelViewer";
+  type JscadModelViewerProps as Props,
+} from "@fea-lib/jscad";
 import { Select, MultiSelect } from "@components/react/Select";
 import { Switch } from "@components/react/Switch";
 import { MilasRoom, type State, variants } from "../models/milas-room.model";

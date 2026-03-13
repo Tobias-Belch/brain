@@ -4,7 +4,7 @@ import {
   type JscadObject,
   type Length,
   deg,
-} from "@jscad/builder";
+} from "@fea-lib/jscad";
 import * as ikea from "./ikea";
 import { materials } from "./materials";
 import { group } from "./utils";

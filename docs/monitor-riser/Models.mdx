@@ -2,7 +2,7 @@
 title: "Models"
 ---
 
-import JscadModelViewer from "@jscad/components/JscadModelViewer.astro";
+import { JscadModelViewer } from "@fea-lib/jscad";
 import { cm, inch, mm, toCm } from "@pocs/values";
 import { BassPort } from "@pocs/monitor-riser-speaker-model/models/BassPort";
 import { Driver } from "@pocs/monitor-riser-speaker-model/models/Driver";
@@ -30,6 +30,7 @@ export const speaker = {
 ### Monitor Riser Speaker Model
 
 <JscadModelViewer
+  client:only="react"
   name="monitor-riser-speaker-model"
   model={MonitorRiserSpeakerModel(speaker)}
   materials={materials}
@@ -40,6 +41,7 @@ export const speaker = {
 ### Bass Port
 
 <JscadModelViewer
+  client:only="react"
   name="bass-port-model"
   model={BassPort({ depth: cm(2), diameter: speaker.bassPort })}
   materials={materials}
@@ -50,6 +52,7 @@ export const speaker = {
 ### Driver
 
 <JscadModelViewer
+  client:only="react"
   name="driver-model"
   model={Driver({ diameter: speaker.driver.woofer })}
   materials={materials}
@@ -60,6 +63,7 @@ export const speaker = {
 ### Jack
 
 <JscadModelViewer
+  client:only="react"
   name="jack-model"
   model={Jack()}
   materials={materials}
@@ -70,6 +74,7 @@ export const speaker = {
 ### Led
 
 <JscadModelViewer
+  client:only="react"
   name="led-model"
   model={Led()}
   materials={materials}
@@ -80,6 +85,7 @@ export const speaker = {
 ### Volume Knob
 
 <JscadModelViewer
+  client:only="react"
   name="volume-knob-model"
   model={VolumeKnob()}
   materials={materials}

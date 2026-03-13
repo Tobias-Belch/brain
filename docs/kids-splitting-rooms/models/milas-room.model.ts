@@ -2,10 +2,9 @@ import {
   createBuilder,
   cm,
   m,
-  toCm,
   type JscadObject,
   type AnyGeom,
-} from "@jscad/builder";
+} from "@fea-lib/jscad";
 import { materials } from "./materials";
 import { brimnesBillyPax } from "./brimnes-billy-pax.variant";
 import { highbedKallaxWall } from "./highbed-kallax-wall.variant";
@@ -114,16 +113,16 @@ const DEBUG = false;
 export function MilasRoom({
   state = defaultState,
 }: { state?: State } = {}): AnyGeom[] {
-  const t = toCm(measurements.wall.thickness).value;
-  const W = toCm(measurements.room.width).value;
-  const H = toCm(measurements.room.height).value;
+  const t = cm(measurements.wall.thickness).value;
+  const W = cm(measurements.room.width).value;
+  const H = cm(measurements.room.height).value;
 
   const debugElements: JscadObject[] = DEBUG
     ? [
         translate({ x: cm(t), y: cm(t), z: cm(t) })(
           colorize(materials.Debug.color)(
             cuboid({
-              size: { x: cm(W), y: cm(H), z: toCm(measurements.room.depth) },
+              size: { x: cm(W), y: cm(H), z: cm(measurements.room.depth) },
             }),
           ),
         ),
@@ -158,29 +157,29 @@ export function MilasRoom({
 // ─── Room geometry ────────────────────────────────────────────────────────────
 
 function room(state: State): JscadObject[] {
-  const t = toCm(measurements.wall.thickness).value;
-  const W = toCm(measurements.room.width).value;
-  const H = toCm(measurements.room.height).value;
-  const D = toCm(measurements.room.depth).value;
+  const t = cm(measurements.wall.thickness).value;
+  const W = cm(measurements.room.width).value;
+  const H = cm(measurements.room.height).value;
+  const D = cm(measurements.room.depth).value;
 
   // Window
-  const wW = toCm(measurements.room.window.width).value;
-  const wH = toCm(measurements.room.window.height).value;
-  const wD = toCm(measurements.room.window.depth).value;
-  const wRight = toCm(measurements.room.window.right).value;
-  const wBottom = toCm(measurements.room.window.bottom).value;
+  const wW = cm(measurements.room.window.width).value;
+  const wH = cm(measurements.room.window.height).value;
+  const wD = cm(measurements.room.window.depth).value;
+  const wRight = cm(measurements.room.window.right).value;
+  const wBottom = cm(measurements.room.window.bottom).value;
 
-  const wbW = toCm(measurements.room.window.board.width).value;
-  const wbH = toCm(measurements.room.window.board.height).value;
-  const wbD = toCm(measurements.room.window.board.depth).value;
-  const wbRight = toCm(measurements.room.window.board.right).value;
-  const wbBottom = toCm(measurements.room.window.board.bottom).value;
+  const wbW = cm(measurements.room.window.board.width).value;
+  const wbH = cm(measurements.room.window.board.height).value;
+  const wbD = cm(measurements.room.window.board.depth).value;
+  const wbRight = cm(measurements.room.window.board.right).value;
+  const wbBottom = cm(measurements.room.window.board.bottom).value;
 
   // Door
-  const dW = toCm(measurements.room.door.width).value;
-  const dH = toCm(measurements.room.door.height).value;
-  const dD = toCm(measurements.room.door.depth).value;
-  const dRight = toCm(measurements.room.door.right).value;
+  const dW = cm(measurements.room.door.width).value;
+  const dH = cm(measurements.room.door.height).value;
+  const dD = cm(measurements.room.door.depth).value;
+  const dRight = cm(measurements.room.door.right).value;
 
   const surfaces = state.surfaces;
   const result: JscadObject[] = [];
@@ -229,9 +228,9 @@ function room(state: State): JscadObject[] {
   // Right wall (X = 0 to t)
   if (surfaces.rightWall) {
     result.push(
-      translate({ y: cm(t) })(
+      translate({ y: cm(t), z: cm(t) })(
         colorize(materials.Wall.color)(
-          cuboid({ size: { x: cm(t), y: cm(H + t), z: cm(D + 2 * t) } }),
+          cuboid({ size: { x: cm(t), y: cm(H + t), z: cm(D) } }),
         ),
       ),
     );
@@ -240,9 +239,9 @@ function room(state: State): JscadObject[] {
   // Left wall (X = W + t to W + 2t)
   if (surfaces.leftWall) {
     result.push(
-      translate({ x: cm(t + W), y: cm(t) })(
+      translate({ x: cm(t + W), y: cm(t), z: cm(t) })(
         colorize(materials.Wall.color)(
-          cuboid({ size: { x: cm(t), y: cm(H + t), z: cm(D + 2 * t) } }),
+          cuboid({ size: { x: cm(t), y: cm(H + t), z: cm(D) } }),
         ),
       ),
     );

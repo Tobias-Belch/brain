@@ -1,4 +1,4 @@
-import { type JscadObject, type AnyGeom } from "@jscad/builder";
+import { type JscadObject, type AnyGeom } from "@fea-lib/jscad";
 
 /**
  * Merge multiple JscadObjects into one by concatenating their geometry arrays

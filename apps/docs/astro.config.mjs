@@ -36,6 +36,9 @@ export default defineConfig({
         // @jscad/* — only redirect the local files; npm packages like
         // @jscad/modeling and @jscad/stl-serializer must NOT be aliased.
         { find: /^@jscad\/(types|downloadModel|jscadToThree|components)(\/.*)?$/, replacement: resolve(__dirname, "src/@jscad/$1$2") },
+        // @fea-lib/* — local library packages
+        { find: "@fea-lib/jscad", replacement: resolve(__dirname, "src/@libs/@fea-lib/jscad/src/index.ts") },
+        { find: "@fea-lib/values", replacement: resolve(__dirname, "src/@libs/@fea-lib/values/src/index.ts") },
       ],
       preserveSymlinks: true,
     },

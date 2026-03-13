@@ -2,7 +2,7 @@
 title: "Monitor Riser Speakers – Concept Summary"
 ---
 
-import JscadModelViewer from "@jscad/components/JscadModelViewer.astro";
+import { JscadModelViewer } from "@fea-lib/jscad";
 import { cm, inch, mm, toCm } from "@pocs/values";
 import { materials } from "@pocs/monitor-riser-speaker-model/models/materials";
 import { MonitorRiserSpeakerModel } from "@pocs/monitor-riser-speaker-model/models/MonitorRiserSpeakerModel";
@@ -47,6 +47,7 @@ export const speaker = {
 };
 
 <JscadModelViewer
+  client:only="react"
   name="monitor-riser-speaker-model"
   model={MonitorRiserSpeakerModel(speaker)}
   materials={materials}

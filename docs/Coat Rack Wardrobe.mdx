@@ -2,13 +2,12 @@
 title: Coat Rack Wardrobe
 ---
 
-import JscadModelViewer from "@jscad/components/JscadModelViewer.astro";
+import { JscadModelViewer } from "@fea-lib/jscad";
 import { cm, inch, mm, toCm, NumberWithUnit } from "@pocs/values";
 import { calculateDimensions } from "@pocs/coat-rack-wardrobe/calculations";
 import { CoatRackWardrobe } from "@pocs/coat-rack-wardrobe/coat-rack-wardrobe.model";
 import { DrillJigs } from "@pocs/coat-rack-wardrobe/drill-jigs.model";
 import { materials } from "@pocs/coat-rack-wardrobe/materials";
-import { Dimensions } from "@pocs/coat-rack-wardrobe/types";
 
 export const pub = process.env.NODE_ENV === "production" ? "/ideas/" : "/"
 
@@ -88,6 +87,7 @@ export const labels = {
 # Coat Rack Wardrobe
 
 <JscadModelViewer
+  client:only="react"
   name="coat-rack-wardrobe-model"
   materials={materials}
   model={CoatRackWardrobe({ dimensions: calculatedDimensions })}
@@ -119,6 +119,7 @@ export const labels = {
 ## Drill Jigs
 
 <JscadModelViewer
+  client:only="react"
   name="drill-jig-model"
   materials={materials}
   model={DrillJigs({ dimensions: calculatedDimensions })}

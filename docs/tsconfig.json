@@ -10,7 +10,9 @@
       "@jscad/*": ["../apps/docs/src/@jscad/*"],
       "@pocs/*": ["../apps/docs/src/pocs/*"],
       "@types/*": ["../apps/docs/src/types/*"],
-      "@utils/*": ["../apps/docs/src/utils/*"]
+      "@utils/*": ["../apps/docs/src/utils/*"],
+      "@fea-lib/values": ["../apps/docs/src/@libs/@fea-lib/values/src/index.ts"],
+      "@fea-lib/jscad": ["../apps/docs/src/@libs/@fea-lib/jscad/src/index.ts"]
     },
     "jsx": "react-jsx",
     "jsxImportSource": "react"

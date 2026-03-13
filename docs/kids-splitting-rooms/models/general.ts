@@ -1,4 +1,4 @@
-import { createBuilder, cm, toCm, isMeasure, type Length, type Dim, type JscadObject } from "@jscad/builder";
+import { createBuilder, cm, isMeasure, type Length, type Dim, type JscadObject } from "@fea-lib/jscad";
 import { group } from "./utils";
 
 const { cuboid, translate, subtract, pipe } = createBuilder({ coordinateUnit: "cm" });
@@ -106,17 +106,17 @@ export function Bed({
       };
 
   // All arithmetic on physical values uses .value in cm
-  const gT = toCm(normalisedGuards.thickness).value;
-  const pL = toCm(normalisedPadding.left).value;
-  const pR = toCm(normalisedPadding.right).value;
-  const pT = toCm(normalisedPadding.top).value;
-  const pB = toCm(normalisedPadding.bottom).value;
-  const mW = toCm(measurements.Mattress.width).value;
-  const mH = toCm(measurements.Mattress.height).value;
-  const mD = toCm(measurements.Mattress.depth).value;
-  const pltT = toCm(platform.thickness).value;
-  const gTop = toCm(normalisedGuards.top).value;
-  const gBot = toCm(normalisedGuards.bottom).value;
+  const gT = cm(normalisedGuards.thickness).value;
+  const pL = cm(normalisedPadding.left).value;
+  const pR = cm(normalisedPadding.right).value;
+  const pT = cm(normalisedPadding.top).value;
+  const pB = cm(normalisedPadding.bottom).value;
+  const mW = cm(measurements.Mattress.width).value;
+  const mH = cm(measurements.Mattress.height).value;
+  const mD = cm(measurements.Mattress.depth).value;
+  const pltT = cm(platform.thickness).value;
+  const gTop = cm(normalisedGuards.top).value;
+  const gBot = cm(normalisedGuards.bottom).value;
 
   const bedMeasurements = {
     width: cm(gT + pL + mW + pR + gT),
@@ -124,8 +124,8 @@ export function Bed({
     depth: cm(gT + pB + mD + pT + gT),
   };
 
-  const bW = toCm(bedMeasurements.width).value;
-  const bD = toCm(bedMeasurements.depth).value;
+  const bW = cm(bedMeasurements.width).value;
+  const bD = cm(bedMeasurements.depth).value;
 
   const model = group(
     // platform
@@ -186,8 +186,8 @@ export function Bed({
       return cuboid({ size: { x: width, y: height, z: depth } });
     }
 
-    const wVal = toCm(width).value;
-    const dVal = toCm(depth).value;
+    const wVal = cm(width).value;
+    const dVal = cm(depth).value;
     const depthIsThickness = dVal < wVal;
     const w = depthIsThickness ? width : depth;
     const t = depthIsThickness ? depth : width;
@@ -198,7 +198,7 @@ export function Bed({
       depth: depthIsThickness ? t : cm(40),
     };
 
-    const wDim = toCm(w).value;
+    const wDim = cm(w).value;
     let cutoutOffset = 0;
     switch (c) {
       case "left":

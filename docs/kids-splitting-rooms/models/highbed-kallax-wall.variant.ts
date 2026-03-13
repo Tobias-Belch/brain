@@ -1,10 +1,9 @@
 import {
   createBuilder,
   cm,
-  toCm,
   type JscadObject,
   type Length,
-} from "@jscad/builder";
+} from "@fea-lib/jscad";
 import * as general from "./general";
 import * as ikea from "./ikea";
 import { materials } from "./materials";
@@ -26,10 +25,10 @@ export function highbedKallaxWall(
   state: State,
   measurements: Measurements,
 ): JscadObject[] {
-  const wT = toCm(measurements.wall.thickness).value;
-  const roomW = toCm(measurements.room.width).value;
-  const roomD = toCm(measurements.room.depth).value;
-  const paxW = toCm(ikea.measurements.cabinets.Pax.width).value;
+  const wT = cm(measurements.wall.thickness).value;
+  const roomW = cm(measurements.room.width).value;
+  const roomD = cm(measurements.room.depth).value;
+  const paxW = cm(ikea.measurements.cabinets.Pax.width).value;
 
   const closet = translate({ z: cm(10 + paxW) })(
     rotate({ y: Math.PI / 2 }, { around: "corner" })(
@@ -55,7 +54,7 @@ export function highbedKallaxWall(
   const pieces: JscadObject[] = [closet, cabinet, bed];
 
   if (state.bed.variant === "double") {
-    const mW = toCm(general.measurements.Mattress.width).value;
+    const mW = cm(general.measurements.Mattress.width).value;
     pieces.push(
       translate({ x: cm(roomW - mW), z: cm(2 * paxW) })(
         colorize(materials.Furniture.color)(general.mattress),

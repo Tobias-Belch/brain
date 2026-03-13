@@ -1,5 +1,5 @@
-import { calculateVolume, l } from "@pocs/values";
-import { createBuilder, cm, toCm, mm, type JscadObject } from "@jscad/builder";
+import { l } from "@fea-lib/values";
+import { createBuilder, cm, mm, type JscadObject } from "@fea-lib/jscad";
 import * as general from "./general";
 import { group } from "./utils";
 
@@ -9,7 +9,7 @@ export const measurements = {
   beds: {
     // https://www.ikea.com/de/de/p/brimnes-tagesbettgestell-2-schubladen-weiss-00228705/
     Brimnes: {
-      storage: l(2 * calculateVolume(cm(85), cm(16), cm(54)).value),
+      storage: l(cm(85), cm(16), cm(54)).mul(2),
       width: cm(205),
       height: cm(58),
       depth: cm(87),
@@ -52,11 +52,11 @@ export const measurements = {
       width: cm(60),
       height: cm(64),
       depth: cm(42),
-      storage: calculateVolume(cm(60), cm(64), cm(42)),
+      storage: l(cm(60), cm(64), cm(42)),
     },
     // https://www.ikea.com/de/de/p/pax-forsand-kleiderschrank-weiss-weiss-s49502665/
     Pax: {
-      storage: calculateVolume(cm(96), cm(200), cm(58)),
+      storage: l(cm(96), cm(200), cm(58)),
       boards: {
         thickness: mm(18),
         back: {
@@ -92,11 +92,11 @@ export const measurements = {
     Billy: {
       storage: l(
         // top shelf
-        calculateVolume(cm(76), cm(24), cm(26)).value +
+        l(cm(76), cm(24), cm(26)).value +
           // middle shelf
-          calculateVolume(cm(72), cm(31), cm(24)).value +
+          l(cm(72), cm(31), cm(24)).value +
           // bottom shelf
-          calculateVolume(cm(72), cm(30), cm(24)).value,
+          l(cm(72), cm(30), cm(24)).value,
       ),
       boards: {
         thickness: cm(1.8),
@@ -148,7 +148,7 @@ export const measurements = {
     },
     // https://www.ikea.com/de/de/p/norden-klapptisch-weiss-10423886/
     Norden: {
-      storage: l(6 * calculateVolume(cm(20), cm(25), cm(38)).value),
+      storage: l(6 * l(cm(20), cm(25), cm(38)).value),
       height: cm(74),
       depth: cm(80),
       closed: {
@@ -171,7 +171,7 @@ export const measurements = {
   shelfs: {
     // https://www.ikea.com/de/de/p/billy-buecherregal-weiss-30263844/
     Billy: {
-      storage: l(3 * calculateVolume(cm(76), cm(33), cm(28)).value),
+      storage: l(3 * l(cm(76), cm(33), cm(28)).value),
       width: cm(80),
       height: cm(106),
       depth: cm(28),
@@ -208,7 +208,7 @@ export const measurements = {
           depth: cm(39),
         },
       },
-      storage: l(2 * calculateVolume(cm(39), cm(33.5), cm(33.5)).value),
+      storage: l(2 * l(cm(39), cm(33.5), cm(33.5)).value),
     },
   },
 };
@@ -216,14 +216,14 @@ export const measurements = {
 // ─── Brimnes bed pieces ───────────────────────────────────────────────────────
 
 const b = measurements.beds.Brimnes;
-const bT = () => toCm(b.boards.thickness).value;
+const bT = () => cm(b.boards.thickness).value;
 
 const brimnesBed = {
-  back: translate({ x: b.boards.thickness, z: cm(toCm(b.depth).value - bT()) })(
+  back: translate({ x: b.boards.thickness, z: cm(cm(b.depth).value - bT()) })(
     cuboid({ size: { x: b.boards.back.width, y: b.boards.back.height, z: b.boards.thickness } }),
   ),
   right: cuboid({ size: { x: b.boards.thickness, y: b.boards.side.height, z: b.boards.side.depth } }),
-  left: translate({ x: cm(bT() + toCm(b.boards.back.width).value) })(
+  left: translate({ x: cm(bT() + cm(b.boards.back.width).value) })(
     cuboid({ size: { x: b.boards.thickness, y: b.boards.side.height, z: b.boards.side.depth } }),
   ),
   front: translate({ x: b.boards.thickness })(
@@ -234,16 +234,16 @@ const brimnesBed = {
       cuboid({
         size: {
           x: b.boards.thickness,
-          y: cm(toCm(b.boards.front.height).value - 3),
+          y: cm(cm(b.boards.front.height).value - 3),
           z: general.measurements.Mattress.width,
         },
       }),
       // left inner
-      translate({ x: cm(toCm(b.boards.front.width).value - bT()) })(
+      translate({ x: cm(cm(b.boards.front.width).value - bT()) })(
         cuboid({
           size: {
             x: b.boards.thickness,
-            y: cm(toCm(b.boards.front.height).value - 3),
+            y: cm(cm(b.boards.front.height).value - 3),
             z: general.measurements.Mattress.width,
           },
         }),
@@ -259,7 +259,7 @@ const brimnesBed = {
     ),
     // left
     translate({
-      x: cm(toCm(b.drawer.boards.front.width).value - toCm(b.drawer.boards.thickness).value),
+      x: cm(cm(b.drawer.boards.front.width).value - cm(b.drawer.boards.thickness).value),
       z: b.drawer.boards.thickness,
     })(
       cuboid({ size: { x: b.drawer.boards.thickness, y: b.drawer.boards.height, z: b.drawer.boards.side.depth } }),
@@ -276,12 +276,12 @@ export const beds = {
     drawers: "closed" | "opened";
     variant: "single" | "double";
   }): JscadObject => {
-    const mW = toCm(general.measurements.Mattress.width).value;
-    const mH = toCm(general.measurements.Mattress.height).value;
-    const frontBoardH = toCm(b.boards.front.height).value;
+    const mW = cm(general.measurements.Mattress.width).value;
+    const mH = cm(general.measurements.Mattress.height).value;
+    const frontBoardH = cm(b.boards.front.height).value;
     const boardT = bT();
-    const frontW = toCm(b.boards.front.width).value;
-    const drawerFrontW = toCm(b.drawer.boards.front.width).value;
+    const frontW = cm(b.boards.front.width).value;
+    const drawerFrontW = cm(b.drawer.boards.front.width).value;
 
     const frontDepthCorrection =
       state.variant === "double" ? -mW : 0;
@@ -349,13 +349,13 @@ export const cabinets = {
 
   Pax: (state: { variant: "closed" | "opened" }): JscadObject => {
     const p = measurements.cabinets.Pax;
-    const pT = toCm(p.boards.thickness).value;
-    const sideH = toCm(p.boards.side.height).value;
-    const sideD = toCm(p.boards.side.depth).value;
-    const backW = toCm(p.boards.back.width).value;
-    const btW = toCm(p.boards.bottomTop.width).value;
-    const doorW = toCm(p.boards.door.width).value;
-    const doorH = toCm(p.boards.door.height).value;
+    const pT = cm(p.boards.thickness).value;
+    const sideH = cm(p.boards.side.height).value;
+    const sideD = cm(p.boards.side.depth).value;
+    const backW = cm(p.boards.back.width).value;
+    const btW = cm(p.boards.bottomTop.width).value;
+    const doorW = cm(p.boards.door.width).value;
+    const doorH = cm(p.boards.door.height).value;
 
     const corpus = group(
       // back
@@ -407,14 +407,14 @@ export const cabinets = {
 export const desks = {
   Billy: (state: { variant: "closed" | "partially" | "fully" }): JscadObject => {
     const d = measurements.desks.Billy;
-    const bdsT = toCm(d.boards.thickness).value;
-    const outerSideH = toCm(d.boards.outer.side.height).value;
-    const outerShelfW = toCm(d.boards.outer.shelf.width).value;
-    const innerSideH = toCm(d.boards.inner.side.height).value;
-    const innerShelfW = toCm(d.boards.inner.shelf.width).value;
-    const innerFromTop = toCm(d.boards.inner.shelf.fromTop).value;
-    const innerFromBot = toCm(d.boards.inner.shelf.fromBottom).value;
-    const deskDepth = toCm(d.boards.desk.depth).value;
+    const bdsT = cm(d.boards.thickness).value;
+    const outerSideH = cm(d.boards.outer.side.height).value;
+    const outerShelfW = cm(d.boards.outer.shelf.width).value;
+    const innerSideH = cm(d.boards.inner.side.height).value;
+    const innerShelfW = cm(d.boards.inner.shelf.width).value;
+    const innerFromTop = cm(d.boards.inner.shelf.fromTop).value;
+    const innerFromBot = cm(d.boards.inner.shelf.fromBottom).value;
+    const deskDepth = cm(d.boards.desk.depth).value;
 
     const outer = group(
       // right
@@ -428,7 +428,7 @@ export const desks = {
         cuboid({ size: { x: d.boards.outer.shelf.width, y: d.boards.thickness, z: d.boards.outer.shelf.depth } }),
       ),
       // shelf
-      translate({ x: d.boards.thickness, y: cm(outerSideH - bdsT - toCm(d.boards.outer.shelf.fromTop).value) })(
+        translate({ x: d.boards.thickness, y: cm(outerSideH - bdsT - cm(d.boards.outer.shelf.fromTop).value) })(
         cuboid({ size: { x: d.boards.outer.shelf.width, y: d.boards.thickness, z: d.boards.outer.shelf.depth } }),
       ),
     );
@@ -475,8 +475,8 @@ export const desks = {
 
   Nordern: (state: { variant: "closed" | "partially" | "fully" }): JscadObject => {
     const n = measurements.desks.Norden;
-    const closedW = toCm(n.closed.width).value;
-    const boardW = toCm(n.boards.width).value;
+    const closedW = cm(n.closed.width).value;
+    const boardW = cm(n.boards.width).value;
 
     const cabinet = cuboid({ size: { x: n.closed.width, y: n.height, z: n.depth } });
     const board = cuboid({ size: { x: n.boards.width, y: n.boards.thickness, z: n.depth } });
@@ -487,7 +487,7 @@ export const desks = {
         boards.push(
           translate({
             x: cm(-boardW),
-            y: cm(toCm(n.height).value - toCm(n.boards.thickness).value),
+            y: cm(cm(n.height).value - cm(n.boards.thickness).value),
           })(board),
         );
         break;
@@ -495,13 +495,13 @@ export const desks = {
         boards.push(
           translate({
             x: cm(-boardW),
-            y: cm(toCm(n.height).value - toCm(n.boards.thickness).value),
+            y: cm(cm(n.height).value - cm(n.boards.thickness).value),
           })(board),
         );
         boards.push(
           translate({
             x: n.closed.width,
-            y: cm(toCm(n.height).value - toCm(n.boards.thickness).value),
+            y: cm(cm(n.height).value - cm(n.boards.thickness).value),
           })(board),
         );
         break;
@@ -523,9 +523,9 @@ export const desks = {
 export const shelfs = {
   Billy: (): JscadObject => {
     const s = measurements.shelfs.Billy;
-    const sT = toCm(s.boards.thickness).value;
-    const backW = toCm(s.boards.back.width).value;
-    const sideH = toCm(s.boards.side.height).value;
+    const sT = cm(s.boards.thickness).value;
+    const backW = cm(s.boards.back.width).value;
+    const sideH = cm(s.boards.side.height).value;
 
     return group(
       // back
@@ -559,11 +559,11 @@ export const shelfs = {
     { rows = 1, columns = 1 }: { rows?: number; columns?: number } = {},
   ): JscadObject => {
     const k = measurements.shelfs.Kallax;
-    const kT = toCm(k.boards.thickness).value;
-    const sideH = toCm(k.boards.side.height).value;
-    const btW = toCm(k.boards.bottomTop.width).value;
-    const kH = toCm(k.height).value;
-    const kD = toCm(k.depth).value;
+    const kT = cm(k.boards.thickness).value;
+    const sideH = cm(k.boards.side.height).value;
+    const btW = cm(k.boards.bottomTop.width).value;
+    const kH = cm(k.height).value;
+    const kD = cm(k.depth).value;
 
     const bottom = cuboid({ size: { x: k.boards.bottomTop.depth, y: k.boards.thickness, z: k.boards.bottomTop.width } });
     const left = translate({ y: k.boards.thickness })(

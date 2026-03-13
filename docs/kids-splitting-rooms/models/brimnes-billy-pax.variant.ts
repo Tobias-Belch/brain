@@ -1,10 +1,9 @@
 import {
   createBuilder,
   cm,
-  toCm,
   type JscadObject,
   type Length,
-} from "@jscad/builder";
+} from "@fea-lib/jscad";
 import * as ikea from "./ikea";
 import { materials } from "./materials";
 import { group } from "./utils";
@@ -25,15 +24,15 @@ export function brimnesBillyPax(
   state: State,
   measurements: Measurements,
 ): JscadObject[] {
-  const wT = toCm(measurements.wall.thickness).value;
-  const paxW = toCm(ikea.measurements.cabinets.Pax.width).value;
-  const paxH = toCm(ikea.measurements.cabinets.Pax.height).value;
-  const billyDeskW = toCm(ikea.measurements.desks.Billy.width).value;
-  const billyShelfH = toCm(ikea.measurements.shelfs.Billy.height).value;
-  const bestaH = toCm(ikea.measurements.cabinets.Besta.height).value;
-  const bestaW = toCm(ikea.measurements.cabinets.Besta.width).value;
-  const brimnesD = toCm(ikea.measurements.beds.Brimnes.depth).value;
-  const roomD = toCm(measurements.room.depth).value;
+  const wT = cm(measurements.wall.thickness).value;
+  const paxW = cm(ikea.measurements.cabinets.Pax.width).value;
+  const paxH = cm(ikea.measurements.cabinets.Pax.height).value;
+  const billyDeskW = cm(ikea.measurements.desks.Billy.width).value;
+  const billyShelfH = cm(ikea.measurements.shelfs.Billy.height).value;
+  const bestaH = cm(ikea.measurements.cabinets.Besta.height).value;
+  const bestaW = cm(ikea.measurements.cabinets.Besta.width).value;
+  const brimnesD = cm(ikea.measurements.beds.Brimnes.depth).value;
+  const roomD = cm(measurements.room.depth).value;
 
   const closet = translate({ x: cm(wT), y: cm(wT), z: cm(wT + 8 + paxW) })(
     rotate({ y: Math.PI / 2 }, { around: "corner" })(
