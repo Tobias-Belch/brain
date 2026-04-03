@@ -5,6 +5,7 @@ title: Inspiration
 ## Table of Contents
 
 - [3D Printing](#3d-printing)
+- [Printable Models](#printable-models)
 - [Cyberpunk](#cyberpunk)
 
 ## 3D Printing
@@ -54,6 +55,42 @@ title: Inspiration
 [![Behnaz Farahi — Caress of the Gaze detail](https://www.behnazfarahi.com/caress-of-the-gaze/2.jpg)](https://www.behnazfarahi.com/caress-of-the-gaze/)
 
 [![Behnaz Farahi — Caress of the Gaze worn](https://www.behnazfarahi.com/caress-of-the-gaze/3.jpg)](https://www.behnazfarahi.com/caress-of-the-gaze/)
+
+## Printable Models
+
+### Printables
+
+[![Tetrahedron chainmail fabric](https://media.printables.com/media/prints/304968/images/2660310_6f2acadd-699d-49ea-a55b-df37b46326d0/thumbs/inside/320x240/jpg/1-1.webp)](https://www.printables.com/model/304968-tetrahedron-chainmail-fabric)
+
+[![Chainmail Fabric](https://media.printables.com/media/prints/816149/images/6305849_7c070dff-934e-41f8-adcf-cc58dc0dc33c_5294213c-d911-4f90-8aa8-7bf291db3eca/thumbs/inside/320x240/jpg/20240319_105333.webp)](https://www.printables.com/model/816149-chainmail-fabric)
+
+[![Chainmail fabric with hexagonal pattern](https://media.printables.com/media/prints/310975/images/2701196_26b37a52-da4b-405d-b04e-8fb96ffb1667/thumbs/inside/320x240/jpg/img_2911.webp)](https://www.printables.com/model/310975-chainmail-fabric-with-hexagonal-pattern)
+
+[![Easy Print Ring Chainmail Fabric](https://media.printables.com/media/prints/ea9502d5-cefa-4386-9188-2b3f6d26962d/images/10490383_8f790685-d862-4e0f-8757-68defb24fc0a_9ea14cb4-f46d-4349-814b-290bd9bc2288/thumbs/inside/320x240/jpg/pxl_20250819_211121518.webp)](https://www.printables.com/model/1388807-easy-print-ring-chainmail-fabric)
+
+[![Pixel Art Chainmail - Fabric Mats Customization](https://media.printables.com/media/prints/1198703/images/9004814_de7f742f-a863-46b8-942b-a6cc94e99946_f7aaa9f8-7e46-474c-be30-d663b2e2875c/thumbs/inside/320x240/gif/img_1557-ezgifcom-optimize.webp)](https://www.printables.com/model/1198703-pixel-art-chainmail-fabric-mats-customization)
+
+[![Rectangular plate Chainmail Fabric](https://media.printables.com/media/prints/955710/images/7288203_8a8cfb5e-627f-4d24-8fd1-3c439f5f3827_a10f5623-5067-4c88-b5d9-bb7442a904bc/thumbs/inside/320x240/jpg/20240727_152728x.webp)](https://www.printables.com/model/955710-rectangular-plate-chainmail-fabric)
+
+[![Elven Chainmail (Fabric)](https://media.printables.com/media/prints/da42b2ac-92b4-484e-8044-e2dec88cbe83/images/11247287_127bbabc-c8a3-4400-9857-6dd65fafad1c_1b0cc24b-d03e-4dc8-a548-ca072ac4ee5d/thumbs/inside/320x240/png/screenshot-2025-11-24-230941.webp)](https://www.printables.com/model/1492659-elven-chainmail-fabric)
+
+[![Truchet Pattern Chainmail Fabric](https://media.printables.com/media/prints/7c544a93-794a-4dda-a369-b31a46f86526/images/12136753_1d20a322-ee1a-450a-a389-bc3274077ab5_987fa11c-2a87-441f-ba9e-67578c6730cb/thumbs/inside/320x240/jpg/2.webp)](https://www.printables.com/model/1613328-truchet-pattern-chainmail-fabric)
+
+[![Slinky Chainmail Fabric](https://media.printables.com/media/prints/246195/images/2220591_0fb3c530-9e4e-4259-9230-3799e859bd91/thumbs/inside/320x240/png/img_0470.webp)](https://www.printables.com/model/246195-slinky-chainmail-fabric)
+
+### Cults3D
+
+[![3D Print Your Own Fashion – Transfer Custom Logos & Designs onto Fabric (TPU)](https://fbi.cults3d.com/uploaders/17436475/illustration-file/2025-03-28_571448137d056.jpg)](https://cults3d.com/en/3d-model/fashion/3d-print-your-own-fashion-transfer-custom-logos-designs-onto-fabric-tpu)
+
+[![Chainmail (tsmarsh)](https://fbi.cults3d.com/uploaders/14427156/illustration-file/2934af53-ce42-442f-98ea-efce77500dde/IMG_3908.jpeg)](https://cults3d.com/en/3d-model/fashion/chainmail-tsmarsh)
+
+[![Fantasy Skull Scales Flexible Articulated Wearable Chainmail Fabric](https://fbi.cults3d.com/uploaders/23323277/illustration-file/4b621634-ae3d-42c3-a02e-1e6674278201/pre.png)](https://cults3d.com/en/3d-model/fashion/fantasy-skull-scales-flexible-articulated-wearable-chainmail-fabric)
+
+[![Flexible Chainmail Medieval Fabric – 1mm Precision Print-in-Place](https://fbi.cults3d.com/uploaders/47431717/illustration-file/7270a402-905f-4d85-bc5c-4d609c84a41d/Gemini_Generated_Image_9i3cwf9i3cwf9i3c.png)](https://cults3d.com/en/3d-model/jewelry/flexible-chainmail-medieval-fabric-1mm-precision-print-in-place-erycvision)
+
+[![Flower Petal TPU Hat Pattern – Flexible Cosplay & Costume Accessory](https://fbi.cults3d.com/uploaders/16376773/illustration-file/acc08e5c-f826-4a39-bd9f-adff534f2913/thum.jpg)](https://cults3d.com/en/3d-model/fashion/flower-petal-tpu-hat-pattern-flexible-cosplay-costume-accessory)
+
+[![Chainmail (various)](https://fbi.cults3d.com/uploaders/13709009/illustration-file/f5924862-5123-4a93-aec5-5aaaec25074a/DSCF5410_display_large_display_large.jpg)](https://cults3d.com/en/3d-model/various/chainmail)
 
 ## Cyberpunk
 
