@@ -41,6 +41,20 @@ title: Inspiration
 
 [![KAIMIN 3D printed jacket, dress and bodysuit, Milan Design Week 2022](https://3dprint.com/wp-content/uploads/2022/06/SSYS-Milan-9.png)](https://3dprint.com/291745/stratasys-milan-design-week-2022/)
 
+[![Danit Peleg — TED Talk "Forget shopping. Soon you'll download your new clothes"](https://img.youtube.com/vi/pQDLGhUm_zU/maxresdefault.jpg)](https://www.ted.com/talks/danit_peleg_forget_shopping_soon_you_ll_download_your_new_clothes)
+
+[![Danit Peleg — BBC 100 Women interview](https://img.youtube.com/vi/o1QXJWlNiv0/maxresdefault.jpg)](https://www.youtube.com/watch?v=o1QXJWlNiv0)
+
+[![Behnaz Farahi — Iridescence interactive 3D-printed collar (2019)](https://www.behnazfarahi.com/Iridescence/1.jpg)](https://www.behnazfarahi.com/Iridescence/)
+
+[![Behnaz Farahi — Iridescence collar, rotating quills detail](https://www.behnazfarahi.com/Iridescence/2.jpg)](https://www.behnazfarahi.com/Iridescence/)
+
+[![Behnaz Farahi — Caress of the Gaze, gaze-actuated wearable (2015)](https://www.behnazfarahi.com/caress-of-the-gaze/1.jpg)](https://www.behnazfarahi.com/caress-of-the-gaze/)
+
+[![Behnaz Farahi — Caress of the Gaze detail](https://www.behnazfarahi.com/caress-of-the-gaze/2.jpg)](https://www.behnazfarahi.com/caress-of-the-gaze/)
+
+[![Behnaz Farahi — Caress of the Gaze worn](https://www.behnazfarahi.com/caress-of-the-gaze/3.jpg)](https://www.behnazfarahi.com/caress-of-the-gaze/)
+
 ## Cyberpunk
 
 [![Cyberpunk runway feature image](https://shellzine.net/wp-content/uploads/2022/06/cyberpunkrunwayfeature.jpg)](https://shellzine.net/cyberpunk-fashion-runway/)

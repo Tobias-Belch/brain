@@ -15,6 +15,9 @@ title: 3D Printing for Fashion & Fabrics
   - [3.1 threeASFOUR — Pangolin \& Harmonograph Dresses (2016)](#31-threeasfour--pangolin--harmonograph-dresses-2016)
   - [3.2 Iris van Herpen](#32-iris-van-herpen)
   - [3.3 Issey Miyake Eyes — UROKO 3D Printed Glasses (2026)](#33-issey-miyake-eyes--uroko-3d-printed-glasses-2026)
+  - [3.4 Danit Peleg — Desktop FDM Collection (2015) \& First Sold Online Jacket (2017)](#34-danit-peleg--desktop-fdm-collection-2015--first-sold-online-jacket-2017)
+  - [3.5 Behnaz Farahi — Iridescence (2019) \& Caress of the Gaze (2015)](#35-behnaz-farahi--iridescence-2019--caress-of-the-gaze-2015)
+  - [3.6 Julia Daviy — Liberation Collection (2018) \& After Forever (2019)](#36-julia-daviy--liberation-collection-2018--after-forever-2019)
 - [4. Key Findings](#4-key-findings)
   - [4.1 Pioneer Designers \& Landmark Pieces](#41-pioneer-designers--landmark-pieces)
   - [4.2 Materials](#42-materials)
@@ -84,6 +87,47 @@ Images sourced from URLs referenced in this report. Click any image to visit the
 
 [![Issey Miyake UROKO glasses detail](https://www.voxelmatters.com/wp-content/uploads/2026/03/issey-miyake-2-UROKO-780x470.jpg)](https://www.voxelmatters.com/five-designers-embracing-3d-printing-iris-van-herpen-issey-miyake/)
 *UROKO detail — ceramics-inspired surface finish, eight lenses*
+
+---
+
+### 3.4 Danit Peleg — Desktop FDM Collection (2015) & First Sold Online Jacket (2017)
+
+*Source: [Danit Peleg portfolio](https://danitpeleg.com) | [TED Talk](https://www.ted.com/talks/danit_peleg_forget_shopping_soon_you_ll_download_your_new_clothes) | [BBC 100 Women](https://www.youtube.com/watch?v=o1QXJWlNiv0)*
+
+[![Danit Peleg — TED Talk "Forget shopping. Soon you'll download your new clothes"](https://img.youtube.com/vi/pQDLGhUm_zU/maxresdefault.jpg)](https://www.ted.com/talks/danit_peleg_forget_shopping_soon_you_ll_download_your_new_clothes)
+*Danit Peleg's 2015 TED Talk — 2M+ views — on producing a complete FDM graduation collection at home*
+
+[![Danit Peleg — BBC 100 Women interview](https://img.youtube.com/vi/o1QXJWlNiv0/maxresdefault.jpg)](https://www.youtube.com/watch?v=o1QXJWlNiv0)
+*BBC 100 Women feature — Peleg discusses her 2017 world-first customisable 3D-printed jacket sold online*
+
+---
+
+### 3.5 Behnaz Farahi — Iridescence (2019) & Caress of the Gaze (2015)
+
+*Source: [behnazfarahi.com/Iridescence](https://www.behnazfarahi.com/Iridescence/) | [behnazfarahi.com/caress-of-the-gaze](https://www.behnazfarahi.com/caress-of-the-gaze/)*
+
+[![Behnaz Farahi — Iridescence interactive 3D-printed collar (2019)](https://www.behnazfarahi.com/Iridescence/1.jpg)](https://www.behnazfarahi.com/Iridescence/)
+*Iridescence — 200 rotating 3D-printed quills respond to facial expressions via camera tracking; commissioned by Museum of Science and Industry Chicago*
+
+[![Behnaz Farahi — Iridescence collar, rotating quills detail](https://www.behnazfarahi.com/Iridescence/2.jpg)](https://www.behnazfarahi.com/Iridescence/)
+*Iridescence detail — quill array, facial-tracking camera integrated into collar structure*
+
+[![Behnaz Farahi — Caress of the Gaze, gaze-actuated wearable (2015)](https://www.behnazfarahi.com/caress-of-the-gaze/1.jpg)](https://www.behnazfarahi.com/caress-of-the-gaze/)
+*Caress of the Gaze — Objet500 Connex multi-material print, SMA actuators; surface bristles respond to a viewer's gaze direction*
+
+[![Behnaz Farahi — Caress of the Gaze detail](https://www.behnazfarahi.com/caress-of-the-gaze/2.jpg)](https://www.behnazfarahi.com/caress-of-the-gaze/)
+*Caress of the Gaze — actuator detail*
+
+[![Behnaz Farahi — Caress of the Gaze worn](https://www.behnazfarahi.com/caress-of-the-gaze/3.jpg)](https://www.behnazfarahi.com/caress-of-the-gaze/)
+*Caress of the Gaze — worn at Autodesk Pier 9; made with Autodesk support*
+
+---
+
+### 3.6 Julia Daviy — Liberation Collection (2018) & After Forever (2019)
+
+*Source: [juliadaviy.com/3d%2F4d-printing](https://juliadaviy.com/3d%2F4d-printing)*
+
+> Direct image URLs are not available from Julia Daviy's site (GoDaddy builder, lazy-loaded). Visit the portfolio page to view the Liberation Collection (first sustainable 3D-printed clothes collection on large-format industrial printers, NYFW 2018) and the After Forever Collection (first digitally customisable 3D-printed skirt, jackets, and shirts with computational design, New Age Lab Miami 2019).
 
 ---
 
@@ -225,6 +269,10 @@ The global 3D printing market was valued at ~$20B in 2024 with projections to ~$
 | S38 | Design in 3D: a computational fashion design protocol — Emerald Publishing | Web/Academic | 2021 | High — peer-reviewed | Computational design workflow |
 | S39 | Lattice Structures Mechanical Description — MDPI | Web/Academic | 2021 | High — peer-reviewed | Lattice mechanics taxonomy |
 | S40 | Plant-based AM Molded Shoes Get Funding Boost — 3D Printing Media | Web | 2023 | Medium — trade press | Bio-based footwear startup |
+| S41 | Danit Peleg — designer portfolio (danitpeleg.com) | Web | 2015–2024 | High — primary source from designer | FDM graduation collection (2015); first online-sold 3D-printed jacket (2017) |
+| S42 | Behnaz Farahi — Iridescence (behnazfarahi.com/Iridescence) | Web | 2019 | High — primary source from designer | 200-quill facial-tracking collar; commissioned by MSI Chicago |
+| S43 | Behnaz Farahi — Caress of the Gaze (behnazfarahi.com/caress-of-the-gaze) | Web | 2015 | High — primary source from designer | Gaze-actuated Objet500 Connex multi-material wearable; SMA actuators; Autodesk Pier 9 |
+| S44 | Julia Daviy — 3D/4D Printing portfolio (juliadaviy.com/3d%2F4d-printing) | Web | 2018–2021 | Medium — primary source, images lazy-loaded | Liberation Collection (NYFW 2018); After Forever (2019); Tessera Project (2019) |
 
 *(Remaining ~25 sources cover supporting topics: general 3D printing history, body scanning software, Iris van Herpen biographical pieces, additional Julia Koerner and threeASFOUR coverage. All are indexed in the NotebookLM notebook.)*
 
