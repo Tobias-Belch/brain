@@ -12,17 +12,21 @@ title: Cyberpunk Fashion & Style
 - [1. Research Question \& Scope](#1-research-question--scope)
 - [2. Methodology](#2-methodology)
 - [3. NLM Artefacts](#3-nlm-artefacts)
-- [4. Key Findings](#4-key-findings)
-  - [4.1 Origins: The "High Tech, Low Life" Aesthetic](#41-origins-the-high-tech-low-life-aesthetic)
-  - [4.2 Subcultures: Four Major Expressions](#42-subcultures-four-major-expressions)
-  - [4.3 High Fashion: The Runway Goes Cyberpunk](#43-high-fashion-the-runway-goes-cyberpunk)
-  - [4.4 Wearable Technology \& Smart Fabrics](#44-wearable-technology--smart-fabrics)
-  - [4.5 Current State: 2025–2026 Trends](#45-current-state-20252026-trends)
-  - [4.6 Visual \& Media Resources](#46-visual--media-resources)
-- [5. Source Inventory](#5-source-inventory)
-- [6. Conflicts \& Open Questions](#6-conflicts--open-questions)
-- [7. Blindspot / Gap Analysis](#7-blindspot--gap-analysis)
-- [8. Recommended Next Steps](#8-recommended-next-steps)
+- [4. Image Gallery](#4-image-gallery)
+  - [4.1 Cyberpunk Runway History](#41-cyberpunk-runway-history)
+  - [4.2 Cyberpunk Aesthetic \& Media References](#42-cyberpunk-aesthetic--media-references)
+  - [4.3 Tokyo Cyber Street Style](#43-tokyo-cyber-street-style)
+- [5. Key Findings](#5-key-findings)
+  - [5.1 Origins: The "High Tech, Low Life" Aesthetic](#51-origins-the-high-tech-low-life-aesthetic)
+  - [5.2 Subcultures: Four Major Expressions](#52-subcultures-four-major-expressions)
+  - [5.3 High Fashion: The Runway Goes Cyberpunk](#53-high-fashion-the-runway-goes-cyberpunk)
+  - [5.4 Wearable Technology \& Smart Fabrics](#54-wearable-technology--smart-fabrics)
+  - [5.5 Current State: 2025–2026 Trends](#55-current-state-20252026-trends)
+  - [5.6 Visual \& Media Resources](#56-visual--media-resources)
+- [6. Source Inventory](#6-source-inventory)
+- [7. Conflicts \& Open Questions](#7-conflicts--open-questions)
+- [8. Blindspot / Gap Analysis](#8-blindspot--gap-analysis)
+- [9. Recommended Next Steps](#9-recommended-next-steps)
 
 ---
 
@@ -77,9 +81,95 @@ Out of scope:
 
 ---
 
-## 4. Key Findings
+## 4. Image Gallery
 
-### 4.1 Origins: The "High Tech, Low Life" Aesthetic
+Images sourced from URLs referenced in this report. Click any image to visit the source page.
+
+### 4.1 Cyberpunk Runway History
+
+*Source: [A Brief History of Cyberpunk on the Fashion Runway — SHELLZINE](https://shellzine.net/cyberpunk-fashion-runway/)*
+
+[![Cyberpunk runway feature image](https://shellzine.net/wp-content/uploads/2022/06/cyberpunkrunwayfeature.jpg)](https://shellzine.net/cyberpunk-fashion-runway/)
+
+[![Thierry Mugler A/W 1990 & S/S 1991](https://shellzine.net/wp-content/uploads/2021/03/mugler.jpg)](https://shellzine.net/cyberpunk-fashion-runway/)
+*Thierry Mugler A/W 1990 & S/S 1991*
+
+[![Jean Paul Gaultier A/W 1995 "CYBER"](https://shellzine.net/wp-content/uploads/2022/06/gaultier_cyber95.jpg)](https://shellzine.net/cyberpunk-fashion-runway/)
+*Jean Paul Gaultier A/W 1995 "CYBER"*
+
+[![20471120 S/S 1998 "Yikes"](https://shellzine.net/wp-content/uploads/2022/06/yikesrunway.jpg)](https://shellzine.net/cyberpunk-fashion-runway/)
+*20471120 S/S 1998 "Yikes"*
+
+[![Dior A/W 1999](https://shellzine.net/wp-content/uploads/2022/06/dior1999runway.jpg)](https://shellzine.net/cyberpunk-fashion-runway/)
+*Dior A/W 1999*
+
+[![Julius_7 2012 manga lookbook](https://shellzine.net/wp-content/uploads/2022/06/julius7manga.jpg)](https://shellzine.net/cyberpunk-fashion-runway/)
+*Julius_7 2012 manga lookbook*
+
+[![Alexander McQueen S/S 2011 heels](https://shellzine.net/wp-content/uploads/2022/06/mcqueenheels.jpg)](https://shellzine.net/cyberpunk-fashion-runway/)
+*Alexander McQueen S/S 2011*
+
+[![Gareth Pugh A/W 2011](https://shellzine.net/wp-content/uploads/2022/06/garethpughrunway.jpg)](https://shellzine.net/cyberpunk-fashion-runway/)
+*Gareth Pugh A/W 2011*
+
+[![Rick Owens A/W 2014 "Moody"](https://shellzine.net/wp-content/uploads/2022/06/rickowens2014.jpg)](https://shellzine.net/cyberpunk-fashion-runway/)
+*Rick Owens A/W 2014 "Moody"*
+
+[![BLACKMERLE lookbooks 2016–2019](https://shellzine.net/wp-content/uploads/2022/06/blackmerlelookbook.jpg)](https://shellzine.net/cyberpunk-fashion-runway/)
+*BLACKMERLE 2016–2019 lookbooks*
+
+[![Boris Bidjan Saberi A/W 2016](https://shellzine.net/wp-content/uploads/2022/06/bbsrunway.jpg)](https://shellzine.net/cyberpunk-fashion-runway/)
+*Boris Bidjan Saberi A/W 2016*
+
+[![Raf Simons S/S 2018](https://shellzine.net/wp-content/uploads/2022/06/raf2018ss.jpg)](https://shellzine.net/cyberpunk-fashion-runway/)
+*Raf Simons S/S 2018*
+
+---
+
+### 4.2 Cyberpunk Aesthetic & Media References
+
+*Source: [Cyberpunk Fashion — SHELLZINE](https://shellzine.net/cyberpunk-fashion/)*
+
+[![Cyberpunk fashion intro](https://shellzine.net/wp-content/uploads/2021/02/cyberpunk_intro.jpg)](https://shellzine.net/cyberpunk-fashion/)
+
+[![Ghost in the Shell (1995) — Major & Batou](https://shellzine.net/wp-content/uploads/2021/02/gits_major_batou.jpg)](https://shellzine.net/cyberpunk-fashion/)
+*Ghost in the Shell (1995) — Major & Batou*
+
+[![Mondo 2000 cyberpunk infographic](https://shellzine.net/wp-content/uploads/2021/01/mondo_cyberpunk-754x1024.jpg)](https://shellzine.net/cyberpunk-fashion/)
+*Mondo 2000 cyberpunk culture infographic*
+
+[![Riot Division FW17/18 techwear lookbook](https://shellzine.net/wp-content/uploads/2021/02/riotdivision-lookbook-fw17-18.jpg)](https://shellzine.net/cyberpunk-fashion/)
+*Riot Division FW17/18 techwear lookbook*
+
+---
+
+### 4.3 Tokyo Cyber Street Style
+
+*Source: [Tokyo Fashion — cyber tag](https://tokyofashion.com/tag/cyber-fashion/)*
+
+[![Japanese Cyber/Y2K street style, Harajuku 2023](https://tokyofashion.com/wp-content/uploads/2023/03/20230226_7_2_0182-600x900.jpg)](https://tokyofashion.com/tag/cyber-fashion/)
+*Japanese Cyber/Y2K street style, Harajuku 2023*
+
+[![Cyber Fashion, Harajuku 2021](https://tokyofashion.com/wp-content/uploads/2021/10/2021-10-02-010-001-NK-Harajuku-1292-600x900.jpg)](https://tokyofashion.com/tag/cyber-fashion/)
+*Cyber fashion, Harajuku 2021*
+
+[![Cyber street style with iridescent platform boots, Harajuku 2020](https://tokyofashion.com/wp-content/uploads/2020/07/NK-2020-06-20-010-011-Harajuku-DZ7-0218-600x900.jpg)](https://tokyofashion.com/tag/cyber-fashion/)
+*Cyber street style with iridescent platform boots, Harajuku 2020*
+
+[![Hatra Japan neon street style, 2019](https://tokyofashion.com/wp-content/uploads/2019/10/Hatra-Japan-Street-Style-Harajuku-20191019DZ75118-600x900.jpg)](https://tokyofashion.com/tag/cyber-fashion/)
+*Hatra Japan neon street style, Harajuku 2019*
+
+[![Harajuku vaporwave dress, 2019](https://tokyofashion.com/wp-content/uploads/2019/10/NK-2019-08-04-002-006-Harajuku-DZ7-2168_1-600x900.jpg)](https://tokyofashion.com/tag/cyber-fashion/)
+*Harajuku vaporwave dress, 2019*
+
+[![Aika Electronics cyber street fashion, 2019](https://tokyofashion.com/wp-content/uploads/2019/05/NK-2019-04-07-008-003-Harajuku-DZ7-9068-2_1-600x900.jpg)](https://tokyofashion.com/tag/cyber-fashion/)
+*Aika Electronics cyber street fashion, Harajuku 2019*
+
+---
+
+## 5. Key Findings
+
+### 5.1 Origins: The "High Tech, Low Life" Aesthetic
 
 Cyberpunk fashion is rooted in 1980s science fiction. **William Gibson's _Neuromancer_ (1984)**
 coined the "high tech, low life" ethos — the contradiction of gleaming technology against social
@@ -92,7 +182,7 @@ cultural appropriation as a genre label [S-NLM]. "Cybergoth" was coined in 1988 
 company Games Workshop for their game _Dark Future_, years before the fashion subculture emerged
 in the late 1990s [S4].
 
-### 4.2 Subcultures: Four Major Expressions
+### 5.2 Subcultures: Four Major Expressions
 
 **Cybergoth** (late 1990s–2000s peak) is the most theatrically extreme form. Originating in the
 fusion of industrial music and rave culture, it is characterised by a dark monochrome base spiked
@@ -123,7 +213,7 @@ disorder," gender-fluid inclusivity, and a view of technology as a tool for self
 rather than a dystopian warning. Key brands: Takuya Angel, D/3, PRODUCT_C, Aika Electronics,
 Chloma, CTCTYO, Grounds.
 
-### 4.3 High Fashion: The Runway Goes Cyberpunk
+### 5.3 High Fashion: The Runway Goes Cyberpunk
 
 High fashion's engagement with cyberpunk spans three decades of increasingly direct references:
 
@@ -144,7 +234,7 @@ High fashion's engagement with cyberpunk spans three decades of increasingly dir
 
 [S8, S-NLM]
 
-### 4.4 Wearable Technology & Smart Fabrics
+### 5.4 Wearable Technology & Smart Fabrics
 
 Wearable tech represents the literal realisation of the cyberpunk ethos — clothing as an
 intelligent, responsive second skin [S9, S10].
@@ -179,7 +269,7 @@ directly into fabric to autonomously analyse health data and adapt to environmen
 [S11]. Key challenge: washability — rigid electronics bonded to textiles typically fail under
 standard washing cycles [S12].
 
-### 4.5 Current State: 2025–2026 Trends
+### 5.5 Current State: 2025–2026 Trends
 
 **Techwear Hybridisation** — modular, weather-resistant techwear merged with glowing
 luminescent stitching, UV-taped straps, and neon accents [S-NLM].
@@ -207,7 +297,7 @@ PETA-vegan and climate-positive [S-NLM].
 (scannable AR illusions, wearable NFTs, haptic feedback); transition from dystopian to
 "solarpunk" — high-tech, self-healing, biodegradable garments [S11, S-NLM].
 
-### 4.6 Visual & Media Resources
+### 5.6 Visual & Media Resources
 
 **YouTube:** "This Is Antwon" (techwear styling, brand reviews, outfit breakdowns)
 
@@ -225,7 +315,7 @@ Tokyo Fashion Archive (Harajuku subcultures); KERA magazine (web version)
 
 ---
 
-## 5. Source Inventory
+## 6. Source Inventory
 
 Select key sources with quality annotations. Full source list in NLM notebook
 (https://notebooklm.google.com/notebook/9c1b2a69-4407-4230-8be7-622e5481ac05).
@@ -252,7 +342,7 @@ Select key sources with quality annotations. Full source list in NLM notebook
 
 ---
 
-## 6. Conflicts & Open Questions
+## 7. Conflicts & Open Questions
 
 **Conflict — Cyberpunk vs. Techwear functionality:** Some sources clearly separate the two,
 arguing cyberpunk clothing is "totally unrelated to functionality and versatility" (pure
@@ -285,7 +375,7 @@ but no source quantifies it or provides a primary study [S12, S-NLM].
 
 ---
 
-## 7. Blindspot / Gap Analysis
+## 8. Blindspot / Gap Analysis
 
 - [x] **Opposing view** — Covered: commodification critique, techno-Orientalism, sexism in
   the genre, sustainability paradox, and privacy concerns are all represented in sources.
@@ -324,7 +414,7 @@ but no source quantifies it or provides a primary study [S12, S-NLM].
 
 ---
 
-## 8. Recommended Next Steps
+## 9. Recommended Next Steps
 
 1. **Deep-read the NLM Briefing Doc ([Artifact A](notebooklm-briefing-cyberpunk-fashion.md)):**
    The NLM-generated briefing doc synthesises across all 72+ sources and may surface details

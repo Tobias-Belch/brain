@@ -11,17 +11,21 @@ title: 3D Printing for Fashion & Fabrics
 - [Table of Contents](#table-of-contents)
 - [1. Research Question \& Scope](#1-research-question--scope)
 - [2. Methodology](#2-methodology)
-- [3. Key Findings](#3-key-findings)
-  - [3.1 Pioneer Designers \& Landmark Pieces](#31-pioneer-designers--landmark-pieces)
-  - [3.2 Materials](#32-materials)
-  - [3.3 Technical Approaches](#33-technical-approaches)
-  - [3.4 Sustainability Claims \& Realities](#34-sustainability-claims--realities)
-  - [3.5 Market Trajectory](#35-market-trajectory)
-  - [3.6 Visual Resources](#36-visual-resources)
-- [4. Source Inventory](#4-source-inventory)
-- [5. Conflicts \& Open Questions](#5-conflicts--open-questions)
-- [6. Blindspot / Gap Analysis](#6-blindspot--gap-analysis)
-- [7. Recommended Next Steps](#7-recommended-next-steps)
+- [3. Image Gallery](#3-image-gallery)
+  - [3.1 threeASFOUR — Pangolin \& Harmonograph Dresses (2016)](#31-threeasfour--pangolin--harmonograph-dresses-2016)
+  - [3.2 Iris van Herpen](#32-iris-van-herpen)
+  - [3.3 Issey Miyake Eyes — UROKO 3D Printed Glasses (2026)](#33-issey-miyake-eyes--uroko-3d-printed-glasses-2026)
+- [4. Key Findings](#4-key-findings)
+  - [4.1 Pioneer Designers \& Landmark Pieces](#41-pioneer-designers--landmark-pieces)
+  - [4.2 Materials](#42-materials)
+  - [4.3 Technical Approaches](#43-technical-approaches)
+  - [4.4 Sustainability Claims \& Realities](#44-sustainability-claims--realities)
+  - [4.5 Market Trajectory](#45-market-trajectory)
+  - [4.6 Visual Resources](#46-visual-resources)
+- [5. Source Inventory](#5-source-inventory)
+- [6. Conflicts \& Open Questions](#6-conflicts--open-questions)
+- [7. Blindspot / Gap Analysis](#7-blindspot--gap-analysis)
+- [8. Recommended Next Steps](#8-recommended-next-steps)
 
 ---
 
@@ -49,9 +53,43 @@ Out of scope: 3D printing for non-fashion industrial textiles (e.g. filtration,
 
 ---
 
-## 3. Key Findings
+## 3. Image Gallery
 
-### 3.1 Pioneer Designers & Landmark Pieces
+Images sourced from URLs referenced in this report. Click any image to visit the source page.
+
+### 3.1 threeASFOUR — Pangolin & Harmonograph Dresses (2016)
+
+*Source: [threeASFOUR x Stratasys — YouTube](https://www.youtube.com/watch?v=2uhR1NFbtL0)*
+
+[![threeASFOUR Pangolin & Harmonograph 3D printed dresses, NYFW 2016](https://img.youtube.com/vi/2uhR1NFbtL0/maxresdefault.jpg)](https://www.youtube.com/watch?v=2uhR1NFbtL0)
+*threeASFOUR Pangolin & Harmonograph dresses — 3D printed with Stratasys, NYFW 2016*
+
+---
+
+### 3.2 Iris van Herpen
+
+*Source: [Five designers embracing 3D printing — VoxelMatters](https://www.voxelmatters.com/five-designers-embracing-3d-printing-iris-van-herpen-issey-miyake/)*
+
+[![Iris van Herpen "Sculpting the Senses" at the Musée des Arts Décoratifs](https://www.voxelmatters.com/wp-content/uploads/2026/01/IVH-sculptingthesenses.jpeg)](https://www.voxelmatters.com/five-designers-embracing-3d-printing-iris-van-herpen-issey-miyake/)
+*Iris van Herpen "Sculpting the Senses" exhibition at the Musée des Arts Décoratifs*
+
+---
+
+### 3.3 Issey Miyake Eyes — UROKO 3D Printed Glasses (2026)
+
+*Source: [Five designers embracing 3D printing — VoxelMatters](https://www.voxelmatters.com/five-designers-embracing-3d-printing-iris-van-herpen-issey-miyake/)*
+
+[![Issey Miyake Eyes UROKO 3D printed sunglasses, S/S 2026](https://www.voxelmatters.com/wp-content/uploads/2026/03/issey-miyake-1-UROKO.jpg)](https://www.voxelmatters.com/five-designers-embracing-3d-printing-iris-van-herpen-issey-miyake/)
+*Issey Miyake Eyes UROKO 3D printed multi-lens sunglasses, S/S 2026*
+
+[![Issey Miyake UROKO glasses detail](https://www.voxelmatters.com/wp-content/uploads/2026/03/issey-miyake-2-UROKO-780x470.jpg)](https://www.voxelmatters.com/five-designers-embracing-3d-printing-iris-van-herpen-issey-miyake/)
+*UROKO detail — ceramics-inspired surface finish, eight lenses*
+
+---
+
+## 4. Key Findings
+
+### 4.1 Pioneer Designers & Landmark Pieces
 
 **Iris van Herpen** is the single most cited figure in the corpus [S1, S2, S3, S4]. She began integrating 3D printing into haute couture around 2010–2011, producing dresses that fused rigid polyamide lattice with traditional textile craft. Her work established that 3D printing was viable as a couture fabrication method, not merely a prototyping tool.
 
@@ -75,11 +113,11 @@ Out of scope: 3D printing for non-fashion industrial textiles (e.g. filtration,
 
 ---
 
-### 3.2 Materials
+### 4.2 Materials
 
 | Material | Properties | Used by / in |
 |---|---|---|
-| TPU (thermoplastic polyurethane) | Flexible, elastic, washable (with caveats — see §5) | Julia Daviy, hybrid textile studies |
+| TPU (thermoplastic polyurethane) | Flexible, elastic, washable (with caveats — see §6) | Julia Daviy, hybrid textile studies |
 | TPE (thermoplastic elastomer) | Soft, rubber-like hand | Wearability studies |
 | PLA (polylactic acid) | Rigid, bio-based, compostable under industrial conditions | Early Danit Peleg, Simplifyber |
 | Polyamide / Nylon (SLS) | Durable, semi-flexible | Iris van Herpen early work |
@@ -93,7 +131,7 @@ The field is shifting from rigid photopolymers (good detail, poor wearability) t
 
 ---
 
-### 3.3 Technical Approaches
+### 4.3 Technical Approaches
 
 **Direct-to-textile (DTT) / Hybrid printing**
 3D printing directly onto woven fabric using FDM with flexible filaments. The printed polymer penetrates the fabric weave, creating mechanical interlocking. Adhesion is highly sensitive to nozzle height (closer = stronger bond) and fabric porosity (loose weave = better penetration) [S22, S23]. Nozzle offset of -0.05 mm on thick fabrics produces the weakest adhesion [S22].
@@ -112,21 +150,21 @@ Structured-light or photogrammetry body scanners capture exact body dimensions; 
 
 ---
 
-### 3.4 Sustainability Claims & Realities
+### 4.4 Sustainability Claims & Realities
 
 Sources strongly emphasise sustainability as a driver: zero-waste production (print only what is needed), on-demand manufacturing (no overstock), bio-based or recyclable filaments, and decentralised local production [S30, S31, S11].
 
-**However:** a sustainability paradox exists in the corpus. Most garments use petroleum-derived TPU/TPE; hybrid textile–print structures fuse plastic to natural fabric, creating composite waste streams that are harder to separate and recycle than either material alone [S32]. Municipal waste management perspectives are entirely absent from the literature (see §6).
+**However:** a sustainability paradox exists in the corpus. Most garments use petroleum-derived TPU/TPE; hybrid textile–print structures fuse plastic to natural fabric, creating composite waste streams that are harder to separate and recycle than either material alone [S32]. Municipal waste management perspectives are entirely absent from the literature (see §7).
 
 ---
 
-### 3.5 Market Trajectory
+### 4.5 Market Trajectory
 
 The global 3D printing market was valued at ~$20B in 2024 with projections to ~$100B by 2030 [S33]. Fashion remains a small segment but is growing, driven primarily by footwear (Adidas, Nike) and accessories. Key barriers to mass-market adoption: print speed, material cost, surface finish (visible layer lines), limited washability of hybrid structures, and lack of designer-friendly tools [S34, S35].
 
 ---
 
-### 3.6 Visual Resources
+### 4.6 Visual Resources
 
 | Resource | Link |
 |---|---|
@@ -139,7 +177,7 @@ The global 3D printing market was valued at ~$20B in 2024 with projections to ~$
 
 ---
 
-## 4. Source Inventory
+## 5. Source Inventory
 
 > 63 sources indexed in NotebookLM notebook: <https://notebooklm.google.com/notebook/b5451b78-71ae-4a03-8126-0702d61c7b3d>
 > Key sources with quality annotations are listed below. NLM briefing doc listed as S-NLM.
@@ -192,7 +230,7 @@ The global 3D printing market was valued at ~$20B in 2024 with projections to ~$
 
 ---
 
-## 5. Conflicts & Open Questions
+## 6. Conflicts & Open Questions
 
 - **Conflict — Washability of TPU hybrid textiles:** [S22] (washing study on TPU–woven cotton) found that repeated washing *improved* TPU adhesion by causing thermal shrinkage that pulled the polymer tighter into the weave. [S23] (Iowa State study) found washing degraded hybrid structures and reduced elasticity over time. Neither study used identical fabric types or print parameters, so the conflict may be methodology-dependent rather than a genuine contradiction — but this is unresolved.
 
@@ -206,7 +244,7 @@ The global 3D printing market was valued at ~$20B in 2024 with projections to ~$
 
 ---
 
-## 6. Blindspot / Gap Analysis
+## 7. Blindspot / Gap Analysis
 
 - [x] **Opposing view** — IDENTIFIED. Critics argue 3D-printed fashion is a "runway gimmick": too slow, too costly, and too fragile for mass-market use. The sustainability paradox (microplastics, petroleum polymers, composite waste) contradicts eco-marketing. Academic literature supports both sides; the opposing view is underrepresented in designer-facing coverage.
 
@@ -224,7 +262,7 @@ The global 3D printing market was valued at ~$20B in 2024 with projections to ~$
 
 ---
 
-## 7. Recommended Next Steps
+## 8. Recommended Next Steps
 
 1. **Fill the recency gap.** Run a targeted search for 3D-printed fashion releases from January 2025 to present. Specific targets: Adidas/Nike 2025 launches, any couture house debuts at 2025 Paris Fashion Week, new bio-based filament commercial launches (BASF, Covestro, Evonik).
 
