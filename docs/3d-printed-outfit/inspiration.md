@@ -78,6 +78,8 @@ title: Inspiration
 
 [![Slinky Chainmail Fabric](https://media.printables.com/media/prints/246195/images/2220591_0fb3c530-9e4e-4259-9230-3799e859bd91/thumbs/inside/320x240/png/img_0470.webp)](https://www.printables.com/model/246195-slinky-chainmail-fabric)
 
+[![3d Printed Fabric](https://media.printables.com/media/prints/544241/images/4378102_9909c124-b932-4bd0-9e00-5ddec7efde30/thumbs/cover/1200x630/jpg/photo1.jpg)](https://www.printables.com/model/544241-3d-printed-fabric)
+
 ### Cults3D
 
 [![3D Print Your Own Fashion – Transfer Custom Logos & Designs onto Fabric (TPU)](https://fbi.cults3d.com/uploaders/17436475/illustration-file/2025-03-28_571448137d056.jpg)](https://cults3d.com/en/3d-model/fashion/3d-print-your-own-fashion-transfer-custom-logos-designs-onto-fabric-tpu)
@@ -91,6 +93,14 @@ title: Inspiration
 [![Flower Petal TPU Hat Pattern – Flexible Cosplay & Costume Accessory](https://fbi.cults3d.com/uploaders/16376773/illustration-file/acc08e5c-f826-4a39-bd9f-adff534f2913/thum.jpg)](https://cults3d.com/en/3d-model/fashion/flower-petal-tpu-hat-pattern-flexible-cosplay-costume-accessory)
 
 [![Chainmail (various)](https://fbi.cults3d.com/uploaders/13709009/illustration-file/f5924862-5123-4a93-aec5-5aaaec25074a/DSCF5410_display_large_display_large.jpg)](https://cults3d.com/en/3d-model/various/chainmail)
+
+[![Triangular fabric (print in place)](https://images.cults3d.com/00CWVAxu8m3sAR3_JOLCyxTWQbA=/516x516/filters:no_upscale()/https://fbi.cults3d.com/uploaders/14497208/illustration-file/1c778ae0-99fa-418b-950a-5690b5dc4fb3/IMG_20191225_100408.jpg)](https://cults3d.com/en/3d-model/fashion/triangular-fabric-print-in-place)
+
+[![Fixels, print in place expandable fabric](https://images.cults3d.com/s7ARiOPuu-bmfgIX2mH4h5qor18=/516x516/filters:no_upscale()/https://fbi.cults3d.com/uploaders/32959145/illustration-file/7280aafe-d3aa-4e5e-a36f-0face0757609/cover-1-1.jpg)](https://cults3d.com/en/3d-model/fashion/fixels-print-in-place-expandable-fabric)
+
+[![Chainmail v2.1 – 1 meter of medieval armor for cosplay](https://images.cults3d.com/lFIoCmwayAQJLMj76TGb755Ig_M=/516x516/filters:no_upscale()/https://fbi.cults3d.com/uploaders/14931424/illustration-file/47a2a281-075d-4271-bc9b-c9717e458401/IMG_9071.jpg)](https://cults3d.com/en/3d-model/fashion/chainmail-v2-0-is-here-large-sheet-and-it-s-a-game-changer)
+
+[![Chainmail Sheet for Cosplay and Accessories](https://videos.cults3d.com/yTUOLq9ljGqNxKe9N2E7Y-mZjAg=/516x516/filters:no_upscale()/https://fbi.cults3d.com/uploaders/26507445/illustration-file/3b6584bb-9180-4efa-a83e-e6e640c2e262/Cotta2.gif)](https://cults3d.com/en/3d-model/fashion/chainmail-sheet-for-cosplay-and-accessories)
 
 ## Cyberpunk
 
