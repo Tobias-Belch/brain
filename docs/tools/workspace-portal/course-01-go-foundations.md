@@ -66,6 +66,8 @@ go mod init hello-go
 
 `go mod init` creates `go.mod` — this is Go's equivalent of `package.json`. It records the module name and Go version.
 
+> **`package main` vs the module name:** VS Code may pre-fill `package hellogo` derived from the module path — ignore it. The module name (in `go.mod`) and the package name (in each `.go` file) are independent. `package main` is special: it is the only package that compiles to a runnable binary. Any file with `func main()` must declare `package main`.
+
 Create `main.go`:
 
 ```go
