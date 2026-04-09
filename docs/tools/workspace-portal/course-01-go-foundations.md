@@ -259,6 +259,8 @@ manager := &SessionManager{
 manager.Start("/workspaces/fea/brain")
 ```
 
+> **`make`:** Maps, slices, and channels must be initialised before use — declaring them only gives you `nil`, and writing to a `nil` map panics at runtime. `make` allocates and initialises the underlying data structure. `make(map[string]Session)` is the idiomatic way to create an empty map, equivalent to `{}` in TypeScript. You will also see `make([]T, 0)` for slices and `make(chan T, bufferSize)` for channels.
+
 ### Interfaces — structural, not declared
 
 TypeScript's interfaces are structural (duck typing). Go's are the same — a type satisfies an interface automatically if it has the right methods. You never write `implements`.
