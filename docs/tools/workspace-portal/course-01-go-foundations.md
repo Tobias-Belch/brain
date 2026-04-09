@@ -309,15 +309,15 @@ if err != nil {
 
 ### `defer` — cleanup that always runs
 
-`defer` schedules a function call to run when the surrounding function returns, regardless of how it returns (normal return, early return, panic). This is how Go handles cleanup instead of `try/finally`:
+`defer` registers a call to run when the surrounding function exits — on any return after that line, including early returns and panics. It is Go's alternative to `try/finally`. Place it immediately after acquiring a resource so cleanup is never forgotten:
 
 ```go
 func readFile(path string) (string, error) {
     f, err := os.Open(path)
     if err != nil {
-        return "", err
+        return "", err      // defer not yet registered — f.Close() does NOT run
     }
-    defer f.Close()   // will always run when readFile returns
+    defer f.Close()         // registered here — runs on every return from this point on
 
     // read file...
     return content, nil
