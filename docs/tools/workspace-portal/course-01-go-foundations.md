@@ -204,6 +204,8 @@ console.log(ports[0])            fmt.Println(ports[0])      // 4100
 console.log(len(ports))          fmt.Println(len(ports))    // 2
 ```
 
+`[]int{}` is shorthand for an initialised empty slice. You can also write `make([]int, 0)` — both are equivalent. A slice declared without initialisation (`var ports []int`) is `nil` and safe to `append` to, but not to index into.
+
 ### Maps (objects/dicts)
 
 ```go
@@ -221,6 +223,8 @@ if (sessions["abc"] !== undefined)  if port, ok := sessions["abc"]; ok {
 ```
 
 The two-value assignment `port, ok := sessions["abc"]` is idiomatic Go — `ok` is `true` if the key exists.
+
+`map[string]int{}` creates an initialised empty map. You can also write `make(map[string]int)` — both are equivalent. Unlike slices, writing to a `nil` map (declared but not initialised) panics at runtime, so always initialise maps before use.
 
 ---
 
@@ -258,8 +262,6 @@ manager := &SessionManager{
 }
 manager.Start("/workspaces/fea/brain")
 ```
-
-> **`make`:** Maps, slices, and channels must be initialised before use — declaring them only gives you `nil`, and writing to a `nil` map panics at runtime. `make` allocates and initialises the underlying data structure. `make(map[string]Session)` is the idiomatic way to create an empty map, equivalent to `{}` in TypeScript. You will also see `make([]T, 0)` for slices and `make(chan T, bufferSize)` for channels.
 
 ### Interfaces — structural, not declared
 
