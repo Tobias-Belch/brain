@@ -5,7 +5,7 @@ title: "Course 02 — Building the Portal in Go"
 # Course 02 — Building the Portal in Go
 
 **Goal:** Implement every module of workspace-portal from scratch, producing a working Go binary.  
-**Prerequisite:** [Course 01 — Go Foundations](./course-01-go-foundations.md)  
+**Prerequisite:** [Course 01 — Go Foundations](/tools/workspace-portal/course-01-go-foundations.md)  
 **Output:** A compiled `workspace-portal` binary that serves an HTTP server, lists directories, and manages OC/VS Code processes. The UI is wired up in Course 03.
 
 ---
@@ -971,42 +971,11 @@ func (m *Manager) loadState() {
 
 ## Lesson 6 — `internal/tailscale`: The Optional Plugin
 
-```go
-package tailscale
-
-import (
-    "fmt"
-    "os/exec"
-    "strconv"
-)
-
-// Serve implements session.Registrar using the tailscale CLI.
-type Serve struct {
-    Binary string
-}
-
-// Register runs: tailscale serve --bg --https={port} http://localhost:{port}
-func (s *Serve) Register(port int) (string, error) {
-    p := strconv.Itoa(port)
-    cmd := exec.Command(s.Binary,
-        "serve", "--bg", "--https="+p,
-        "http://localhost:"+p,
-    )
-    if out, err := cmd.CombinedOutput(); err != nil {
-        return "", fmt.Errorf("tailscale serve: %w\n%s", err, out)
-    }
-    // We don't know the hostname here — the caller resolves it separately
-    return "", nil
-}
-
-// Deregister removes the serve config for the given port.
-func (s *Serve) Deregister(port int) error {
-    p := strconv.Itoa(port)
-    cmd := exec.Command(s.Binary, "serve", "--https="+p, "reset")
-    cmd.Run() // best-effort
-    return nil
-}
-```
+> The `internal/tailscale` module is implemented and explained in **[Course 07 — Tailscale Setup](/tools/workspace-portal/course-07-tailscale.md)** (Lesson 7). It is kept separate because Tailscale is an optional dependency — the portal builds and runs without it.
+>
+> The module skeleton (`internal/tailscale/`) was created in Lesson 1. You can leave it empty for now and return to Course 07 when you are ready to wire up Tailscale.
+>
+> If you are skipping Tailscale entirely, the `session.NoopRegistrar` already handles the disabled path — no further action required here.
 
 ---
 
@@ -1239,7 +1208,7 @@ You now have a working Go binary with:
 - Config loading from YAML + env vars + `.secrets/`
 - Directory tree listing with smart pruning and git detection
 - Session lifecycle management (start, stop, health check, state persistence)
-- Optional Tailscale integration via the `Registrar` interface
+- Optional Tailscale hook via the `Registrar` interface (implementation in Course 07)
 - HTTP server with all routes stubbed and responding
 
-**Next:** [Course 03 — HTMX and SSE](./course-03-htmx-and-sse.md) — replace the plain-text responses with a real HTMX-driven UI.
+**Next:** [Course 03 — HTMX and SSE](/tools/workspace-portal/course-03-htmx-and-sse.md) — replace the plain-text responses with a real HTMX-driven UI.

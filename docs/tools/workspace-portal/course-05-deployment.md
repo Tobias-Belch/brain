@@ -4,9 +4,9 @@ title: "Course 05 — Deployment"
 
 # Course 05 — Deployment
 
-**Goal:** Deploy workspace-portal as a persistent macOS service using `launchd`, expose it over Tailscale HTTPS, wire up the optional Tailscale session registration, and write the `README` and `config.example.yaml` for open-source distribution.  
-**Prerequisite:** [Course 04 — Docker](./course-04-docker.md)  
-**Output:** The portal running permanently on your Mac, accessible from any device on your tailnet at `https://portal.your-machine.ts.net`.
+**Goal:** Deploy workspace-portal as a persistent macOS service using `launchd`, wire up the optional Tailscale session registration, and write the `README` and `config.example.yaml` for open-source distribution.  
+**Prerequisite:** [Course 04 — Docker](/tools/workspace-portal/course-04-docker.md)  
+**Output:** The portal running permanently on your Mac as a launchd service, accessible at `http://localhost:3000` locally — and at `https://portal.your-machine.ts.net` once you complete [Course 07 — Tailscale Setup](/tools/workspace-portal/course-07-tailscale.md).
 
 ---
 
@@ -223,27 +223,11 @@ tail -f ~/Library/Logs/workspace-portal.log
 
 ## Lesson 4 — Tailscale Integration
 
-### What Tailscale does
+Tailscale installation, admin console configuration (MagicDNS, HTTPS certificates), and `tailscale serve` usage are covered in **[Course 07 — Tailscale Setup](/tools/workspace-portal/course-07-tailscale.md)**. This lesson assumes Tailscale is already installed and your tailnet has MagicDNS and HTTPS enabled.
 
-Tailscale creates a private, encrypted mesh network (tailnet) between your devices using WireGuard. Every device on your tailnet gets a stable private IP (100.x.x.x) and an optional DNS name (`device-name.tail1234.ts.net`).
+### Enabling Tailscale in config
 
-With `tailscale serve`, Tailscale can also expose a local HTTP port over HTTPS on your tailnet with a valid TLS certificate:
-
-```bash
-tailscale serve --bg --https=443 http://localhost:3000
-# Now accessible at https://your-machine.tail1234.ts.net
-```
-
-The portal uses this same mechanism for individual sessions:
-
-```bash
-tailscale serve --bg --https=4101 http://localhost:4101
-# Session accessible at https://your-machine.tail1234.ts.net:4101
-```
-
-### Enabling Tailscale integration in config
-
-Edit your `~/.config/workspace-portal/config.yaml`:
+To activate the portal's Tailscale integration, set `tailscale.enabled: true` in `~/.config/workspace-portal/config.yaml`:
 
 ```yaml
 workspaces_root: ~/workspaces
@@ -251,66 +235,24 @@ portal_port: 3000
 
 tailscale:
   enabled: true
-  binary: tailscale   # must be on PATH (added in the launchd plist)
+  binary: tailscale   # must be on PATH (included in the launchd plist)
 ```
 
-When `tailscale.enabled: true`, the session manager calls `tailscale.Register(port)` after each session starts and `tailscale.Deregister(port)` when a session stops.
+When enabled, the session manager calls `tailscale.Register(port)` after each session becomes healthy, and `tailscale.Deregister(port)` when a session stops. The `internal/tailscale` Go module is implemented in Course 07 (Lesson 7).
 
 ### Exposing the portal itself over Tailscale
 
-The portal binds to `localhost:3000`. To expose it over HTTPS on your tailnet, run this once:
+Run this once after installing the launchd service:
 
 ```bash
 tailscale serve --bg --https=443 http://localhost:3000
 ```
 
-Or add it to a setup script. After this, `https://your-machine.ts.net` reaches the portal from any Tailscale device.
-
-### How `tailscale.Serve` works in the code
-
-In `internal/tailscale/serve.go` (from Course 02), `Register` shells out:
-
-```go
-func (s *tsServe) Register(port int) (string, error) {
-    args := []string{
-        "serve", "--bg",
-        fmt.Sprintf("--https=%d", port),
-        fmt.Sprintf("http://localhost:%d", port),
-    }
-    cmd := exec.Command(s.binary, args...)
-    out, err := cmd.CombinedOutput()
-    if err != nil {
-        return "", fmt.Errorf("tailscale serve: %w: %s", err, out)
-    }
-    // Parse the URL from tailscale serve output: "https://hostname:port"
-    url := strings.TrimSpace(string(out))
-    return url, nil
-}
-```
-
-The returned URL is stored on the session and rendered as a link in the UI.
-
-### Deregistering on stop
-
-```go
-func (s *tsServe) Deregister(port int) error {
-    args := []string{
-        "serve", "--bg",
-        fmt.Sprintf("--https=%d", port),
-        "off",
-    }
-    cmd := exec.Command(s.binary, args...)
-    out, err := cmd.CombinedOutput()
-    if err != nil {
-        return fmt.Errorf("tailscale serve off: %w: %s", err, out)
-    }
-    return nil
-}
-```
+After this, `https://your-machine.ts.net` reaches the portal from any device on your tailnet. The `--bg` flag persists the route across reboots.
 
 ### Testing without Tailscale
 
-When `tailscale.enabled: false` (the default), `Register` and `Deregister` are no-ops. The session URL field in the UI falls back to `http://localhost:{port}`. Everything else works identically.
+When `tailscale.enabled: false` (the default), `Register` and `Deregister` are no-ops. Session URLs fall back to `http://localhost:{port}`. Everything else works identically.
 
 ---
 
@@ -520,7 +462,7 @@ docker compose up --build
 
 ## Configuration
 
-All options are documented in [`config.example.yaml`](./config.example.yaml).
+All options are documented in `config.example.yaml` (in the portal repo root).
 
 Environment variables override config file values. Prefix: `PORTAL_`.
 
@@ -644,9 +586,7 @@ Before considering the portal "production-ready" for daily use:
 - [ ] You have confirmed the portal recovers after a `launchctl stop` + `launchctl start`.
 
 ### Tailscale
-- [ ] `tailscale status` shows the machine is connected.
-- [ ] `tailscale serve status` shows the portal is served over HTTPS.
-- [ ] You can open `https://your-machine.ts.net` from another device.
+- [ ] See the full checklist in [Course 07 — Tailscale Setup, Lesson 9](/tools/workspace-portal/course-07-tailscale.md#lesson-9--checklist).
 
 ### Open Source readiness
 - [ ] `config.example.yaml` is committed with all options documented.
@@ -663,11 +603,10 @@ The portal is now:
 1. **Built** — a single static Go binary at `/usr/local/bin/portal`
 2. **Configured** — `~/.config/workspace-portal/config.yaml` with your workspaces root, port ranges, and Tailscale flag
 3. **Running persistently** — launchd starts it on login, restarts it on crash, logs to `~/Library/Logs/`
-4. **Accessible** — `https://your-machine.ts.net` from any device on your tailnet
-5. **Sessions managed** — OC and VS Code sessions registered/deregistered with Tailscale automatically
-6. **Open-source ready** — example config and secrets, documented README, zero machine-specific values in the repo
+4. **Accessible locally** — `http://localhost:3000`
+5. **Open-source ready** — example config and secrets, documented README, zero machine-specific values in the repo
 
-You have completed the workspace-portal course series. The portal solves the original problem — per-directory OC restarts from a mobile browser — and teaches Go, HTMX, and Docker along the way.
+To expose the portal and its sessions securely over HTTPS from any device, continue to **[Course 07 — Tailscale Setup](/tools/workspace-portal/course-07-tailscale.md)**.
 
 ---
 

@@ -877,4 +877,4 @@ You now understand:
 - YAML config parsing
 - Cross-compilation
 
-**Next:** [Course 02 — Building the Portal in Go](./course-02-building-the-portal.md) — put all of this into practice by implementing each module of workspace-portal, starting from the scaffold and ending with a working binary.
+**Next:** [Course 02 — Building the Portal in Go](/tools/workspace-portal/course-02-building-the-portal.md) — put all of this into practice by implementing each module of workspace-portal, starting from the scaffold and ending with a working binary.
