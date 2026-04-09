@@ -53,7 +53,8 @@ Go comes with everything built-in. No separate package manager (npm, pip) needed
 
 ### VS Code extension
 
-Install the official Go extension (`golang.go` by the Go team). It covers everything: autocompletion, inline errors, auto-imports, format-on-save, and test runner — no additional plugins needed.
+- [`golang.go`](https://marketplace.visualstudio.com/items?itemName=golang.go) (Go team) — covers everything: autocompletion, inline errors, auto-imports, format-on-save, and test runner. Mandatory.
+- [`premparihar.gotestexplorer`](https://marketplace.visualstudio.com/items?itemName=premparihar.gotestexplorer) — tree-view of all tests in the project. Optional but handy.
 
 ### Your first Go program
 
