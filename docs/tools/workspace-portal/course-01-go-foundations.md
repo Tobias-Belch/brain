@@ -632,6 +632,13 @@ var htmxJS []byte
 
 The `//go:embed` comment (a compile-time directive) tells the compiler to embed the file's contents into the variable. The resulting binary contains the HTML — no external files needed.
 
+> **Other compiler directives:** `//go:embed` is one of several `//go:` directives. The most common others:
+> - `//go:generate` — runs a command during `go generate` (e.g. code generation, mocks)
+> - `//go:build` — build constraints (replaces the old `// +build`); controls which files are compiled for which OS/architecture
+> - `//go:noinline` / `//go:nosplit` — low-level performance hints, rarely needed outside the standard library
+>
+> Full reference: https://pkg.go.dev/cmd/compile#hdr-Compiler_Directives
+
 ---
 
 ## Lesson 8 — Concurrency: Goroutines and Channels
