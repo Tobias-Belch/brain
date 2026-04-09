@@ -137,6 +137,8 @@ func greet(name string) string {
 
 Multiple return values — this is one of Go's signature features:
 
+> **Parameter type shorthand:** `(a, b float64)` means both `a` and `b` are `float64` — consecutive parameters of the same type can share a single type annotation. It is equivalent to `(a float64, b float64)`.
+
 ```go
 // Go
 func divide(a, b float64) (float64, error) {
