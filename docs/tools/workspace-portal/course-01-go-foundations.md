@@ -176,6 +176,23 @@ console.log(u.name)              fmt.Println(u.Name)
 
 Go uses `struct` instead of TypeScript's object types. Field names starting with a capital letter are exported (public). Lowercase is unexported (private to the package). This is Go's visibility system — no `public`/`private` keywords.
 
+#### Primitive and common types
+
+| Type | Description | TypeScript equivalent |
+|---|---|---|
+| `string` | UTF-8 text | `string` |
+| `bool` | `true` / `false` | `boolean` |
+| `int` | Integer, size matches the platform (64-bit on 64-bit systems). **Default choice for integers.** | `number` |
+| `int8` / `int16` / `int32` / `int64` | Signed integers of explicit bit size. Use when size matters (e.g. binary protocols, memory-constrained data). | `number` |
+| `uint` / `uint8` / `uint16` / `uint32` / `uint64` | Unsigned integers. `uint8` is also aliased as `byte` and is common for raw data/buffers. | `number` |
+| `float32` / `float64` | Floating-point numbers. **`float64` is the default choice** — it is what untyped decimal literals become. Use `float32` only when memory is a concern. | `number` |
+| `byte` | Alias for `uint8`. Used for raw bytes, file contents, network data. | `number` |
+| `rune` | Alias for `int32`. Represents a Unicode code point. Used when iterating over characters in a string. | `number` |
+| `error` | Built-in interface for errors. Covered in Lesson 4. | `Error` |
+| `any` | Accepts any type (like TypeScript's `any`). Avoid unless necessary. | `any` |
+
+**`int` vs `float64` in practice:** use `int` for counts, ports, indices, and anything that is conceptually a whole number. Use `float64` for measurements, ratios, or anything that can have a fractional part. The compiler will not implicitly convert between them — you must cast explicitly: `float64(myInt)`.
+
 ### Slices (arrays)
 
 ```go
