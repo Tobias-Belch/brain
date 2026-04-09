@@ -419,7 +419,7 @@ A Go module is a collection of packages with a single `go.mod` file. It is like 
 
 ```
 workspace-portal/
-├── go.mod                        # module github.com/yourname/workspace-portal
+├── go.mod                        # module workspace-portal
 ├── cmd/
 │   └── portal/
 │       └── main.go              # package main
@@ -455,7 +455,7 @@ func Load(path string) (*Config, error) {
 package main
 
 import (
-    "github.com/yourname/workspace-portal/internal/config"
+    "workspace-portal/internal/config"
 )
 
 func main() {
