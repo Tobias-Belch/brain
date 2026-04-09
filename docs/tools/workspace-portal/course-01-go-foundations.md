@@ -98,6 +98,8 @@ go build -o hello .
 
 The resulting `hello` binary has zero dependencies. Copy it to any machine with the same OS/architecture and it runs.
 
+> **Running the binary:** Use `./hello` in the terminal — the `./` prefix means "in the current directory" and is required because the shell doesn't search the current directory by default. Double-clicking in Finder won't work for a server binary; it would open and close a Terminal window before you could see anything.
+
 ---
 
 ## Lesson 3 — Go Syntax: The Familiar Parts
