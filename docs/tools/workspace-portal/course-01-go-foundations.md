@@ -612,6 +612,10 @@ func (m *SessionManager) Add(s Session) {
 }
 ```
 
+A mutex does not automatically protect anything — it only works because every access to `sessions` consistently calls `Lock()` first. The mutex has no structural awareness of the fields around it; the protection is entirely in how you use it.
+
+**One mutex vs many:** Start with one mutex per struct. If a struct has fields that are mutated independently and contention becomes measurable, split into one mutex per independent group of fields — not per field, but per mutation boundary (fields that always change together share a mutex). Finer-grained locking increases complexity and deadlock risk if mutexes are ever acquired in inconsistent order, so only introduce it when profiling justifies it.
+
 ### `embed` — Embedding static files into the binary
 
 This is how the portal ships its HTML templates and HTMX script inside the binary itself:
