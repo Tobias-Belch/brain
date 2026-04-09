@@ -917,6 +917,10 @@ func Load(path string) (*Config, error) {
 
 The struct tags (`` `yaml:"field_name"` ``) tell the YAML parser which YAML key maps to which struct field. This is the same pattern used for JSON (`` `json:"field_name"` ``).
 
+> **Struct tags** are metadata strings attached to struct fields, read at runtime via reflection by libraries. They are not enforced by the compiler — just raw strings any library can inspect. The same mechanism is used by `encoding/json` (`json:"..."`), database ORMs (`db:"..."`), and validation libraries (`validate:"..."`). Full reference: https://pkg.go.dev/reflect#StructTag
+
+> **Defaults and unmarshalling:** `cfg` is initialised with default values first. `yaml.Unmarshal` then overwrites only the fields present in the YAML file — fields not mentioned keep their defaults. This is the standard Go pattern for config loading with fallback values.
+
 ---
 
 ## Lesson 12 — Building for Production
