@@ -508,6 +508,8 @@ http.ListenAndServe(":3000", nil)
 
 `http.ResponseWriter` is how you write the response. `*http.Request` has the request data (path, method, headers, body, query params).
 
+> **`nil` as the handler:** `ListenAndServe`'s second argument is the router. Passing `nil` means "use `http.DefaultServeMux`" — the global router that `http.HandleFunc` registers routes on. The explicit `mux` pattern below is preferred for real projects as it avoids global state.
+
 More structured routing:
 
 ```go
