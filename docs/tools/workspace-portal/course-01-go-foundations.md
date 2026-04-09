@@ -703,6 +703,11 @@ case <-time.After(30 * time.Second):
 }
 ```
 
+`select` blocks until one of its `case` branches becomes ready, then executes that branch — like a `switch` but for channel operations. If multiple cases are ready simultaneously, one is chosen at random.
+
+- **`<-events`** — the receive operator. `event := <-events` reads the next value from the channel and assigns it to `event`. The goroutine blocks here until a value is available.
+- **`case <-time.After(30 * time.Second)`** — `time.After` returns a channel that receives a value after the given duration. Discarding the value with a bare `<-` (no assignment) is idiomatic when you only care that it fired, not what it sent. `time.Second` is a constant of type `time.Duration` — multiplying it by 30 gives a 30-second duration.
+
 This is used in the health-check loop: wait for either a healthy response or a timeout.
 
 ---
