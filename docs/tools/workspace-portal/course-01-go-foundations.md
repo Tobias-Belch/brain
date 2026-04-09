@@ -403,6 +403,12 @@ SessionManager{}.Start()  // ✗ compile error — literals are not addressable
 
 In practice, avoid relying on auto-addressing. Create structs with `&` from the start (`&SessionManager{}`), and pass `&x` explicitly to functions.
 
+### Performance and memory
+
+Copies are cheaper than they appear — the compiler eliminates many via escape analysis, and slices, maps, strings, and channels are already reference-like (only a small header is copied, not the underlying data). For a tool like workspace-portal, naive code is fast enough; profile before optimising.
+
+The one rule worth following upfront: use pointer receivers consistently on a type. Mixing value and pointer receivers on the same struct causes subtle bugs.
+
 ---
 
 ## Lesson 6 — Packages and Modules
