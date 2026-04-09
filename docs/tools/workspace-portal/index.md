@@ -16,13 +16,13 @@ A self-study series for building **workspace-portal** from scratch. Each course 
 
 | Course | Topic | What you build |
 |---|---|---|
-| [Course 01](/tools/workspace-portal/course-01-go-foundations.md) | Go Foundations | Go language, stdlib, toolchain — referenced throughout |
-| [Course 02](/tools/workspace-portal/course-02-building-the-portal.md) | Building the Portal in Go | All Go modules: config, fs, session, HTTP server (text stubs) |
-| [Course 03](/tools/workspace-portal/course-03-htmx-and-sse.md) | HTMX and Server-Sent Events | Full UI: directory tree, session management, live SSE updates |
-| [Course 04](/tools/workspace-portal/course-04-docker.md) | Docker | Multi-stage Dockerfile, Compose, volumes, secrets |
-| [Course 05](/tools/workspace-portal/course-05-deployment.md) | Deployment | launchd service, production checklist, README, config example |
-| [Course 06](/tools/workspace-portal/course-06-docs-viewer.md) | Centralised Documentation Viewer | Astro Starlight child process, `.gitignore` filtering, reverse proxy at `/docs` |
-| [Course 07](/tools/workspace-portal/course-07-tailscale.md) | Tailscale Setup | Install, MagicDNS + HTTPS in admin console, `tailscale serve`, `internal/tailscale` Go module |
+| [Course 01](./course-01-go-foundations.md) | Go Foundations | Go language, stdlib, toolchain — referenced throughout |
+| [Course 02](./course-02-building-the-portal.md) | Building the Portal in Go | All Go modules: config, fs, session, HTTP server (text stubs) |
+| [Course 03](./course-03-htmx-and-sse.md) | HTMX and Server-Sent Events | Full UI: directory tree, session management, live SSE updates |
+| [Course 04](./course-04-docker.md) | Docker | Multi-stage Dockerfile, Compose, volumes, secrets |
+| [Course 05](./course-05-deployment.md) | Deployment | launchd service, production checklist, README, config example |
+| [Course 06](./course-06-docs-viewer.md) | Centralised Documentation Viewer | Astro Starlight child process, `.gitignore` filtering, reverse proxy at `/docs` |
+| [Course 07](./course-07-tailscale.md) | Tailscale Setup | Install, MagicDNS + HTTPS in admin console, `tailscale serve`, `internal/tailscale` Go module |
 
 ---
 
@@ -44,7 +44,7 @@ The courses are designed to be read and coded in order. Each course begins where
 
 ## Reference
 
-- [PRD — Product Requirements Document](/tools/workspace-portal/00-prd.md) — full specification: user stories, module design, config schema, SSE events, testing decisions
+- [PRD — Product Requirements Document](./00-prd.md) — full specification: user stories, module design, config schema, SSE events, testing decisions
 - [Go standard library](https://pkg.go.dev/std)
 - [HTMX documentation](https://htmx.org/docs/)
 - [Docker documentation](https://docs.docker.com/)

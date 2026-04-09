@@ -5,8 +5,8 @@ title: "Course 05 — Deployment"
 # Course 05 — Deployment
 
 **Goal:** Deploy workspace-portal as a persistent macOS service using `launchd`, wire up the optional Tailscale session registration, and write the `README` and `config.example.yaml` for open-source distribution.  
-**Prerequisite:** [Course 04 — Docker](/tools/workspace-portal/course-04-docker.md)  
-**Output:** The portal running permanently on your Mac as a launchd service, accessible at `http://localhost:3000` locally — and at `https://portal.your-machine.ts.net` once you complete [Course 07 — Tailscale Setup](/tools/workspace-portal/course-07-tailscale.md).
+**Prerequisite:** [Course 04 — Docker](./course-04-docker.md)  
+**Output:** The portal running permanently on your Mac as a launchd service, accessible at `http://localhost:3000` locally — and at `https://portal.your-machine.ts.net` once you complete [Course 07 — Tailscale Setup](./course-07-tailscale.md).
 
 ---
 
@@ -223,7 +223,7 @@ tail -f ~/Library/Logs/workspace-portal.log
 
 ## Lesson 4 — Tailscale Integration
 
-Tailscale installation, admin console configuration (MagicDNS, HTTPS certificates), and `tailscale serve` usage are covered in **[Course 07 — Tailscale Setup](/tools/workspace-portal/course-07-tailscale.md)**. This lesson assumes Tailscale is already installed and your tailnet has MagicDNS and HTTPS enabled.
+Tailscale installation, admin console configuration (MagicDNS, HTTPS certificates), and `tailscale serve` usage are covered in **[Course 07 — Tailscale Setup](./course-07-tailscale.md)**. This lesson assumes Tailscale is already installed and your tailnet has MagicDNS and HTTPS enabled.
 
 ### Enabling Tailscale in config
 
@@ -586,7 +586,7 @@ Before considering the portal "production-ready" for daily use:
 - [ ] You have confirmed the portal recovers after a `launchctl stop` + `launchctl start`.
 
 ### Tailscale
-- [ ] See the full checklist in [Course 07 — Tailscale Setup, Lesson 9](/tools/workspace-portal/course-07-tailscale.md#lesson-9--checklist).
+- [ ] See the full checklist in [Course 07 — Tailscale Setup, Lesson 9](./course-07-tailscale.md#lesson-9--checklist).
 
 ### Open Source readiness
 - [ ] `config.example.yaml` is committed with all options documented.
@@ -606,7 +606,7 @@ The portal is now:
 4. **Accessible locally** — `http://localhost:3000`
 5. **Open-source ready** — example config and secrets, documented README, zero machine-specific values in the repo
 
-To expose the portal and its sessions securely over HTTPS from any device, continue to **[Course 07 — Tailscale Setup](/tools/workspace-portal/course-07-tailscale.md)**.
+To expose the portal and its sessions securely over HTTPS from any device, continue to **[Course 07 — Tailscale Setup](./course-07-tailscale.md)**.
 
 ---
 

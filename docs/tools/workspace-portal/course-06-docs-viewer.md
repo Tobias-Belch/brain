@@ -6,7 +6,7 @@ title: "Course 06 — Centralised Documentation Viewer"
 
 **Goal:** Add a live documentation viewer to workspace-portal that renders all `.md` and `.mdx` files from your workspaces root as a searchable, navigable Starlight site — automatically excluding gitignored files and updating as you edit.
 
-**Prerequisite:** [Course 05 — Deployment](/tools/workspace-portal/course-05-deployment.md)
+**Prerequisite:** [Course 05 — Deployment](./course-05-deployment.md)
 
 **Output:** A new `/docs` route in the portal backed by an Astro Starlight child process. Edit any `.md` or `.mdx` file in your workspaces and the change is visible in the browser within seconds. Full MDX component rendering, sidebar navigation, and search included.
 

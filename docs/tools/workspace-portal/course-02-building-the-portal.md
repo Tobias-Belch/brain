@@ -5,7 +5,7 @@ title: "Course 02 — Building the Portal in Go"
 # Course 02 — Building the Portal in Go
 
 **Goal:** Implement every module of workspace-portal from scratch, producing a working Go binary.  
-**Prerequisite:** [Course 01 — Go Foundations](/tools/workspace-portal/course-01-go-foundations.md)  
+**Prerequisite:** [Course 01 — Go Foundations](./course-01-go-foundations.md)  
 **Output:** A compiled `workspace-portal` binary that serves an HTTP server, lists directories, and manages OC/VS Code processes. The UI is wired up in Course 03.
 
 ---
@@ -971,7 +971,7 @@ func (m *Manager) loadState() {
 
 ## Lesson 6 — `internal/tailscale`: The Optional Plugin
 
-> The `internal/tailscale` module is implemented and explained in **[Course 07 — Tailscale Setup](/tools/workspace-portal/course-07-tailscale.md)** (Lesson 7). It is kept separate because Tailscale is an optional dependency — the portal builds and runs without it.
+> The `internal/tailscale` module is implemented and explained in **[Course 07 — Tailscale Setup](./course-07-tailscale.md)** (Lesson 7). It is kept separate because Tailscale is an optional dependency — the portal builds and runs without it.
 >
 > The module skeleton (`internal/tailscale/`) was created in Lesson 1. You can leave it empty for now and return to Course 07 when you are ready to wire up Tailscale.
 >
@@ -1211,4 +1211,4 @@ You now have a working Go binary with:
 - Optional Tailscale hook via the `Registrar` interface (implementation in Course 07)
 - HTTP server with all routes stubbed and responding
 
-**Next:** [Course 03 — HTMX and SSE](/tools/workspace-portal/course-03-htmx-and-sse.md) — replace the plain-text responses with a real HTMX-driven UI.
+**Next:** [Course 03 — HTMX and SSE](./course-03-htmx-and-sse.md) — replace the plain-text responses with a real HTMX-driven UI.

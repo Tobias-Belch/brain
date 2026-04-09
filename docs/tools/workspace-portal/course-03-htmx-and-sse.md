@@ -5,7 +5,7 @@ title: "Course 03 — HTMX and Server-Sent Events"
 # Course 03 — HTMX and Server-Sent Events
 
 **Goal:** Replace the plain-text stub responses from Course 02 with a real, mobile-friendly UI driven by HTMX and Server-Sent Events.  
-**Prerequisite:** [Course 02 — Building the Portal in Go](/tools/workspace-portal/course-02-building-the-portal.md)  
+**Prerequisite:** [Course 02 — Building the Portal in Go](./course-02-building-the-portal.md)  
 **Output:** A fully functional portal UI: interactive directory tree, session management, live SSE updates — no JavaScript framework, no build step.
 
 ---
@@ -1184,4 +1184,4 @@ You now have a complete, working portal UI with:
 
 The binary is fully functional. In the next course we package it into a Docker image.
 
-**Next:** [Course 04 — Docker](/tools/workspace-portal/course-04-docker.md) — build a minimal Docker image using multi-stage builds, configure secrets and volumes, and run the portal as a container.
+**Next:** [Course 04 — Docker](./course-04-docker.md) — build a minimal Docker image using multi-stage builds, configure secrets and volumes, and run the portal as a container.

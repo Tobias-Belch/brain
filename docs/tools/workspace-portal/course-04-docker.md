@@ -5,7 +5,7 @@ title: "Course 04 — Docker"
 # Course 04 — Docker
 
 **Goal:** Package workspace-portal into a minimal Docker image using multi-stage builds, understand how Docker runs Go binaries, and wire up volumes, environment variables, and secrets for the containerised portal.  
-**Prerequisite:** [Course 03 — HTMX and SSE](/tools/workspace-portal/course-03-htmx-and-sse.md)  
+**Prerequisite:** [Course 03 — HTMX and SSE](./course-03-htmx-and-sse.md)  
 **Output:** A working `Dockerfile`, a `docker-compose.yml` for local development, and a compiled Docker image that runs the portal.
 
 ---
@@ -542,4 +542,4 @@ You now know how to:
 
 The portal is now packaged and portable. In the final course we deploy it on macOS as a native `launchd` service.
 
-**Next:** [Course 05 — Deployment](/tools/workspace-portal/course-05-deployment.md) — install the portal as a `launchd` service that starts on login and set up the full production environment.
+**Next:** [Course 05 — Deployment](./course-05-deployment.md) — install the portal as a `launchd` service that starts on login and set up the full production environment.

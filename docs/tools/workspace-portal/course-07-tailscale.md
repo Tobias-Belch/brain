@@ -5,7 +5,7 @@ title: "Course 07 — Tailscale Setup"
 # Course 07 — Tailscale Setup
 
 **Goal:** Install Tailscale on macOS, enable MagicDNS and HTTPS certificates in the admin console, expose the portal and its sessions securely over your tailnet, and implement the `internal/tailscale` Go module that wires this into the portal.  
-**Prerequisite:** [Course 05 — Deployment](/tools/workspace-portal/course-05-deployment.md). Tailscale is optional — the portal works without it — but this course unlocks HTTPS URLs for all sessions.  
+**Prerequisite:** [Course 05 — Deployment](./course-05-deployment.md). Tailscale is optional — the portal works without it — but this course unlocks HTTPS URLs for all sessions.  
 **Output:** The portal and all OC/VS Code sessions accessible at `https://<your-machine>.ts.net` from any device on your tailnet. No port forwarding, no self-signed certificates.
 
 ---
