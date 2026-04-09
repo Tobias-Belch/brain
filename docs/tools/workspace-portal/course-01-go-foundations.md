@@ -176,7 +176,7 @@ console.log(u.name)              fmt.Println(u.Name)
 
 Go uses `struct` instead of TypeScript's object types. Field names starting with a capital letter are exported (public). Lowercase is unexported (private to the package). This is Go's visibility system — no `public`/`private` keywords.
 
-> **No structural type inference from literals:** Unlike TypeScript, Go does not infer a struct type from an assigned object literal. You always declare the shape explicitly — either as a named type or as an inline anonymous struct (`struct { Name string }{ Name: "Tobias" }`). `data := { Name: "Tobias" }` is not valid Go. This is a deliberate tradeoff: Go prioritises explicitness over brevity.
+> **No structural type inference from literals:** Unlike TypeScript, Go does not infer a struct type from an assigned object literal. You always declare the shape explicitly — either as a named type or as an inline anonymous struct (`struct { Name string }{ Name: "Tobias" }`). `data := { Name: "Tobias" }` is not valid Go. This is a known gap in the language rather than a principled tradeoff — somewhat ironic given that Go otherwise has both structural typing and type inference. It has never been fixed, likely because the spec calcified early and the Go team has not deemed it worth the cost of a retrofit.
 
 #### Primitive and common types
 
