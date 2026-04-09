@@ -51,6 +51,10 @@ Go comes with everything built-in. No separate package manager (npm, pip) needed
 | `go fmt` | Format code (like Prettier, runs automatically) |
 | `go vet` | Static analysis (like ESLint) |
 
+### VS Code extension
+
+Install the official Go extension (`golang.go` by the Go team). It covers everything: autocompletion, inline errors, auto-imports, format-on-save, and test runner — no additional plugins needed.
+
 ### Your first Go program
 
 Create a directory:
