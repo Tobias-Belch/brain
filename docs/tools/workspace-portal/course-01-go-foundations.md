@@ -28,7 +28,7 @@ Go's design goals:
 
 ### What this means for workspace-portal
 
-The portal compiles to a single binary. Users on any machine can download it and run it — no need to install Go, Node.js, Python, or any runtime. This is the primary reason Go was chosen over TypeScript/Bun for this project.
+The portal compiles to a single binary. Users on any machine can download it and run it — no need to install Go, Node.js, Python, or any runtime. This, alongside the desire to learn Go, are the two primary reasons Go was chosen over TypeScript/Bun for this project.
 
 ---
 
