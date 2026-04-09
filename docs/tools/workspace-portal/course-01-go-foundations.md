@@ -482,6 +482,8 @@ import "gopkg.in/yaml.v3"
 
 The portal uses exactly one external dependency: `gopkg.in/yaml.v3` for parsing YAML config files. Everything else is the Go standard library.
 
+> **Remote module resolution:** External modules are fetched from their import path URL (GitHub, GitLab, etc.). `proxy.golang.org` — run by Google — automatically caches every published version permanently, so a dependency remains available even if the original repository disappears. `go.sum` pins exact checksums locally, so builds are reproducible without hitting the network at all after the first fetch. For libraries that need a stable import path independent of hosting, authors can set up a **vanity domain** — a custom domain with a small HTML meta tag that redirects Go to the real repo. If the repo moves, only the redirect changes, not the import path.
+
 ---
 
 ## Lesson 7 — The Standard Library: What You Need for the Portal
