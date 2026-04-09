@@ -951,6 +951,20 @@ ldd portal             # Linux: same
 
 A properly built Go binary is fully static — `ldd` will say "not a dynamic executable".
 
+### Distribution patterns
+
+For workspace-portal, building from source locally is sufficient — it is a personal tool with no distribution need. The cross-compilation above is mainly useful if you want to run the binary on a Linux server without installing Go there.
+
+For reference, common patterns for distributing Go binaries publicly:
+
+| Pattern | When to use |
+|---|---|
+| **Build from source** (`go build`) | Developer tools with a technical audience — users clone and build themselves |
+| **GitHub Releases** | Pre-built binaries attached to a tagged release, cross-compiled per OS/arch. `goreleaser` automates this |
+| **`go install`** | Public modules — users run `go install module@latest` and Go fetches, compiles, and installs automatically |
+| **Docker** | Server-side tools — the Dockerfile compiles the binary during image build, users never touch Go |
+| **Homebrew / package managers** | Only worth the effort for widely distributed tools with a large audience |
+
 ---
 
 ## Summary
