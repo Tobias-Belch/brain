@@ -386,6 +386,23 @@ type Config struct {
 
 A good rule of thumb: if a struct has state that changes (like a session manager), use pointer receivers. If a struct is read-only data (like a config), value receivers are fine.
 
+### Mismatched pointer/value passing
+
+**Caller passes a pointer, receiver expects a value:** Go dereferences automatically. No action needed.
+
+**Caller passes a value, receiver expects a pointer:** Go auto-takes the address — but only for method calls on addressable variables. For regular function parameters you must always pass `&x` explicitly.
+
+```go
+doubleInPlace(x)          // ✗ compile error — must pass &x for a plain function
+doubleInPlace(&x)         // ✓ always works
+
+manager := SessionManager{}
+manager.Start(dir)        // ✓ Go auto-takes &manager for a pointer receiver method
+SessionManager{}.Start()  // ✗ compile error — literals are not addressable
+```
+
+In practice, avoid relying on auto-addressing. Create structs with `&` from the start (`&SessionManager{}`), and pass `&x` explicitly to functions.
+
 ---
 
 ## Lesson 6 — Packages and Modules
