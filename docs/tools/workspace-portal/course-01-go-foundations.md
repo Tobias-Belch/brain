@@ -111,13 +111,15 @@ Coming from TypeScript, most of Go will feel familiar. The syntax is different b
 ```go
 // TypeScript                    // Go
 let name = "portal"              name := "portal"           // inferred type
-const port: number = 3000        port := 3000               // := declares AND assigns
+const port: number = 3000        const port = 3000          // compile-time constant
 let url: string                  var url string             // zero value: ""
 ```
 
 Go has **zero values** — every variable has a default. `string` defaults to `""`, `int` to `0`, `bool` to `false`, pointers to `nil`. You rarely need to explicitly initialise.
 
 `:=` is the short declaration operator — it declares a new variable and assigns it. It only works inside functions. At package level, use `var`.
+
+`const` works for primitive values only (strings, numbers, booleans) and the value must be determinable at compile time. You cannot use `const` for slices, maps, or structs, and you cannot assign a runtime expression like `os.Getenv("PORT")` to a constant.
 
 ### Functions
 
