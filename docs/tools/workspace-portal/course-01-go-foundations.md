@@ -466,7 +466,13 @@ func main() {
 
 ### `internal/` directory
 
-The `internal/` directory is special in Go. Packages inside `internal/` can only be imported by code in the parent tree. This enforces encapsulation — `internal/session` cannot be imported by external packages, only by your own code. This is how the portal keeps its implementation private while exposing a clean public API.
+The `internal/` directory is special in Go. Any code that shares a common parent with `internal/` can import it — in this layout that includes `cmd/portal/main.go`. What it blocks is *external* modules (other projects) from importing it. Nesting `internal/` deeper restricts it further: a `cmd/portal/internal/` directory could only be imported by code inside `cmd/portal/`.
+
+This enforces encapsulation — the portal's implementation packages are private to the project while the binary remains the clean public surface.
+
+### `cmd/` directory
+
+`cmd/` is convention, not a Go special directory. The pattern exists for projects that build multiple binaries — each subdirectory of `cmd/` contains one `package main`. For workspace-portal there is only one binary, so `cmd/portal/` could be skipped and `main.go` placed at the root. The `cmd/portal/` layout is used here to keep the root clean and leave room for additional tools later.
 
 ### Adding a dependency
 
