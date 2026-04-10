@@ -30,13 +30,16 @@ mkdir -p cmd/portal
 mkdir -p internal/config
 mkdir -p internal/fs
 mkdir -p internal/session
-mkdir -p internal/tailscale
 mkdir -p internal/server
 mkdir -p templates
 mkdir -p static
 mkdir -p deploy/launchd
 mkdir -p deploy/docker
 ```
+
+> **No `src/` directory:** Go does not treat `src/` as special. The idiomatic layout places packages directly under named directories (`cmd/`, `internal/`, etc.) at the module root. A top-level `src/` is a Java/Maven habit — avoid it in Go.
+>
+> **No `internal/tailscale` yet:** That directory is created in Course 07 when Tailscale is wired up. If you are skipping Tailscale, you never need it — `session.NoopRegistrar` covers the disabled path.
 
 ### `go.mod` — add the only external dependency
 
