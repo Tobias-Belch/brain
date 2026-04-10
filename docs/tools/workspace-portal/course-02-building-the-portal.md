@@ -192,7 +192,7 @@ Go's zero values (`0`, `""`, `false`) are not always sensible defaults. A port o
 `os.IsNotExist(err)` lets the portal start with defaults + env vars even if no `config.yaml` exists. This is useful in Docker or CI environments where you inject everything via environment variables.
 
 **Why a `Secret` method?**  
-Secrets (like `vscode-password`) should never live in the main config file, which is likely shared or version-controlled. The `Secret` method resolves them from env vars first, then from files in a `.secrets/` directory, then from Docker secrets (`/run/secrets/`). The caller doesn't care where the value came from.
+Secrets (like `vscode-password`) should never live in the main config file, which is likely shared or version-controlled. The `Secret` method resolves them from env vars first, then from files in a `.secrets/` directory, then from Docker secrets (`/run/secrets/`). The caller doesn't care where the value came from. If no source provides a value, `Secret` returns an empty string and logs a warning — the empty string is intentional (it avoids a hard failure for optional secrets), but the warning makes misconfiguration visible immediately in the process log rather than producing a silent auth bypass.
 
 ### `internal/config/config.go`
 
@@ -201,6 +201,7 @@ package config
 
 import (
     "fmt"
+    "log"
     "os"
     "path/filepath"
     "strconv"
@@ -307,6 +308,7 @@ func (cfg *Config) Secret(name string) string {
     if v, err := os.ReadFile(filepath.Join("/run/secrets", name)); err == nil {
         return strings.TrimSpace(string(v))
     }
+    log.Printf("warning: secret %q not found (checked env var %s, %s, /run/secrets/%s)", name, envKey, filepath.Join(cfg.SecretsDir, name), name)
     return ""
 }
 

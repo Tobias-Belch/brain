@@ -117,7 +117,7 @@ A self-hosted web portal called **workspace-portal** — a small Go HTTP server 
 ### Modules
 
 **`internal/config`**
-Loads configuration from (in priority order): CLI flag `--config`, env var `PORTAL_CONFIG`, `./config.yaml`, `~/.config/workspace-portal/config.yaml`. Merges with env var overrides (`PORTAL_` prefix). Resolves secrets from env var → `{secrets_dir}/{name}` → `/run/secrets/{name}`. Exposes a single `Config` struct. Validates required fields at startup.
+Loads configuration from (in priority order): CLI flag `--config`, env var `PORTAL_CONFIG`, `./config.yaml`, `~/.config/workspace-portal/config.yaml`. Merges with env var overrides (`PORTAL_` prefix). Resolves secrets from env var → `{secrets_dir}/{name}` → `/run/secrets/{name}`. Returns an empty string when a secret is not found in any source, and logs a warning so misconfiguration is visible in the process log. Exposes a single `Config` struct. Validates required fields at startup.
 
 **`internal/fs`**
 Provides `List(path string) ([]DirEntry, error)` — reads immediate children of a directory, prunes known build/git-internal dirs, annotates each entry with `IsGit` (has `.git` dir, `.git` file, or `.bare/HEAD`) and `HasChildren` (has non-pruned subdirs). Pruned dir names are a hardcoded default set, additive with `config.fs.prune_dirs`. Does not recurse — the tree is navigated lazily by the browser.
@@ -180,6 +180,7 @@ Env var override format: `PORTAL_{SECTION}_{KEY}` (e.g. `PORTAL_OC_PORT_RANGE=41
 
 - `vscode-password` → used as `PASSWORD` env var for code-server
 - Additional secrets (e.g. OpenCode server password) added to `.secrets/` and wired via config as needed
+- If a secret is not found in any source (env var, `.secrets/`, `/run/secrets/`), `Secret` returns an empty string and logs a warning. Callers must handle the empty case; for `vscode-password` an empty value means code-server starts with no password set.
 
 ### Session state file
 
