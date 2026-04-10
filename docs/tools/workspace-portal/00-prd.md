@@ -117,7 +117,7 @@ A self-hosted web portal called **workspace-portal** — a small Go HTTP server 
 ### Modules
 
 **`internal/config`**
-Loads configuration from (in priority order): CLI flag `--config`, env var `PORTAL_CONFIG`, `./config.yaml`, `~/.config/workspace-portal/config.yaml`. Merges with env var overrides via `env` struct tags and `github.com/caarlos0/env/v11` — all tagged fields are covered automatically; adding a new config field requires only a matching `env:"..."` tag, not a code change in a separate override function. Port ranges use a custom `"lo-hi"` string format and are handled by an explicit `parsePortRange` helper. Returns an empty string when a secret is not found in any source, and logs a warning so misconfiguration is visible in the process log. Exposes a single `Config` struct. Validates required fields at startup.
+Loads configuration from (in priority order): CLI flag `--config`, env var `PORTAL_CONFIG`, `./config.yaml`, `~/.config/workspace-portal/config.yaml`. Merges with env var overrides via `env` struct tags and `github.com/caarlos0/env/v11` — all tagged fields are covered automatically; adding a new config field requires only a matching `env:"..."` tag, not a code change in a separate override function. Port ranges are a named `PortRange` type that implements `encoding.TextUnmarshaler`, so both `yaml.v3` and `caarlos0/env` parse the `"lo-hi"` string format automatically with no special-casing in `Load`. Returns an empty string when a secret is not found in any source, and logs a warning so misconfiguration is visible in the process log. Exposes a single `Config` struct. Validates required fields at startup.
 
 **`internal/fs`**
 Provides `List(path string) ([]DirEntry, error)` — reads immediate children of a directory, prunes known build/git-internal dirs, annotates each entry with `IsGit` (has `.git` dir, `.git` file, or `.bare/HEAD`) and `HasChildren` (has non-pruned subdirs). Pruned dir names are a hardcoded default set, additive with `config.fs.prune_dirs`. Does not recurse — the tree is navigated lazily by the browser.
@@ -174,7 +174,7 @@ fs.prune_dirs       []string  (default: [])
 
 Tailscale config (`tailscale.enabled`, `tailscale.binary`) is added in Course 07.
 
-Env var override format: declared via `env:"..."` struct tags (e.g. `env:"PORTAL_PORT"`). Nested structs use `envPrefix` (e.g. `envPrefix:"PORTAL_OC_"` on `OCConfig`). Port ranges use a custom `"lo-hi"` format handled by a separate helper (e.g. `PORTAL_OC_PORT_RANGE=4100-4199`).
+Env var override format: declared via `env:"..."` struct tags (e.g. `env:"PORTAL_PORT"`). Nested structs use `envPrefix` (e.g. `envPrefix:"PORTAL_OC_"` on `OCConfig`). Port ranges use a `"lo-hi"` string format (e.g. `PORTAL_OC_PORT_RANGE=4100-4199`) parsed automatically via `encoding.TextUnmarshaler` on the `PortRange` type — no special handling in `Load`.
 
 ### Secrets
 

@@ -202,7 +202,7 @@ The `env` tag approach solves this by colocating the env var name with the field
 
 `github.com/caarlos0/env/v11` was chosen specifically because it has **zero transitive dependencies** — adding it costs one line in `go.mod` with no dependency tree attached. The `env:"..."` tag convention also directly mirrors the `yaml:"..."` and `json:"..."` tags students already know.
 
-`PortRange [2]int` is the one exception: `[2]int` has no standard string representation, so `env` cannot parse it. Two env vars in `"lo-hi"` format are handled by the small `parsePortRange` helper, which is called explicitly after `env.ParseWithOptions`. This keeps the exception isolated and visible rather than hiding it inside the library.
+`PortRange [2]int` is the one type that `env` cannot parse out of the box, because `[2]int` has no standard string representation. Rather than adding a helper function that calls `os.Getenv` explicitly (reintroducing exactly the maintenance problem we set out to solve), the solution is to define a named type `PortRange` and implement `encoding.TextUnmarshaler` on it. Both `yaml.v3` and `caarlos0/env` discover and call `UnmarshalText` automatically — the port range fields get normal `env` tags, no special-casing exists anywhere in `Load`, and the YAML schema and env var format are unchanged.
 
 **Why a `Secret` method?**  
 Secrets (like `vscode-password`) should never live in the main config file, which is likely shared or version-controlled. The `Secret` method resolves them from env vars first, then from files in a `.secrets/` directory, then from Docker secrets (`/run/secrets/`). The caller doesn't care where the value came from. If no source provides a value, `Secret` returns an empty string and logs a warning — the empty string is intentional (it avoids a hard failure for optional secrets), but the warning makes misconfiguration visible immediately in the process log rather than producing a silent auth bypass.
@@ -234,15 +234,35 @@ type Config struct {
     FS             FSConfig  `yaml:"fs"`
 }
 
+// PortRange is a [lo, hi] port pair that unmarshals from "lo-hi" strings in both
+// YAML and environment variables (e.g. "4100-4199"). Implementing
+// encoding.TextUnmarshaler means both yaml.v3 and caarlos0/env pick it up
+// automatically — no custom parsing code needed at the call site.
+type PortRange [2]int
+
+func (p *PortRange) UnmarshalText(text []byte) error {
+    parts := strings.SplitN(string(text), "-", 2)
+    if len(parts) != 2 {
+        return fmt.Errorf("port range must be in lo-hi format, got %q", string(text))
+    }
+    lo, err1 := strconv.Atoi(parts[0])
+    hi, err2 := strconv.Atoi(parts[1])
+    if err1 != nil || err2 != nil {
+        return fmt.Errorf("invalid port range %q", string(text))
+    }
+    *p = PortRange{lo, hi}
+    return nil
+}
+
 type OCConfig struct {
-    Binary    string   `yaml:"binary" env:"BINARY"`
-    PortRange [2]int   `yaml:"port_range"`             // parsed separately — see parsePortRange
-    Flags     []string `yaml:"flags"  env:"FLAGS"`
+    Binary    string    `yaml:"binary"     env:"BINARY"`
+    PortRange PortRange `yaml:"port_range" env:"PORT_RANGE"`
+    Flags     []string  `yaml:"flags"      env:"FLAGS"`
 }
 
 type VSCConfig struct {
-    Binary    string `yaml:"binary" env:"BINARY"`
-    PortRange [2]int `yaml:"port_range"`             // parsed separately — see parsePortRange
+    Binary    string    `yaml:"binary"     env:"BINARY"`
+    PortRange PortRange `yaml:"port_range" env:"PORT_RANGE"`
 }
 
 type FSConfig struct {
@@ -256,12 +276,12 @@ func defaults() *Config {
         SecretsDir: ".secrets",
         OC: OCConfig{
             Binary:    "opencode",
-            PortRange: [2]int{4100, 4199},
+            PortRange: PortRange{4100, 4199},
             Flags:     []string{"web", "--mdns"},
         },
         VSCode: VSCConfig{
             Binary:    "code-server",
-            PortRange: [2]int{4200, 4299},
+            PortRange: PortRange{4200, 4299},
         },
     }
 }
@@ -285,16 +305,13 @@ func Load(path string) (*Config, error) {
     // Apply env var overrides for all tagged fields automatically.
     // env.ParseWithOptions only sets fields that have a matching env var present,
     // so YAML values are preserved unless the env var is explicitly set.
+    // PortRange fields are covered automatically because PortRange implements
+    // encoding.TextUnmarshaler — env parses "4100-4199" into PortRange{4100,4199}.
     if err := env.ParseWithOptions(cfg, env.Options{
         SetDefaultsForZeroValuesOnly: true,
     }); err != nil {
         return nil, fmt.Errorf("applying env overrides: %w", err)
     }
-
-    // Port ranges use a "lo-hi" string format (e.g. "4100-4199") which env cannot
-    // parse into [2]int natively. Handle them as the one explicit exception.
-    parsePortRange("PORTAL_OC_PORT_RANGE", &cfg.OC.PortRange)
-    parsePortRange("PORTAL_VSCODE_PORT_RANGE", &cfg.VSCode.PortRange)
 
     // Expand ~ in workspaces root
     if strings.HasPrefix(cfg.WorkspacesRoot, "~/") {
@@ -335,26 +352,6 @@ func (cfg *Config) Secret(name string) string {
     }
     log.Printf("warning: secret %q not found (checked env var %s, %s, /run/secrets/%s)", name, envKey, filepath.Join(cfg.SecretsDir, name), name)
     return ""
-}
-
-// parsePortRange reads an env var in "lo-hi" format (e.g. "4100-4199") and
-// sets the target [2]int in place. It is the only field that env cannot handle
-// natively because [2]int has no standard string representation.
-func parsePortRange(envKey string, target *[2]int) {
-    v := os.Getenv(envKey)
-    if v == "" {
-        return
-    }
-    parts := strings.SplitN(v, "-", 2)
-    if len(parts) != 2 {
-        return
-    }
-    lo, errLo := strconv.Atoi(parts[0])
-    hi, errHi := strconv.Atoi(parts[1])
-    if errLo != nil || errHi != nil {
-        return
-    }
-    *target = [2]int{lo, hi}
 }
 ```
 
