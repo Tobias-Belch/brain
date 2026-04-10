@@ -8,7 +8,7 @@ A self-study series for building **workspace-portal** from scratch. Each course 
 
 **Audience:** Developers familiar with TypeScript/JavaScript who want to learn Go, HTMX, and Docker through a real project.
 
-**Project:** A self-hosted, mobile-friendly web portal that launches and manages per-directory [OpenCode](https://opencode.ai) and [code-server](https://github.com/coder/code-server) sessions over Tailscale.
+**Project:** A self-hosted, mobile-friendly web portal that launches and manages per-directory [OpenCode](https://opencode.ai) and [code-server](https://github.com/coder/code-server) sessions.
 
 ---
 
@@ -32,7 +32,6 @@ A self-study series for building **workspace-portal** from scratch. Each course 
 - A Mac with Go 1.22+ installed
 - Node.js 20+ installed (needed for Course 06 — the docs viewer runs an Astro child process at runtime)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) or [OrbStack](https://orbstack.dev) (for Course 04+) — OrbStack is a lighter, faster alternative to Docker Desktop on macOS
-- Tailscale installed and connected to a tailnet (optional — needed for Course 07 only)
 
 ---
 
@@ -49,6 +48,3 @@ The courses are designed to be read and coded in order. Each course begins where
 - [HTMX documentation](https://htmx.org/docs/)
 - [Docker documentation](https://docs.docker.com/)
 - [launchd reference](https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html)
-- [Tailscale serve CLI reference](https://tailscale.com/kb/1242/tailscale-serve)
-- [Tailscale MagicDNS](https://tailscale.com/kb/1081/magicdns)
-- [Tailscale HTTPS certificates](https://tailscale.com/kb/1153/enabling-https)

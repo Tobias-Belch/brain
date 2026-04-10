@@ -73,7 +73,7 @@ HTMX has **no virtual DOM, no diffing, no client-side state**. The server is the
 The portal UI has three interacting pieces:
 
 1. **Directory tree** — click a row to expand it (HTMX `hx-get` loads children); click again to collapse (toggle).
-2. **Session controls** — "Open OC" / "Open VS Code" buttons POST to the server and replace the sessions list.
+2. **Session controls** — "Open OpenCode" / "Open VS Code" buttons POST to the server and replace the sessions list.
 3. **Live updates** — an SSE connection pushes `session.started`, `session.healthy`, `session.stopped` events and HTMX re-fetches the sessions list in response.
 
 ---
@@ -155,7 +155,7 @@ Update `internal/server/server.go` to import `assets`:
 ```go
 import (
     // ...
-    "github.com/yourusername/workspace-portal/internal/assets"
+    "workspace-portal/internal/assets"
 )
 ```
 
@@ -171,10 +171,10 @@ import (
     "log"
     "net/http"
 
-    "github.com/yourusername/workspace-portal/internal/assets"
-    "github.com/yourusername/workspace-portal/internal/config"
-    "github.com/yourusername/workspace-portal/internal/session"
-    "github.com/yourusername/workspace-portal/internal/fs"
+    "workspace-portal/internal/assets"
+    "workspace-portal/internal/config"
+    "workspace-portal/internal/session"
+    "workspace-portal/internal/fs"
 )
 
 type Server struct {
@@ -247,7 +247,7 @@ Define the data types that templates receive in `internal/server/templates.go`:
 ```go
 package server
 
-import "github.com/yourusername/workspace-portal/internal/session"
+import "workspace-portal/internal/session"
 
 // pageData is passed to layout.html for the initial full-page render.
 type pageData struct {
@@ -442,11 +442,11 @@ This template receives a single `treeRowData` as dot and renders one row with:
     <div class="tree-actions">
       <button class="btn btn-oc"
               hx-post="/sessions/start"
-              hx-vals='{"type":"oc","dir":"{{.Path}}"}'
+              hx-vals='{"type":"opencode","dir":"{{.Path}}"}'
               hx-target="#sessions"
               hx-swap="innerHTML"
               hx-indicator="#sessions-indicator">
-        OC
+        OpenCode
       </button>
       <button class="btn btn-vs"
               hx-post="/sessions/start"
@@ -834,9 +834,9 @@ import (
     "path/filepath"
     "strings"
 
-    "github.com/yourusername/workspace-portal/internal/config"
-    "github.com/yourusername/workspace-portal/internal/fs"
-    "github.com/yourusername/workspace-portal/internal/session"
+    "workspace-portal/internal/config"
+    "workspace-portal/internal/fs"
+    "workspace-portal/internal/session"
 )
 ```
 
@@ -850,7 +850,7 @@ go run ./cmd/portal
 Open `http://localhost:3000` in a browser. You should see:
 - A dark-themed portal with a directory tree
 - Clicking a `▶` arrow expands the directory and loads children
-- Clicking "OC" or "VS" starts a session (it will fail gracefully if OC/code-server are not installed)
+- Clicking "OpenCode" or "VS" starts a session (it will fail gracefully if OpenCode/code-server are not installed)
 - The sessions section updates live via SSE when sessions start or stop
 
 ---
@@ -985,7 +985,7 @@ func TestSessionsStart(t *testing.T) {
     ts := newTestServer(t, mgr)
     defer ts.Close()
 
-    form := url.Values{"type": {"oc"}, "dir": {"my-project"}}
+    form := url.Values{"type": {"opencode"}, "dir": {"my-project"}}
     resp, err := http.PostForm(ts.URL+"/sessions/start", form)
     if err != nil {
         t.Fatal(err)
@@ -998,14 +998,14 @@ func TestSessionsStart(t *testing.T) {
     if len(mgr.started) != 1 {
         t.Fatalf("want 1 session started, got %d", len(mgr.started))
     }
-    if mgr.started[0].Type != session.TypeOC {
-        t.Errorf("want type oc, got %s", mgr.started[0].Type)
+    if mgr.started[0].Type != session.TypeOpenCode {
+        t.Errorf("want type opencode, got %s", mgr.started[0].Type)
     }
 }
 
 func TestSessionsStop(t *testing.T) {
     mgr := &fakeManager{
-        sessions: []session.Session{{ID: "abc", Type: session.TypeOC, Dir: "/foo", Port: 4100, Status: "healthy"}},
+        sessions: []session.Session{{ID: "abc", Type: session.TypeOpenCode, Dir: "/foo", Port: 4100, Status: "healthy"}},
     }
     ts := newTestServer(t, mgr)
     defer ts.Close()
@@ -1175,7 +1175,7 @@ func (h *handler) sessionsStart(w http.ResponseWriter, r *http.Request) {
 You now have a complete, working portal UI with:
 
 - **HTMX-driven directory tree** — lazy expansion, one level at a time, no full-page reloads
-- **Session management** — start and stop OC/VS Code sessions with a single tap
+- **Session management** — start and stop OpenCode/VS Code sessions with a single tap
 - **Live SSE updates** — the sessions section updates automatically across all open browser tabs when sessions start, become healthy, or stop
 - **Embedded assets** — HTMX and the SSE extension are baked into the binary; no CDN, no external dependencies at runtime
 - **Go HTML templates** — server-rendered fragments with auto-escaping; no JavaScript framework

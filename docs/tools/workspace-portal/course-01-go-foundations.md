@@ -285,7 +285,7 @@ type Runner interface {
 }
 ```
 
-Any struct that has these three methods automatically satisfies `Runner`. This is how the portal's OC and VS Code sessions are interchangeable — both implement `Runner`, the session manager only knows about `Runner`.
+Any struct that has these three methods automatically satisfies `Runner`. This is how the portal's OpenCode and VS Code sessions are interchangeable — both implement `Runner`, the session manager only knows about `Runner`.
 
 There is no `implements` keyword. You never declare that a struct satisfies an interface — the compiler checks it silently at the point of use, when you assign the struct to an interface variable or pass it to a function that expects one. If a method is missing, the error appears there, not on the struct definition.
 
@@ -872,10 +872,10 @@ import (
 )
 
 type Config struct {
-    WorkspacesRoot string    `yaml:"workspaces_root"`
-    PortalPort     int       `yaml:"portal_port"`
-    OC             OCConfig  `yaml:"oc"`
-    VSCode         VSConfig  `yaml:"vscode"`
+    WorkspacesRoot string      `yaml:"workspaces_root"`
+    PortalPort     int         `yaml:"portal_port"`
+    OpenCode       OCConfig    `yaml:"oc"`
+    VSCode         VSCConfig   `yaml:"vscode"`
 }
 
 type OCConfig struct {
@@ -884,7 +884,7 @@ type OCConfig struct {
     Flags     []string `yaml:"flags"`
 }
 
-type VSConfig struct {
+type VSCConfig struct {
     Binary    string `yaml:"binary"`
     PortRange [2]int `yaml:"port_range"`
 }
@@ -897,11 +897,11 @@ func Load(path string) (*Config, error) {
 
     cfg := &Config{
         PortalPort: 3000,               // default
-        OC: OCConfig{
+        OpenCode: OCConfig{
             Binary:    "opencode",
             PortRange: [2]int{4100, 4199},
         },
-        VSCode: VSConfig{
+        VSCode: VSCConfig{
             Binary:    "code-server",
             PortRange: [2]int{4200, 4299},
         },

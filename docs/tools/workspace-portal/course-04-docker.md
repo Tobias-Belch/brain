@@ -394,7 +394,7 @@ ports:
   - "4200-4299:4200-4299"  # VS Code sessions
 ```
 
-Exposing a range of 200 ports is fine for Docker on a local machine. For production (remote server), you would add these ranges to your Tailscale or reverse proxy configuration instead.
+Exposing a range of 200 ports is fine for Docker on a local machine. For production (remote server), add these ranges to your reverse proxy configuration.
 
 ---
 

@@ -4,9 +4,9 @@ title: "Course 05 — Deployment"
 
 # Course 05 — Deployment
 
-**Goal:** Deploy workspace-portal as a persistent macOS service using `launchd`, wire up the optional Tailscale session registration, and write the `README` and `config.example.yaml` for open-source distribution.  
+**Goal:** Deploy workspace-portal as a persistent macOS service using `launchd`, and write the `README` and `config.example.yaml` for open-source distribution.  
 **Prerequisite:** [Course 04 — Docker](./course-04-docker.md)  
-**Output:** The portal running permanently on your Mac as a launchd service, accessible at `http://localhost:3000` locally — and at `https://portal.your-machine.ts.net` once you complete [Course 07 — Tailscale Setup](./course-07-tailscale.md).
+**Output:** The portal running permanently on your Mac as a launchd service, accessible at `http://localhost:3000`.
 
 ---
 
@@ -221,42 +221,7 @@ tail -f ~/Library/Logs/workspace-portal.log
 
 ---
 
-## Lesson 4 — Tailscale Integration
-
-Tailscale installation, admin console configuration (MagicDNS, HTTPS certificates), and `tailscale serve` usage are covered in **[Course 07 — Tailscale Setup](./course-07-tailscale.md)**. This lesson assumes Tailscale is already installed and your tailnet has MagicDNS and HTTPS enabled.
-
-### Enabling Tailscale in config
-
-To activate the portal's Tailscale integration, set `tailscale.enabled: true` in `~/.config/workspace-portal/config.yaml`:
-
-```yaml
-workspaces_root: ~/workspaces
-portal_port: 3000
-
-tailscale:
-  enabled: true
-  binary: tailscale   # must be on PATH (included in the launchd plist)
-```
-
-When enabled, the session manager calls `tailscale.Register(port)` after each session becomes healthy, and `tailscale.Deregister(port)` when a session stops. The `internal/tailscale` Go module is implemented in Course 07 (Lesson 7).
-
-### Exposing the portal itself over Tailscale
-
-Run this once after installing the launchd service:
-
-```bash
-tailscale serve --bg --https=443 http://localhost:3000
-```
-
-After this, `https://your-machine.ts.net` reaches the portal from any device on your tailnet. The `--bg` flag persists the route across reboots.
-
-### Testing without Tailscale
-
-When `tailscale.enabled: false` (the default), `Register` and `Deregister` are no-ops. Session URLs fall back to `http://localhost:{port}`. Everything else works identically.
-
----
-
-## Lesson 5 — The `config.example.yaml`
+## Lesson 4 — The `config.example.yaml`
 
 Create `config.example.yaml` at the repo root. Every option must be documented:
 
@@ -314,18 +279,6 @@ vscode:
   # Env: PORTAL_VSCODE_PORT_RANGE
   port_range: [4200, 4299]
 
-# ─── Tailscale (optional) ─────────────────────────────────────────────────────
-
-tailscale:
-  # Set to true to enable Tailscale serve registration for each session.
-  # Requires: tailscale CLI installed and authenticated.
-  # Env: PORTAL_TAILSCALE_ENABLED
-  enabled: false
-
-  # Path to the tailscale binary.
-  # Env: PORTAL_TAILSCALE_BINARY
-  binary: tailscale
-
 # ─── Filesystem ───────────────────────────────────────────────────────────────
 
 fs:
@@ -337,7 +290,7 @@ fs:
 
 ---
 
-## Lesson 6 — The `.secrets.example/` Directory
+## Lesson 5 — The `.secrets.example/` Directory
 
 Create `secrets.example/` at the repo root with example files:
 
@@ -376,7 +329,7 @@ Add to `.gitignore`:
 
 ---
 
-## Lesson 7 — The README
+## Lesson 6 — The README
 
 Create `README.md` at the repo root. Keep it task-focused: prerequisites → install → configure → run:
 
@@ -397,7 +350,6 @@ Built with Go + HTMX. Single binary. No Node.js required.
 - Go 1.22+ (for native builds)
 - [opencode](https://opencode.ai) installed and on `PATH`
 - [code-server](https://github.com/coder/code-server) installed and on `PATH`
-- [Tailscale](https://tailscale.com) (optional — for HTTPS exposure)
 
 ---
 
@@ -473,19 +425,6 @@ PORTAL_WORKSPACES_ROOT=/home/user/projects portal
 
 ---
 
-## Tailscale (optional)
-
-To expose the portal and sessions over HTTPS on your tailnet:
-
-1. Set `tailscale.enabled: true` in your config.
-2. Expose the portal itself once:
-   ```bash
-   tailscale serve --bg --https=443 http://localhost:3000
-   ```
-3. Sessions will automatically register when started and deregister when stopped.
-
----
-
 ## Stopping the service
 
 ```bash
@@ -509,7 +448,7 @@ lsof -iTCP -sTCP:LISTEN -P | grep 410
 
 ---
 
-## Lesson 8 — The Uninstall Script
+## Lesson 7 — The Uninstall Script
 
 For completeness, provide an uninstall script at `deploy/launchd/uninstall.sh`:
 
@@ -544,7 +483,7 @@ chmod +x deploy/launchd/uninstall.sh
 
 ---
 
-## Lesson 9 — Log Rotation
+## Lesson 8 — Log Rotation
 
 `launchd` does not rotate logs by default. Your portal log can grow unbounded. macOS ships with `newsyslog` for log rotation.
 
@@ -566,7 +505,7 @@ For a personal portal, simpler is fine — just truncate manually when it gets l
 
 ---
 
-## Lesson 10 — Production Checklist
+## Lesson 9 — Production Checklist
 
 Before considering the portal "production-ready" for daily use:
 
@@ -585,9 +524,6 @@ Before considering the portal "production-ready" for daily use:
 - [ ] You have run `tail -f ~/Library/Logs/workspace-portal.log` and confirmed normal startup messages appear.
 - [ ] You have confirmed the portal recovers after a `launchctl stop` + `launchctl start`.
 
-### Tailscale
-- [ ] See the full checklist in [Course 07 — Tailscale Setup, Lesson 9](./course-07-tailscale.md#lesson-9--checklist).
-
 ### Open Source readiness
 - [ ] `config.example.yaml` is committed with all options documented.
 - [ ] `secrets.example/` is committed with placeholder values.
@@ -601,7 +537,7 @@ Before considering the portal "production-ready" for daily use:
 The portal is now:
 
 1. **Built** — a single static Go binary at `/usr/local/bin/portal`
-2. **Configured** — `~/.config/workspace-portal/config.yaml` with your workspaces root, port ranges, and Tailscale flag
+2. **Configured** — `~/.config/workspace-portal/config.yaml` with your workspaces root and port ranges
 3. **Running persistently** — launchd starts it on login, restarts it on crash, logs to `~/Library/Logs/`
 4. **Accessible locally** — `http://localhost:3000`
 5. **Open-source ready** — example config and secrets, documented README, zero machine-specific values in the repo

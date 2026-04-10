@@ -6,7 +6,7 @@ title: "Course 02 — Building the Portal in Go"
 
 **Goal:** Implement every module of workspace-portal from scratch, producing a working Go binary.  
 **Prerequisite:** [Course 01 — Go Foundations](./course-01-go-foundations.md)  
-**Output:** A compiled `workspace-portal` binary that serves an HTTP server, lists directories, and manages OC/VS Code processes. The UI is wired up in Course 03.
+**Output:** A compiled `workspace-portal` binary that serves an HTTP server, lists directories, and manages OpenCode/VS Code processes. The UI is wired up in Course 03.
 
 ---
 
@@ -53,8 +53,6 @@ The directories map directly to the modules you'll build:
 | `deploy/` | Deployment configs — launchd plist and Dockerfile. |
 
 > **No `src/` directory:** Go does not treat `src/` as special. The idiomatic layout places packages directly under named directories (`cmd/`, `internal/`, etc.) at the module root. A top-level `src/` is a Java/Maven habit — avoid it in Go.
->
-> **No `internal/tailscale` yet:** That directory is created in Course 07 when Tailscale is wired up. If you are skipping Tailscale, you never need it — `session.NoopRegistrar` covers the disabled path.
 
 ### `go.mod` — add the only external dependency
 
@@ -178,7 +176,7 @@ If you get "no Go files" warnings, that's expected — empty directories are ign
 
 ### What this module does
 
-Every other module in the portal needs configuration — the port to listen on, the path to the workspaces directory, which binary to launch for OC, and so on. Rather than scatter `os.Getenv` calls throughout the codebase, all configuration is centralised here. This module is the first one you implement because nothing else can be written without it.
+Every other module in the portal needs configuration — the port to listen on, the path to the workspaces directory, which binary to launch for OpenCode, and so on. Rather than scatter `os.Getenv` calls throughout the codebase, all configuration is centralised here. This module is the first one you implement because nothing else can be written without it.
 
 The design follows a three-layer resolution order:
 1. **YAML file** — the primary source, written once and kept locally.
@@ -188,7 +186,7 @@ The design follows a three-layer resolution order:
 ### Key design decisions
 
 **Why a `defaults()` function?**  
-Go's zero values (`0`, `""`, `false`) are not always sensible defaults. A port of `0` would pick a random port; an empty binary path would fail immediately. Seeding `cfg` with defaults before unmarshalling means YAML only needs to specify what differs from the defaults — you don't have to repeat the OC binary path in every config file.
+Go's zero values (`0`, `""`, `false`) are not always sensible defaults. A port of `0` would pick a random port; an empty binary path would fail immediately. Seeding `cfg` with defaults before unmarshalling means YAML only needs to specify what differs from the defaults — you don't have to repeat the OpenCode binary path in every config file.
 
 **Why accept a missing file?**  
 `os.IsNotExist(err)` lets the portal start with defaults + env vars even if no `config.yaml` exists. This is useful in Docker or CI environments where you inject everything via environment variables.
@@ -217,8 +215,7 @@ type Config struct {
     PortalPort     int       `yaml:"portal_port"`
     SecretsDir     string    `yaml:"secrets_dir"`
     OC             OCConfig  `yaml:"oc"`
-    VSCode         VSConfig  `yaml:"vscode"`
-    Tailscale      TSConfig  `yaml:"tailscale"`
+    VSCode         VSCConfig `yaml:"vscode"`
     FS             FSConfig  `yaml:"fs"`
 }
 
@@ -228,14 +225,9 @@ type OCConfig struct {
     Flags     []string `yaml:"flags"`
 }
 
-type VSConfig struct {
+type VSCConfig struct {
     Binary    string `yaml:"binary"`
     PortRange [2]int `yaml:"port_range"`
-}
-
-type TSConfig struct {
-    Enabled bool   `yaml:"enabled"`
-    Binary  string `yaml:"binary"`
 }
 
 type FSConfig struct {
@@ -252,12 +244,9 @@ func defaults() *Config {
             PortRange: [2]int{4100, 4199},
             Flags:     []string{"web", "--mdns"},
         },
-        VSCode: VSConfig{
+        VSCode: VSCConfig{
             Binary:    "code-server",
             PortRange: [2]int{4200, 4299},
-        },
-        Tailscale: TSConfig{
-            Binary: "tailscale",
         },
     }
 }
@@ -337,9 +326,6 @@ func applyEnvOverrides(cfg *Config) {
     if v := os.Getenv("PORTAL_VSCODE_BINARY"); v != "" {
         cfg.VSCode.Binary = v
     }
-    if v := os.Getenv("PORTAL_TAILSCALE_ENABLED"); v == "true" {
-        cfg.Tailscale.Enabled = true
-    }
     if v := os.Getenv("PORTAL_OC_PORT_RANGE"); v != "" {
         if parts := strings.SplitN(v, "-", 2); len(parts) == 2 {
             lo, _ := strconv.Atoi(parts[0])
@@ -397,7 +383,7 @@ func TestLoadFromFile(t *testing.T) {
     }
     // Defaults still apply for unset fields
     if cfg.OC.Binary != "opencode" {
-        t.Errorf("expected default OC binary, got %q", cfg.OC.Binary)
+        t.Errorf("expected default OpenCode binary, got %q", cfg.OC.Binary)
     }
 }
 
@@ -663,19 +649,19 @@ func TestIsGitRepo(t *testing.T) {
 
 This module handles the full lifecycle of a running editor session: launching the process, assigning it a port, polling until it's healthy, persisting state to disk so sessions survive a portal restart, and broadcasting events to connected browsers via SSE.
 
-There are two session types — OC and VS Code — which are launched differently (different binaries, different flags, different auth). The module is split into four files to separate these concerns:
+There are two session types — OpenCode and VS Code — which are launched differently (different binaries, different flags, different auth). The module is split into four files to separate these concerns:
 
 | File | Responsibility |
 |---|---|
 | `runner.go` | The `Runner` interface and `Session` struct — the shared contract. |
-| `oc.go` | The OC-specific `Runner` implementation. |
+| `oc.go` | The OpenCode-specific `Runner` implementation. |
 | `vscode.go` | The VS Code-specific `Runner` implementation. |
 | `manager.go` | Orchestration — port assignment, lifecycle, state persistence, SSE. |
 
 ### Key design decisions
 
 **Why define a `Runner` interface before writing the implementations?**  
-The `Manager` in `manager.go` needs to start and stop sessions without knowing which type they are. By programming against the `Runner` interface, the manager is completely decoupled from the OC and VS Code specifics. You can add a third session type later without touching the manager, and you can inject a fake `Runner` in tests.
+The `Manager` in `manager.go` needs to start and stop sessions without knowing which type they are. By programming against the `Runner` interface, the manager is completely decoupled from the OpenCode and VS Code specifics. You can add a third session type later without touching the manager, and you can inject a fake `Runner` in tests.
 
 This is the same principle as TypeScript interfaces — the difference is that Go satisfies interfaces implicitly (no `implements` keyword).
 
@@ -694,7 +680,7 @@ import "time"
 // Session holds the state of a running session.
 type Session struct {
     ID        string    `json:"id"`
-    Type      string    `json:"type"`    // "oc" or "vscode"
+    Type      string    `json:"type"`    // "opencode" or "vscode"
     Dir       string    `json:"dir"`
     Port      int       `json:"port"`
     PID       int       `json:"pid"`
@@ -702,7 +688,7 @@ type Session struct {
     URL       string    `json:"url"`     // set after health check passes
 }
 
-// Runner is implemented by each session type (OC, VS Code).
+// Runner is implemented by each session type (OpenCode, VS Code).
 type Runner interface {
     // Start launches the process. Returns when the process has started
     // (not necessarily healthy yet).
@@ -824,11 +810,6 @@ The manager is the most complex part of the portal. It owns the runtime state of
 
 ### Key design decisions
 
-**Why a `Registrar` interface?**  
-When Tailscale is enabled, a newly-healthy session needs to be registered with `tailscale serve` to get a public URL. When it's disabled, nothing should happen. Rather than an `if cfg.Tailscale.Enabled` check scattered through the manager, we inject a `Registrar` at construction time. `NoopRegistrar` satisfies the interface and does nothing — the manager never needs to know which one it has.
-
-This is the same pattern as the `Runner` interface: express the dependency as an interface, inject the implementation, test with a no-op.
-
 **Why a buffered `events` channel of size 64?**  
 The manager sends events synchronously (no goroutine). If the HTTP handler is slow to consume them, a blocking send would deadlock the manager. A buffer of 64 means the manager can fire 64 events before it blocks — more than enough for any realistic load. This is a pragmatic choice, not a scalable pub/sub system.
 
@@ -866,25 +847,12 @@ import (
     "github.com/google/uuid"
 )
 
-// Registrar is implemented by the Tailscale integration (or a no-op).
-type Registrar interface {
-    Register(port int) (url string, err error)
-    Deregister(port int) error
-}
-
-// NoopRegistrar does nothing — used when Tailscale is disabled.
-type NoopRegistrar struct{}
-
-func (n *NoopRegistrar) Register(port int) (string, error) { return "", nil }
-func (n *NoopRegistrar) Deregister(port int) error         { return nil }
-
 // Manager manages the lifecycle of all running sessions.
 type Manager struct {
     mu        sync.Mutex
     sessions  map[string]*Session
     stateFile string
     events    chan Event // SSE event broadcast channel
-    registrar Registrar
     ocRunner  Runner
     vsRunner  Runner
     ocRange   [2]int
@@ -901,14 +869,12 @@ type Event struct {
 func NewManager(
     stateFile string,
     ocRunner, vsRunner Runner,
-    registrar Registrar,
     ocRange, vsRange [2]int,
 ) *Manager {
     m := &Manager{
         sessions:  make(map[string]*Session),
         stateFile: stateFile,
         events:    make(chan Event, 64),
-        registrar: registrar,
         ocRunner:  ocRunner,
         vsRunner:  vsRunner,
         ocRange:   ocRange,
@@ -939,7 +905,7 @@ func (m *Manager) Start(sessionType, dir string) (*Session, error) {
     var runner Runner
     var portRange [2]int
     switch sessionType {
-    case "oc":
+    case "opencode":
         runner = m.ocRunner
         portRange = m.ocRange
     case "vscode":
@@ -999,19 +965,18 @@ func (m *Manager) Stop(id string) error {
     m.mu.Unlock()
 
     var runner Runner
-    if s.Type == "oc" {
+    if s.Type == "opencode" {
         runner = m.ocRunner
     } else {
         runner = m.vsRunner
     }
     runner.Stop(s.PID)
-    m.registrar.Deregister(s.Port)
     m.saveState()
     m.events <- Event{Type: "stopped", Session: s}
     return nil
 }
 
-// waitHealthy polls until the session responds, then registers with Tailscale.
+// waitHealthy polls until the session responds, then marks it healthy.
 // It times out after 30 seconds to avoid leaking goroutines for processes that
 // fail to start.
 func (m *Manager) waitHealthy(s *Session, healthURL string) {
@@ -1029,12 +994,8 @@ func (m *Manager) waitHealthy(s *Session, healthURL string) {
             resp, err := http.Get(healthURL)
             if err == nil && resp.StatusCode < 500 {
                 resp.Body.Close()
-                url, _ := m.registrar.Register(s.Port)
-                if url == "" {
-                    url = healthURL
-                }
                 m.mu.Lock()
-                s.URL = url
+                s.URL = healthURL
                 m.mu.Unlock()
                 m.saveState()
                 m.events <- Event{Type: "healthy", Session: s}
@@ -1116,9 +1077,7 @@ func (m *Manager) loadState() {
 
 ## Lesson 6 — `internal/tailscale`: The Optional Plugin
 
-The Tailscale integration is out of scope for this course. It is implemented in [Course 07 — Tailscale Setup](./course-07-tailscale.md).
-
-The `session.Registrar` interface (defined in the previous lesson) is the seam that makes this optional. When `cfg.Tailscale.Enabled` is false, the server wires up `NoopRegistrar` and nothing Tailscale-related runs. You do not need to create the `internal/tailscale/` directory now — Course 07 does that.
+The Tailscale integration is implemented in [Course 07 — Tailscale Setup](./course-07-tailscale.md). You do not need to create the `internal/tailscale/` directory now — Course 07 covers it in full, including how it hooks into the session manager.
 
 ---
 
@@ -1162,9 +1121,6 @@ import (
 
 // Start builds all dependencies and starts the HTTP server.
 func Start(cfg *config.Config) error {
-    // Tailscale registrar — NoopRegistrar until Course 07
-    var registrar session.Registrar = &session.NoopRegistrar{}
-
     // Build runners
     ocRunner := &session.OCRunner{
         Binary: cfg.OC.Binary,
@@ -1181,7 +1137,7 @@ func Start(cfg *config.Config) error {
 
     // Build manager
     manager := session.NewManager(
-        stateFile, ocRunner, vsRunner, registrar,
+        stateFile, ocRunner, vsRunner,
         cfg.OC.PortRange, cfg.VSCode.PortRange,
     )
 
@@ -1202,8 +1158,6 @@ func Start(cfg *config.Config) error {
     return http.ListenAndServe(addr, mux)
 }
 ```
-
-> **Note on the Tailscale import:** When you implement Course 07, you will add a `cfg.Tailscale.Enabled` branch here that imports `workspace-portal/internal/tailscale`. For now, that import is omitted so the project compiles without the package.
 
 ### `internal/server/handlers.go`
 
@@ -1372,7 +1326,6 @@ You now have a working Go binary with:
 - Config loading from YAML + env vars + `.secrets/`
 - Directory tree listing with smart pruning and git detection
 - Session lifecycle management (start, stop, health check, state persistence)
-- Optional Tailscale hook via the `Registrar` interface (implementation in Course 07)
 - HTTP server with all routes stubbed and responding
 
 **Next:** [Course 03 — HTMX and SSE](./course-03-htmx-and-sse.md) — replace the plain-text responses with a real HTMX-driven UI.

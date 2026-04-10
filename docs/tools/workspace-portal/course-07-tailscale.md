@@ -6,7 +6,7 @@ title: "Course 07 — Tailscale Setup"
 
 **Goal:** Install Tailscale on macOS, enable MagicDNS and HTTPS certificates in the admin console, expose the portal and its sessions securely over your tailnet, and implement the `internal/tailscale` Go module that wires this into the portal.  
 **Prerequisite:** [Course 05 — Deployment](./course-05-deployment.md). Tailscale is optional — the portal works without it — but this course unlocks HTTPS URLs for all sessions.  
-**Output:** The portal and all OC/VS Code sessions accessible at `https://<your-machine>.ts.net` from any device on your tailnet. No port forwarding, no self-signed certificates.
+**Output:** The portal and all OpenCode/VS Code sessions accessible at `https://<your-machine>.ts.net` from any device on your tailnet. No port forwarding, no self-signed certificates.
 
 ---
 
@@ -25,7 +25,7 @@ For the workspace-portal, this means:
 | Without Tailscale | With Tailscale |
 |---|---|
 | `http://localhost:3000` — only on the machine | `https://my-mac.tail1234.ts.net` — any device on the tailnet |
-| `http://localhost:4101` — OC session, local only | `https://my-mac.tail1234.ts.net:4101` — OC from phone |
+| `http://localhost:4101` — OpenCode session, local only | `https://my-mac.tail1234.ts.net:4101` — OpenCode from phone |
 | Self-signed cert or no TLS | Valid Let's Encrypt cert, auto-provisioned |
 | Code Server complains about insecure context | Code Server works: requires HTTPS for clipboard, PWA features |
 
@@ -264,7 +264,68 @@ You should see the portal UI with a valid HTTPS certificate, no browser warnings
 
 ---
 
-## Lesson 7 — `internal/tailscale`: The Go Module
+## Lesson 7 — Tailscale in `internal/config`
+
+Before implementing `internal/tailscale`, it is worth understanding how Tailscale is represented in the config module. The config structs were scaffolded in Course 02 so that `config.go` compiles before the Tailscale integration exists. This lesson explains those decisions in detail.
+
+### `TSConfig` — the config struct
+
+```go
+type TSConfig struct {
+    Enabled bool   `yaml:"enabled"`
+    Binary  string `yaml:"binary"`
+}
+```
+
+`Enabled` is `false` by default — opting in requires an explicit `tailscale.enabled: true` in `config.yaml`. This makes Tailscale strictly opt-in: a portal deployed without Tailscale never calls the `tailscale` binary.
+
+`Binary` defaults to `"tailscale"` (resolved via `PATH`). Override it if the binary lives at a non-standard path (e.g. `/opt/homebrew/bin/tailscale` when using Homebrew on Apple Silicon without a `PATH` fix in the launchd plist).
+
+### `Config` struct field
+
+```go
+type Config struct {
+    // ...other fields...
+    Tailscale TSConfig `yaml:"tailscale"`
+}
+```
+
+The field is present regardless of whether Tailscale is enabled. This is intentional: the `TSConfig` struct is always unmarshalled from YAML, so you can stage `tailscale.enabled: false` in your config file and flip it to `true` when ready, without any Go code changes.
+
+### Default in `defaults()`
+
+```go
+Tailscale: TSConfig{
+    Binary: "tailscale",
+},
+```
+
+Only `Binary` gets a default. `Enabled` is left as the zero value (`false`) — requiring an explicit opt-in.
+
+### Env var override
+
+```go
+if v := os.Getenv("PORTAL_TAILSCALE_ENABLED"); v == "true" {
+    cfg.Tailscale.Enabled = true
+}
+```
+
+This follows the same pattern as the other overrides: env vars take precedence over the YAML file. There is no `PORTAL_TAILSCALE_ENABLED=false` path because the zero value is already `false` — an env var can only *enable* Tailscale, not disable it (use the YAML for that).
+
+### Sample `config.yaml` with Tailscale enabled
+
+```yaml
+workspaces_root: ~/workspaces
+portal_port: 3000
+
+tailscale:
+  enabled: true
+  binary: tailscale  # or /usr/local/bin/tailscale
+```
+
+---
+
+## Lesson 8 — `internal/tailscale`: The Go Module
 
 This lesson implements the Go module that the portal uses to register and deregister session ports with `tailscale serve`. This code was introduced in the module scaffold in Course 02 but deferred here.
 
@@ -391,7 +452,7 @@ Then in the test, set `PATH` to include the directory containing the fake binary
 
 ---
 
-## Lesson 8 — Troubleshooting
+## Lesson 9 — Troubleshooting
 
 ### `tailscale serve status` — check what's registered
 
@@ -468,7 +529,7 @@ Call `Reset()` in `Start()` before the session manager is initialised, only when
 
 ---
 
-## Lesson 9 — Checklist
+## Lesson 10 — Checklist
 
 Before relying on Tailscale for daily remote access:
 
@@ -506,7 +567,7 @@ The portal is now fully integrated with Tailscale:
 3. **MagicDNS enabled** — `<machine>.ts.net` resolves across all tailnet devices
 4. **HTTPS enabled** — valid Let's Encrypt certs provisioned via Tailscale
 5. **Portal exposed** — `https://<machine>.ts.net` accessible from phone, tablet, and any tailnet device
-6. **Sessions exposed** — each OC/VS Code session gets its own HTTPS port, registered on start and deregistered on stop
+6. **Sessions exposed** — each OpenCode/VS Code session gets its own HTTPS port, registered on start and deregistered on stop
 7. **Go module implemented** — `internal/tailscale.Serve` shells out to the CLI; `NoopRegistrar` handles the disabled path transparently
 
-The complete round-trip from "tap Open OC in mobile browser" to "OpenCode running in a browser tab, accessible via HTTPS" is now in place.
+The complete round-trip from "tap Open OpenCode in mobile browser" to "OpenCode running in a browser tab, accessible via HTTPS" is now in place.

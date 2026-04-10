@@ -734,8 +734,7 @@ type Config struct {
     PortalPort     int         `yaml:"portal_port"`
     SecretsDir     string      `yaml:"secrets_dir"`
     OC             OCConfig    `yaml:"oc"`
-    VSCode         VSCodeConfig `yaml:"vscode"`
-    Tailscale      TailscaleConfig `yaml:"tailscale"`
+    VSCode         VSCConfig   `yaml:"vscode"`
     FS             FSConfig    `yaml:"fs"`
     Docs           DocsConfig  `yaml:"docs"`  // ← new
 }
@@ -1240,12 +1239,7 @@ Add to the launchd plist's `EnvironmentVariables`:
 <string>/Users/yourname/workspaces/fea/lib/workspace-portal/docs</string>
 ```
 
-And add to the Tailscale serve configuration so the docs port is also accessible:
-```bash
-tailscale serve --bg --https=4300 http://localhost:4300
-```
-
-Or simply rely on the portal's `/docs` reverse proxy — external clients only need to access port 3000.
+External clients only need to access port 3000 via the portal's `/docs` reverse proxy.
 
 ### Summary
 
