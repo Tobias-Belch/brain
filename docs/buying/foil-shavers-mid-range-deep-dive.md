@@ -31,7 +31,7 @@ This document extends [electric-foil-shavers-germany.md](electric-foil-shavers-g
 | Cartridge razor (e.g. Gillette Fusion5) | Non-electric | ~10–25 handle |
 
 **Notes on scope:**
-- The BG5020/15 is a body groomer, not a facial shaver. Scores and cost figures reflect body grooming performance (chest, underarms, groin, back). It is included as a peer — no special treatment — but cross-category comparisons should be read with this in mind.
+- The BG5020/15 is a body groomer, not a facial shaver. Philips does not market it for the face, and no published review tests it on the face. Its performance scores in this document are **inferred estimates for hypothetical facial use** — derived from ShavingAdvisor's body shaving assessment (Jan 2026, 6.5/10 body shaving score) and the hardware mismatch between a single body foil and dedicated facial foil geometry. These scores should be read as a lower-bound estimate, not direct evidence. The BG5020's primary value is body grooming.
 - Non-electric methods are wet-shave only. The two most relevant alternatives are included: the safety razor (best value, best closeness among non-electric) and the cartridge razor (most common daily-use baseline).
 - Remington F8, Braun Series 9 Pro+, Panasonic Arc 6, straight razor, and disposables are excluded.
 
@@ -43,7 +43,7 @@ Scoring weights: Closeness 30%, Speed/Efficiency 25%, Consistency 20%, Skin Comf
 Abs. Grade = (Closeness×0.30)+(Speed×0.25)+(Consistency×0.20)+(Skin Comfort×0.25).
 
 For the Arc 5, dry and wet variants are listed separately — wet use with gel substantially closes the comfort gap.
-BG5020 scores are body-grooming adapted (mapped from ShavingAdvisor body-specific ratings, Jan 2026).
+BG5020 scores reflect **facial shaving** performance (see rationale below). No source directly reviews it on the face; scores are inferred from hardware characteristics and ShavingAdvisor's body shaving assessment (Jan 2026).
 Non-electric scores reflect a competent daily user.
 
 | Method | Closeness | Speed | Consistency | Skin Comfort | **Abs. Grade** | Session | Dry option |
@@ -52,15 +52,22 @@ Non-electric scores reflect a competent daily user.
 | Braun S5 51-B1000s | 70 | 68 | 72 | 82 | **73** | 3–5 min | Yes |
 | Arc 5 ES-LV67 (dry) | 88 | 78 | 76 | 72 | **80** | 3–5 min | Yes |
 | Arc 5 ES-LV67 (wet) | 92 | 76 | 78 | 81 | **82** | 5–8 min | — |
-| Philips BG5020/15 ¹ | 65 | 70 | 80 | 80 | **73** | varies | Yes |
+| Philips BG5020/15 ¹ | 45 | 55 | 55 | 62 | **54** | 5–10 min | Yes |
 | Safety razor (DE) | 88 | 42 | 70 | 72 | **69** | 10–15 min | No |
 | Cartridge razor | 82 | 55 | 78 | 62 | **70** | 5–8 min | No |
 
-¹ Body grooming scores — not comparable to facial shaver scores in the same column.
+¹ Inferred face-shaving scores — no published review tests the BG5020 on the face. Philips markets it exclusively as a body groomer. See rationale below.
 
 **Arc 5 wet note:** A thin layer of shaving gel is strongly recommended for sensitive-skin users — it closes the comfort gap from 72 to ~81 (+9), raising the Abs. Grade from 80 to 82. The dry vs. wet difference is larger on this model than on the Braun shavers.
 
-**BG5020 score rationale:** Closeness 65 (foil does not achieve razor-close results on body hair; adequate for maintenance, not close shaving). Speed 70 (efficient with combs; body surface area slows overall session). Consistency 80 (reliable in intimate areas with combs; consistent on flat surfaces). Skin Comfort 80 (ergonomic, waterproof, self-sharpening; no nick risk with comb use).
+**BG5020 face-shaving score rationale:**
+No review source tests the BG5020 for facial use. Philips does not market it for the face. The scores below are inferred from two inputs: (a) ShavingAdvisor's body shaving score of 6.5/10 and the explicit finding that the device "leaves stubble areas and does not provide a razor-close shave all over" even on body, and (b) the hardware mismatch — a single wide body foil vs. the multi-element, facial-contour-optimised foils of dedicated facial shavers.
+
+- **Closeness 45** — Body shaving already rated 6.5/10 by ShavingAdvisor; facial stubble is denser, finer, and grows in more directions. A single body foil not designed for chin/jaw geometry will leave significantly more stubble than even a budget dedicated shaver.
+- **Speed 55** — The face is a smaller area (partial advantage), but the wider flat head requires more passes on curved facial surfaces. Overall speed is slightly below the Braun S3.
+- **Consistency 55** — Performs adequately on flat body surfaces but the face has high-curvature zones (jaw, chin, philtrum, neck-jaw junction) where a non-contouring body foil will miss patches consistently.
+- **Skin Comfort 62** — The hypoallergenic foil and rounded tips reduce nick risk, but facial skin (especially the neck) is far more reactive than body skin. Body-optimised pressure and foil geometry are not calibrated for facial use.
+- **Abs. Grade 54** = (45×0.30)+(55×0.25)+(55×0.20)+(62×0.25)
 
 ---
 
@@ -147,14 +154,14 @@ The Braun 96M cassette (Series 9 Pro+ only) is **not compatible** with Series 3 
 | Rank | Method | Purchase | 5-yr consumables | **5-yr total** | Abs. Grade | **5-yr Rel. Score** |
 |------|--------|----------|-----------------|----------------|------------|---------------------|
 | 1 | Braun S3 3040s | 52 | ~58 | **~110** | 67 | **60.9** |
-| 2 | Philips BG5020/15 ¹ | 48 | ~75 | **~123** | 73 | **59.3** |
-| 3 | Safety razor (DE) | ~95 | ~40 | **~135** | 69 | **51.1** |
-| 4 | Braun S5 51-B1000s | 88 | ~74 | **~162** | 73 | **45.1** |
+| 2 | Safety razor (DE) | ~95 | ~40 | **~135** | 69 | **51.1** |
+| 3 | Braun S5 51-B1000s | 88 | ~74 | **~162** | 73 | **45.1** |
+| 4 | Philips BG5020/15 ¹ | 48 | ~75 | **~123** | 54 | **43.9** |
 | 5 | Arc 5 ES-LV67 (wet) | 128 | ~256 | **~384** | 82 | **21.4** |
 | 6 | Arc 5 ES-LV67 (dry) | 128 | ~256 | **~384** | 80 | **20.8** |
 | 7 | Cartridge razor | ~18 | ~535 | **~553** | 70 | **12.7** |
 
-¹ Body groomer — cross-category comparison; see Section 1.
+¹ Body groomer used in a facial shaving context. Abs. Grade is inferred (no direct face-shaving review exists). See Section 2 rationale.
 
 **TCO notes:**
 - Arc 5's 5-year consumable cost (~256 EUR) exceeds its purchase price and is ~4× the Braun S3's total 5-year cost.
@@ -165,9 +172,9 @@ The Braun 96M cassette (Series 9 Pro+ only) is **not compatible** with Series 3 
 **Interpretation:**
 
 - **Braun S3 leads on value** (60.9) despite its modest absolute grade (67). Lowest 5-year cost of any electric shaver; the dominant choice if convenience and skin comfort matter more than closeness.
-- **BG5020 is close second** (59.3) but solves a different problem — body grooming, not facial shaving.
 - **Safety razor (51.1)** is the strongest non-electric option on value. Closeness matches the Arc 5 dry; trade-offs are session time (10–15 min) and a real learning curve.
 - **Braun S5 (45.1)** is the best foil shaver for skin comfort (82/100) with a reasonable 5-year cost. The step up from S3 is justified if irritation is a recurring issue.
+- **BG5020 (43.9)** — despite low 5-year cost (~123 EUR), the inferred facial performance grade (54) is well below any dedicated facial shaver. It is not a cost-effective facial shaving substitute. Its value is as a body groomer.
 - **Arc 5 wet (21.4)** is the best absolute performer (82/100) in a fast format. Worth it if maximum closeness is the priority; poor value otherwise.
 - **Cartridge razor (12.7)** is the worst value of any method despite being the most widely available option. Ongoing cartridge spend drives its cost far above all alternatives.
 
