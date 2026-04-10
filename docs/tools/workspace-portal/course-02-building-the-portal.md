@@ -617,7 +617,19 @@ func hasVisibleSubdirs(path, root string, matchers []*gitignore.GitIgnore) bool 
 
 The tests build a synthetic directory tree in a temp directory. This is the standard Go testing pattern for file system code — never test against real directories you don't control.
 
-The tree covers all the cases worth asserting: a pruned directory is absent, a dotdir is present, git is detected, `HasChildren` is accurate, and a `.gitignore`-excluded directory is absent.
+The file uses `package fs` (white-box testing), which gives access to unexported functions like `isGitRepo`. This is intentional: `TestIsGitRepo` tests the three git layouts directly against the internal function, so a regression in that detection logic is caught at the lowest level. `TestList` then tests the same layouts through the public `List` function, ensuring the wiring is correct too.
+
+`TestList` covers every distinct behaviour of `List`:
+
+- `node_modules` is absent (hardcoded prune)
+- `ignored-dir` is absent (root `.gitignore`)
+- `.secrets` appears (dotdirs are never filtered)
+- `Path` is the full absolute path to the entry, not its parent
+- `IsGit` is true for all three git layouts (standard, worktree, bare) via `List`
+- `IsGit` is false for a plain directory
+- `HasChildren` is true when a visible subdirectory exists (pruned siblings don't count)
+- `HasChildren` is false for a leaf with no subdirectories
+- A subdirectory's own `.gitignore` excludes entries when that subdirectory is listed
 
 ```go
 package fs
@@ -631,20 +643,55 @@ import (
 func TestList(t *testing.T) {
     // Build a temp tree:
     // root/
-    //   project-a/      (git repo)
-    //   project-b/      (no git, has children)
-    //   node_modules/   (should be pruned by defaultPrune)
-    //   .secrets/       (dotdir, should appear — we show all)
-    //   ignored-dir/    (should be pruned via .gitignore)
+    //   project-a/         (standard git repo — .git/ dir)
+    //   project-b/         (no git, has one visible child)
+    //     src/
+    //   project-b/node_modules/  (pruned — not counted as visible child)
+    //   project-c/         (worktree — .git is a regular file)
+    //   project-d/         (bare repo — .bare/HEAD exists)
+    //   project-e/         (leaf — no subdirs at all)
+    //   node_modules/      (pruned by defaultPrune)
+    //   .secrets/          (dotdir — must appear)
+    //   ignored-dir/       (excluded by root .gitignore)
+    //   subdir/
+    //     nested-ignored/  (excluded by subdir .gitignore)
+    //     visible/
     root, _ := os.MkdirTemp("", "portal-fs*")
     defer os.RemoveAll(root)
 
+    // project-a: standard git repo
     os.MkdirAll(filepath.Join(root, "project-a", ".git"), 0755)
+
+    // project-b: not a git repo, has one visible child (src) and one pruned child
     os.MkdirAll(filepath.Join(root, "project-b", "src"), 0755)
+    os.MkdirAll(filepath.Join(root, "project-b", "node_modules"), 0755)
+
+    // project-c: worktree (.git is a regular file)
+    os.MkdirAll(filepath.Join(root, "project-c"), 0755)
+    os.WriteFile(filepath.Join(root, "project-c", ".git"), []byte("gitdir: ../.bare/worktrees/main"), 0644)
+
+    // project-d: bare repo (.bare/HEAD exists)
+    os.MkdirAll(filepath.Join(root, "project-d", ".bare"), 0755)
+    os.WriteFile(filepath.Join(root, "project-d", ".bare", "HEAD"), []byte("ref: refs/heads/main"), 0644)
+
+    // project-e: leaf — no subdirs
+    os.MkdirAll(filepath.Join(root, "project-e"), 0755)
+    os.WriteFile(filepath.Join(root, "project-e", "README.md"), []byte("hello"), 0644)
+
+    // pruned by defaultPrune
     os.MkdirAll(filepath.Join(root, "node_modules"), 0755)
+
+    // dotdir — must appear
     os.MkdirAll(filepath.Join(root, ".secrets"), 0755)
+
+    // excluded by root .gitignore
     os.MkdirAll(filepath.Join(root, "ignored-dir"), 0755)
     os.WriteFile(filepath.Join(root, ".gitignore"), []byte("ignored-dir\n"), 0644)
+
+    // subdir with its own .gitignore
+    os.MkdirAll(filepath.Join(root, "subdir", "nested-ignored"), 0755)
+    os.MkdirAll(filepath.Join(root, "subdir", "visible"), 0755)
+    os.WriteFile(filepath.Join(root, "subdir", ".gitignore"), []byte("nested-ignored\n"), 0644)
 
     entries, err := List(root, root)
     if err != nil {
@@ -656,23 +703,73 @@ func TestList(t *testing.T) {
         byName[e.Name] = e
     }
 
+    // defaultPrune entries must be absent
     if _, ok := byName["node_modules"]; ok {
         t.Error("node_modules should be pruned")
     }
+
+    // .gitignore-excluded entries must be absent
     if _, ok := byName["ignored-dir"]; ok {
         t.Error("ignored-dir should be excluded by .gitignore")
     }
+
+    // dotdir must appear
     if _, ok := byName[".secrets"]; !ok {
         t.Error(".secrets should appear")
     }
-    if !byName["project-a"].IsGit {
-        t.Error("project-a should be detected as git repo")
+
+    // Path must be the full absolute path, not just the parent
+    if e, ok := byName["project-a"]; ok {
+        want := filepath.Join(root, "project-a")
+        if e.Path != want {
+            t.Errorf("project-a Path: got %q, want %q", e.Path, want)
+        }
     }
+
+    // IsGit: standard repo
+    if !byName["project-a"].IsGit {
+        t.Error("project-a should be detected as git repo (standard .git dir)")
+    }
+
+    // IsGit: worktree
+    if !byName["project-c"].IsGit {
+        t.Error("project-c should be detected as git repo (worktree .git file)")
+    }
+
+    // IsGit: bare repo
+    if !byName["project-d"].IsGit {
+        t.Error("project-d should be detected as git repo (bare .bare/HEAD)")
+    }
+
+    // not a git repo
     if byName["project-b"].IsGit {
         t.Error("project-b should not be a git repo")
     }
+
+    // HasChildren: true when a visible subdir exists (pruned siblings don't count)
     if !byName["project-b"].HasChildren {
-        t.Error("project-b should have children")
+        t.Error("project-b should have children (src/ is visible)")
+    }
+
+    // HasChildren: false for a leaf with no subdirs
+    if byName["project-e"].HasChildren {
+        t.Error("project-e should not have children")
+    }
+
+    // ancestor .gitignore: listing subdir should hide nested-ignored
+    subdirEntries, err := List(filepath.Join(root, "subdir"), root)
+    if err != nil {
+        t.Fatal(err)
+    }
+    subdirByName := make(map[string]DirEntry)
+    for _, e := range subdirEntries {
+        subdirByName[e.Name] = e
+    }
+    if _, ok := subdirByName["nested-ignored"]; ok {
+        t.Error("nested-ignored should be excluded by subdir/.gitignore")
+    }
+    if _, ok := subdirByName["visible"]; !ok {
+        t.Error("visible should appear in subdir listing")
     }
 }
 
