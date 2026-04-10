@@ -495,8 +495,7 @@ var defaultPrune = map[string]bool{
 // It respects .gitignore files found in path and its ancestors up to root.
 // root is the workspaces root — gitignore walk stops there.
 func List(path, root string) ([]DirEntry, error) {
-    // Collect .gitignore rules from ancestor directories (root → path).
-    ignorer := loadGitignores(path, root)
+    matchers := loadGitignores(path, root)
 
     entries, err := os.ReadDir(path)
     if err != nil {
@@ -512,9 +511,7 @@ func List(path, root string) ([]DirEntry, error) {
             continue
         }
         absPath := filepath.Join(path, e.Name())
-        // Check .gitignore rules using a path relative to root for matching.
-        rel, err := filepath.Rel(root, absPath)
-        if err == nil && ignorer != nil && ignorer.MatchesPath(rel) {
+        if gitignored(absPath, root, matchers) {
             continue
         }
         entry := DirEntry{
@@ -522,7 +519,7 @@ func List(path, root string) ([]DirEntry, error) {
             Name:  e.Name(),
             IsGit: isGitRepo(absPath),
         }
-        entry.HasChildren = hasVisibleSubdirs(absPath, root, ignorer)
+        entry.HasChildren = hasVisibleSubdirs(absPath, root, matchers)
         result = append(result, entry)
     }
 
@@ -532,9 +529,23 @@ func List(path, root string) ([]DirEntry, error) {
     return result, nil
 }
 
+// gitignored returns true if absPath is matched by any of the compiled matchers.
+func gitignored(absPath, root string, matchers []*gitignore.GitIgnore) bool {
+    rel, err := filepath.Rel(root, absPath)
+    if err != nil {
+        return false
+    }
+    for _, m := range matchers {
+        if m.MatchesPath(rel) {
+            return true
+        }
+    }
+    return false
+}
+
 // loadGitignores walks from root up to path, collecting all .gitignore files,
-// and returns a compiled matcher. Returns nil if no .gitignore files are found.
-func loadGitignores(path, root string) *gitignore.GitIgnore {
+// and returns a slice of compiled matchers. Returns nil if none are found.
+func loadGitignores(path, root string) []*gitignore.GitIgnore {
     // Collect .gitignore file paths from root down to path.
     var files []string
     current := path
@@ -552,14 +563,15 @@ func loadGitignores(path, root string) *gitignore.GitIgnore {
         }
         current = parent
     }
-    if len(files) == 0 {
-        return nil
+
+    var matchers []*gitignore.GitIgnore
+    for _, f := range files {
+        ig, err := gitignore.CompileIgnoreFile(f)
+        if err == nil {
+            matchers = append(matchers, ig)
+        }
     }
-    ig, err := gitignore.CompileIgnoreFiles(files...)
-    if err != nil {
-        return nil
-    }
-    return ig
+    return matchers
 }
 
 // isGitRepo returns true if the directory contains a git repository.
@@ -583,7 +595,7 @@ func isGitRepo(path string) bool {
 // hasVisibleSubdirs returns true if path contains at least one subdirectory
 // that is neither in the default prune set nor excluded by .gitignore rules.
 // Files are not considered.
-func hasVisibleSubdirs(path, root string, ignorer *gitignore.GitIgnore) bool {
+func hasVisibleSubdirs(path, root string, matchers []*gitignore.GitIgnore) bool {
     entries, err := os.ReadDir(path)
     if err != nil {
         return false
@@ -592,11 +604,8 @@ func hasVisibleSubdirs(path, root string, ignorer *gitignore.GitIgnore) bool {
         if !e.IsDir() || defaultPrune[e.Name()] {
             continue
         }
-        if ignorer != nil {
-            rel, err := filepath.Rel(root, filepath.Join(path, e.Name()))
-            if err == nil && ignorer.MatchesPath(rel) {
-                continue
-            }
+        if gitignored(filepath.Join(path, e.Name()), root, matchers) {
+            continue
         }
         return true
     }
