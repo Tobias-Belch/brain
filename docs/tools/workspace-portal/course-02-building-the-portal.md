@@ -12,16 +12,18 @@ title: "Course 02 — Building the Portal in Go"
 
 ## Lesson 1 — Scaffolding the Repository
 
+Before writing a line of application code, you need a working project skeleton: a directory, a Git repo, a module, the package layout, and the tooling files (`Makefile`, `.gitignore`). Getting this right up front means every subsequent lesson starts from a clean, compilable state.
+
 ### Create the directory and initialise the module
 
 ```bash
 mkdir -p ~/workspaces/fea/lib/workspace-portal
 cd ~/workspaces/fea/lib/workspace-portal
 git init
-go mod init github.com/yourusername/workspace-portal
+go mod init workspace-portal
 ```
 
-The module name is the import path. Use your actual GitHub username if you plan to publish. For local development any string works.
+`go mod init` creates `go.mod`, which declares the module name. Every import path inside this project will be rooted here — for example, `workspace-portal/internal/config`. Because this is a personal tool you won't be publishing, a plain name without a domain works fine.
 
 ### Create the directory structure
 
@@ -37,11 +39,26 @@ mkdir -p deploy/launchd
 mkdir -p deploy/docker
 ```
 
+The directories map directly to the modules you'll build:
+
+| Directory | Purpose |
+|---|---|
+| `cmd/portal/` | The binary entry point (`main.go`). One sub-directory per binary is the convention. |
+| `internal/config/` | YAML loading, env var overrides, secrets resolution. |
+| `internal/fs/` | Directory tree listing with pruning and git detection. |
+| `internal/session/` | Process lifecycle — start, stop, health check, state persistence. |
+| `internal/server/` | HTTP mux, route handlers, SSE streaming. |
+| `templates/` | Go HTML templates (wired up in Course 03). |
+| `static/` | CSS and JS assets (Course 03). |
+| `deploy/` | Deployment configs — launchd plist and Dockerfile. |
+
 > **No `src/` directory:** Go does not treat `src/` as special. The idiomatic layout places packages directly under named directories (`cmd/`, `internal/`, etc.) at the module root. A top-level `src/` is a Java/Maven habit — avoid it in Go.
 >
 > **No `internal/tailscale` yet:** That directory is created in Course 07 when Tailscale is wired up. If you are skipping Tailscale, you never need it — `session.NoopRegistrar` covers the disabled path.
 
 ### `go.mod` — add the only external dependency
+
+The portal has exactly one external dependency: `gopkg.in/yaml.v3` for parsing the config file. Everything else — HTTP, file I/O, process management, JSON, concurrency — is covered by the Go standard library.
 
 ```bash
 go get gopkg.in/yaml.v3
@@ -50,7 +67,7 @@ go get gopkg.in/yaml.v3
 Your `go.mod` will now look like:
 
 ```
-module github.com/yourusername/workspace-portal
+module workspace-portal
 
 go 1.22
 
@@ -58,6 +75,14 @@ require gopkg.in/yaml.v3 v3.0.1
 ```
 
 ### `cmd/portal/main.go` — the entry point
+
+`main.go` is intentionally thin. Its only job is to wire together three things:
+
+1. **Parse CLI flags** — so the config path can be overridden at the command line.
+2. **Load config** — delegate to `internal/config`, fail fast and loudly if it's wrong.
+3. **Start the server** — delegate to `internal/server`, which owns all HTTP concerns.
+
+This pattern — a thin `main` that delegates immediately — keeps the entry point testable (you can't test `main` directly in Go, but you can test `config.Load` and `server.Start`).
 
 ```go
 package main
@@ -68,8 +93,8 @@ import (
     "log"
     "os"
 
-    "github.com/yourusername/workspace-portal/internal/config"
-    "github.com/yourusername/workspace-portal/internal/server"
+    "workspace-portal/internal/config"
+    "workspace-portal/internal/server"
 )
 
 func main() {
@@ -77,7 +102,7 @@ func main() {
     configPath := flag.String("config", "", "path to config.yaml")
     flag.Parse()
 
-    // Resolve config path
+    // Resolve config path: flag > env var > default
     if *configPath == "" {
         if v := os.Getenv("PORTAL_CONFIG"); v != "" {
             *configPath = v
@@ -101,7 +126,11 @@ func main() {
 }
 ```
 
+`flag.String` returns a `*string`, so you dereference it with `*configPath`. The resolution order (flag → env var → default) is a common pattern for CLI tools: it lets you override in scripts without editing config files.
+
 ### `Makefile`
+
+The Makefile wraps the commands you'll run repeatedly so you don't have to remember the flags:
 
 ```makefile
 .PHONY: build run test install
@@ -119,6 +148,8 @@ install: build
 	cp bin/workspace-portal /usr/local/bin/workspace-portal
 ```
 
+`-ldflags="-s -w"` strips the symbol table and DWARF debug info from the binary. It has no effect on behaviour but reduces binary size by ~25–30%.
+
 ### `.gitignore`
 
 ```
@@ -128,18 +159,42 @@ config.yaml
 *.log
 ```
 
-Verify the scaffold compiles (it won't run yet — we haven't written the other packages):
+`config.yaml` is gitignored because it will contain paths specific to your machine. If you commit it, someone else's clone will silently use the wrong paths.
+
+### Verify the scaffold compiles
+
+The project won't run yet — `internal/config` and `internal/server` don't exist — but it should parse without errors:
 
 ```bash
 go build ./...
 # should produce no output (no errors)
 ```
 
+If you get "no Go files" warnings, that's expected — empty directories are ignored by the toolchain.
+
 ---
 
 ## Lesson 2 — `internal/config`: Loading Configuration
 
-This module is the foundation. Everything else depends on it.
+### What this module does
+
+Every other module in the portal needs configuration — the port to listen on, the path to the workspaces directory, which binary to launch for OC, and so on. Rather than scatter `os.Getenv` calls throughout the codebase, all configuration is centralised here. This module is the first one you implement because nothing else can be written without it.
+
+The design follows a three-layer resolution order:
+1. **YAML file** — the primary source, written once and kept locally.
+2. **Environment variables** — useful for overriding in scripts or containers without editing the file.
+3. **Defaults** — sensible values so the binary is runnable with a minimal config.
+
+### Key design decisions
+
+**Why a `defaults()` function?**  
+Go's zero values (`0`, `""`, `false`) are not always sensible defaults. A port of `0` would pick a random port; an empty binary path would fail immediately. Seeding `cfg` with defaults before unmarshalling means YAML only needs to specify what differs from the defaults — you don't have to repeat the OC binary path in every config file.
+
+**Why accept a missing file?**  
+`os.IsNotExist(err)` lets the portal start with defaults + env vars even if no `config.yaml` exists. This is useful in Docker or CI environments where you inject everything via environment variables.
+
+**Why a `Secret` method?**  
+Secrets (like `vscode-password`) should never live in the main config file, which is likely shared or version-controlled. The `Secret` method resolves them from env vars first, then from files in a `.secrets/` directory, then from Docker secrets (`/run/secrets/`). The caller doesn't care where the value came from.
 
 ### `internal/config/config.go`
 
@@ -232,12 +287,12 @@ func Load(path string) (*Config, error) {
         cfg.WorkspacesRoot = filepath.Join(home, cfg.WorkspacesRoot[2:])
     }
 
-    // Resolve secrets dir relative to config file
+    // Resolve secrets dir relative to config file location
     if !filepath.IsAbs(cfg.SecretsDir) {
         cfg.SecretsDir = filepath.Join(filepath.Dir(path), cfg.SecretsDir)
     }
 
-    // Validate
+    // Validate required fields
     if cfg.WorkspacesRoot == "" {
         return nil, fmt.Errorf("workspaces_root is required (set in config.yaml or PORTAL_WORKSPACES_ROOT)")
     }
@@ -304,6 +359,10 @@ func applyEnvOverrides(cfg *Config) {
 
 ### `internal/config/config_test.go`
 
+The tests cover the four meaningful behaviours: missing file, file with values, env var override, and secret resolution. Each test is independent — it creates its own temp files and cleans up with `defer`.
+
+Notice the test for defaults: it expects an *error* because `workspaces_root` is required and no file is present. This is the right thing to test — "missing required field fails loudly" is a behaviour worth protecting.
+
 ```go
 package config
 
@@ -313,12 +372,11 @@ import (
 )
 
 func TestDefaults(t *testing.T) {
-    // Load with a non-existent file — should use defaults
-    cfg, err := Load("nonexistent.yaml")
+    // Load with a non-existent file — should fail on missing workspaces_root
+    _, err := Load("nonexistent.yaml")
     if err == nil {
         t.Fatal("expected error for missing workspaces_root")
     }
-    _ = cfg
 }
 
 func TestLoadFromFile(t *testing.T) {
@@ -350,7 +408,6 @@ func TestEnvOverride(t *testing.T) {
     defer os.Remove(f.Name())
 
     t.Setenv("PORTAL_PORT", "5555")
-    defer os.Unsetenv("PORTAL_PORT")
 
     cfg, _ := Load(f.Name())
     if cfg.PortalPort != 5555 {
@@ -376,11 +433,28 @@ Run:
 go test ./internal/config/...
 ```
 
+All four tests should pass before continuing.
+
 ---
 
 ## Lesson 3 — `internal/fs`: Directory Tree
 
-This module provides one function: list the children of a directory, with pruning.
+### What this module does
+
+The portal needs to display a navigable directory tree rooted at `workspaces_root`. Critically, it should *not* descend into build artefact directories like `node_modules`, `.next`, or `target` — these are noisy, large, and irrelevant to navigation.
+
+This module provides a single function, `List`, that returns the immediate children of a given path with those directories filtered out. It also annotates each entry with two flags that the UI needs: `IsGit` (to show a git badge) and `HasChildren` (to show an expand arrow).
+
+### Key design decisions
+
+**Why only immediate children, not a full recursive tree?**  
+The UI will load children lazily on expand — so we only need one level at a time. Recursing the whole workspace tree upfront would be slow and unnecessary.
+
+**Why a hardcoded `defaultPrune` map plus a config `extraPrune` list?**  
+Most pruned directories (`node_modules`, `dist`, etc.) are universally unwanted. Hardcoding them means users don't have to rediscover the list. The `extraPrune` config field lets you add project-specific additions (e.g. `vendor/` for some Go setups).
+
+**Why detect git repos at this layer?**  
+The directory listing and git detection happen in the same `os.ReadDir` pass. Doing it here avoids a second pass later and keeps the data clean for the handler.
 
 ### `internal/fs/tree.go`
 
@@ -455,17 +529,17 @@ func List(path string, extraPrune []string) ([]DirEntry, error) {
 }
 
 // isGitRepo returns true if the directory contains a git repository.
-// Handles: standard .git dir, worktree .git file, and bare .bare/HEAD.
+// Handles three layouts:
+//   - standard:  .git/ is a directory
+//   - worktree:  .git is a file (contains "gitdir: ...")
+//   - bare repo: .bare/HEAD exists
 func isGitRepo(path string) bool {
-    // Standard repo: .git is a directory
     if info, err := os.Stat(filepath.Join(path, ".git")); err == nil && info.IsDir() {
         return true
     }
-    // Worktree checkout: .git is a file (contains "gitdir: ...")
     if info, err := os.Stat(filepath.Join(path, ".git")); err == nil && info.Mode().IsRegular() {
         return true
     }
-    // Bare repo: .bare/HEAD exists
     if _, err := os.Stat(filepath.Join(path, ".bare", "HEAD")); err == nil {
         return true
     }
@@ -488,6 +562,10 @@ func hasNonPrunedChildren(path string, pruned map[string]bool) bool {
 ```
 
 ### `internal/fs/tree_test.go`
+
+The tests build a synthetic directory tree in a temp directory. This is the standard Go testing pattern for file system code — never test against real directories you don't control.
+
+The tree covers all the cases worth asserting: a pruned directory is absent, a dotdir is present, git is detected, and `HasChildren` is accurate.
 
 ```go
 package fs
@@ -581,9 +659,32 @@ func TestIsGitRepo(t *testing.T) {
 
 ## Lesson 4 — `internal/session`: The Runner Interface
 
-Before writing the OC and VS Code runners, define the interface they both implement. This is the key design decision: the session manager works with `Runner` and never imports `oc` or `vscode` directly. This makes both swappable and testable in isolation.
+### What this module does
+
+This module handles the full lifecycle of a running editor session: launching the process, assigning it a port, polling until it's healthy, persisting state to disk so sessions survive a portal restart, and broadcasting events to connected browsers via SSE.
+
+There are two session types — OC and VS Code — which are launched differently (different binaries, different flags, different auth). The module is split into four files to separate these concerns:
+
+| File | Responsibility |
+|---|---|
+| `runner.go` | The `Runner` interface and `Session` struct — the shared contract. |
+| `oc.go` | The OC-specific `Runner` implementation. |
+| `vscode.go` | The VS Code-specific `Runner` implementation. |
+| `manager.go` | Orchestration — port assignment, lifecycle, state persistence, SSE. |
+
+### Key design decisions
+
+**Why define a `Runner` interface before writing the implementations?**  
+The `Manager` in `manager.go` needs to start and stop sessions without knowing which type they are. By programming against the `Runner` interface, the manager is completely decoupled from the OC and VS Code specifics. You can add a third session type later without touching the manager, and you can inject a fake `Runner` in tests.
+
+This is the same principle as TypeScript interfaces — the difference is that Go satisfies interfaces implicitly (no `implements` keyword).
+
+**Why keep `Session` in `runner.go` rather than `manager.go`?**  
+`Session` is the data shape shared by the runner, the manager, and the HTTP handlers. Defining it in `runner.go` (the foundational file) avoids circular imports and makes it clear that it belongs to the `session` package as a whole, not just to the manager.
 
 ### `internal/session/runner.go`
+
+The `Runner` interface defines the three things the manager needs from any session type: start it, stop it, and get the URL to health-check it.
 
 ```go
 package session
@@ -615,19 +716,22 @@ type Runner interface {
 
 ### `internal/session/oc.go`
 
+`OCRunner` launches the `opencode` binary with a port flag and optional CORS origin. `cmd.Start()` (not `cmd.Run()`) is used because we want the process to keep running after `Start` returns — `Run` would block until the process exits.
+
 ```go
 package session
 
 import (
     "fmt"
+    "os"
     "os/exec"
     "strconv"
 )
 
 // OCRunner starts and stops OpenCode processes.
 type OCRunner struct {
-    Binary string
-    Flags  []string
+    Binary     string
+    Flags      []string
     CORSOrigin string
 }
 
@@ -661,6 +765,8 @@ func (r *OCRunner) HealthURL(port int) string {
 
 ### `internal/session/vscode.go`
 
+`VSCodeRunner` launches `code-server`. The password is passed as an environment variable (`PASSWORD=...`) rather than a flag, because that is how code-server's auth is designed. `os.Environ()` copies the current process environment so the child inherits `PATH` and everything else it needs.
+
 ```go
 package session
 
@@ -668,7 +774,6 @@ import (
     "fmt"
     "os"
     "os/exec"
-    "strconv"
 )
 
 // VSCodeRunner starts and stops code-server processes.
@@ -707,7 +812,41 @@ func (r *VSCodeRunner) HealthURL(port int) string {
 
 ## Lesson 5 — `internal/session/manager.go`: The Session Manager
 
-This is the most complex module. It orchestrates port assignment, process lifecycle, health checking, state persistence, and SSE event broadcasting.
+### What this module does
+
+The manager is the most complex part of the portal. It owns the runtime state of every running session and handles five distinct concerns:
+
+1. **Port assignment** — scan the configured range and find a free port before starting a process.
+2. **Process lifecycle** — start a session, record its PID, and stop it cleanly on request.
+3. **Health checking** — after starting, poll the process's HTTP endpoint until it responds. Only then mark the session as ready.
+4. **State persistence** — write the session map to a JSON file after every change. On restart, reload it and remove any sessions whose processes are no longer alive (orphans).
+5. **SSE broadcasting** — publish events (`started`, `healthy`, `stopped`) to a channel that HTTP handlers can fan out to connected browsers.
+
+### Key design decisions
+
+**Why a `Registrar` interface?**  
+When Tailscale is enabled, a newly-healthy session needs to be registered with `tailscale serve` to get a public URL. When it's disabled, nothing should happen. Rather than an `if cfg.Tailscale.Enabled` check scattered through the manager, we inject a `Registrar` at construction time. `NoopRegistrar` satisfies the interface and does nothing — the manager never needs to know which one it has.
+
+This is the same pattern as the `Runner` interface: express the dependency as an interface, inject the implementation, test with a no-op.
+
+**Why a buffered `events` channel of size 64?**  
+The manager sends events synchronously (no goroutine). If the HTTP handler is slow to consume them, a blocking send would deadlock the manager. A buffer of 64 means the manager can fire 64 events before it blocks — more than enough for any realistic load. This is a pragmatic choice, not a scalable pub/sub system.
+
+**Why save state after every mutation?**  
+State persistence is cheap (a small JSON file) and the cost of losing it (all sessions appear stopped after a portal restart) is high. Writing on every change is the right tradeoff here.
+
+**Why check `proc.Signal(0)` to detect orphans?**  
+`os.FindProcess` on Unix never returns an error — it just constructs a process handle. The only way to check if a process is actually alive is to send it signal 0, which does nothing to the process but returns an error if it doesn't exist or you don't have permission.
+
+### `internal/session/manager.go`
+
+Before writing this file, add the UUID dependency:
+
+```bash
+go get github.com/google/uuid
+```
+
+UUIDs are used as session IDs. The stdlib has no UUID generator — `crypto/rand` could generate random bytes, but encoding them correctly to the standard UUID format is non-trivial. `github.com/google/uuid` is a well-maintained, zero-dependency package maintained by Google. This is a case where using a dependency is clearly the right call.
 
 ```go
 package session
@@ -721,9 +860,10 @@ import (
     "os"
     "path/filepath"
     "sync"
+    "syscall"
     "time"
 
-    "github.com/google/uuid"  // go get github.com/google/uuid
+    "github.com/google/uuid"
 )
 
 // Registrar is implemented by the Tailscale integration (or a no-op).
@@ -734,25 +874,26 @@ type Registrar interface {
 
 // NoopRegistrar does nothing — used when Tailscale is disabled.
 type NoopRegistrar struct{}
+
 func (n *NoopRegistrar) Register(port int) (string, error) { return "", nil }
 func (n *NoopRegistrar) Deregister(port int) error         { return nil }
 
 // Manager manages the lifecycle of all running sessions.
 type Manager struct {
-    mu         sync.Mutex
-    sessions   map[string]*Session
-    stateFile  string
-    events     chan Event      // SSE event broadcast channel
-    registrar  Registrar
-    ocRunner   Runner
-    vsRunner   Runner
-    ocRange    [2]int
-    vsRange    [2]int
+    mu        sync.Mutex
+    sessions  map[string]*Session
+    stateFile string
+    events    chan Event // SSE event broadcast channel
+    registrar Registrar
+    ocRunner  Runner
+    vsRunner  Runner
+    ocRange   [2]int
+    vsRange   [2]int
 }
 
 // Event is sent on the SSE channel when session state changes.
 type Event struct {
-    Type    string  // "started", "healthy", "stopped"
+    Type    string // "started", "healthy", "stopped"
     Session *Session
 }
 
@@ -808,7 +949,7 @@ func (m *Manager) Start(sessionType, dir string) (*Session, error) {
         return nil, fmt.Errorf("unknown session type: %s", sessionType)
     }
 
-    // Check for existing session for this dir+type
+    // Return existing session if one is already running for this dir+type
     if existing := m.findByDirAndType(dir, sessionType); existing != nil {
         return existing, nil
     }
@@ -839,7 +980,8 @@ func (m *Manager) Start(sessionType, dir string) (*Session, error) {
 
     m.events <- Event{Type: "started", Session: s}
 
-    // Health check in a goroutine — updates URL when ready
+    // Health check runs in a goroutine — it blocks until the process responds,
+    // then updates s.URL and sends the "healthy" event.
     go m.waitHealthy(s, runner.HealthURL(port))
 
     return s, nil
@@ -856,7 +998,6 @@ func (m *Manager) Stop(id string) error {
     delete(m.sessions, id)
     m.mu.Unlock()
 
-    // Determine runner
     var runner Runner
     if s.Type == "oc" {
         runner = m.ocRunner
@@ -870,7 +1011,9 @@ func (m *Manager) Stop(id string) error {
     return nil
 }
 
-// waitHealthy polls until the session is healthy, then registers with Tailscale.
+// waitHealthy polls until the session responds, then registers with Tailscale.
+// It times out after 30 seconds to avoid leaking goroutines for processes that
+// fail to start.
 func (m *Manager) waitHealthy(s *Session, healthURL string) {
     ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
     defer cancel()
@@ -881,7 +1024,7 @@ func (m *Manager) waitHealthy(s *Session, healthURL string) {
     for {
         select {
         case <-ctx.Done():
-            return // timed out
+            return // timed out — process failed to become healthy
         case <-ticker.C:
             resp, err := http.Get(healthURL)
             if err == nil && resp.StatusCode < 500 {
@@ -902,6 +1045,8 @@ func (m *Manager) waitHealthy(s *Session, healthURL string) {
 }
 
 // nextPort finds the first available port in the given range.
+// It checks both the in-use session map (fast) and then attempts to bind
+// the port (authoritative — catches ports used by unrelated processes).
 func (m *Manager) nextPort(r [2]int) (int, error) {
     m.mu.Lock()
     inUse := make(map[int]bool)
@@ -935,7 +1080,7 @@ func (m *Manager) findByDirAndType(dir, sessionType string) *Session {
     return nil
 }
 
-// saveState persists current sessions to disk.
+// saveState persists current sessions to disk as JSON.
 func (m *Manager) saveState() {
     m.mu.Lock()
     defer m.mu.Unlock()
@@ -947,44 +1092,57 @@ func (m *Manager) saveState() {
     }
 }
 
-// loadState reads persisted sessions and removes orphans (dead processes).
+// loadState reads persisted sessions and removes orphans (processes no longer alive).
 func (m *Manager) loadState() {
     data, err := os.ReadFile(m.stateFile)
     if err != nil {
-        return // no state file yet
+        return // no state file yet — fresh start
     }
     var loaded map[string]*Session
     if err := json.Unmarshal(data, &loaded); err != nil {
         return
     }
     for id, s := range loaded {
-        // Check if process is still alive
         proc, err := os.FindProcess(s.PID)
         if err != nil || proc.Signal(syscall.Signal(0)) != nil {
-            continue // orphan — skip
+            continue // orphan — process is gone
         }
         m.sessions[id] = s
     }
 }
 ```
 
-> **Note on `uuid`:** Add the dependency: `go get github.com/google/uuid`. This is a rare case where using an external package for UUID generation is preferable to a stdlib implementation.
-
 ---
 
 ## Lesson 6 — `internal/tailscale`: The Optional Plugin
 
-> The `internal/tailscale` module is implemented and explained in **[Course 07 — Tailscale Setup](./course-07-tailscale.md)** (Lesson 7). It is kept separate because Tailscale is an optional dependency — the portal builds and runs without it.
->
-> The module skeleton (`internal/tailscale/`) was created in Lesson 1. You can leave it empty for now and return to Course 07 when you are ready to wire up Tailscale.
->
-> If you are skipping Tailscale entirely, the `session.NoopRegistrar` already handles the disabled path — no further action required here.
+The Tailscale integration is out of scope for this course. It is implemented in [Course 07 — Tailscale Setup](./course-07-tailscale.md).
+
+The `session.Registrar` interface (defined in the previous lesson) is the seam that makes this optional. When `cfg.Tailscale.Enabled` is false, the server wires up `NoopRegistrar` and nothing Tailscale-related runs. You do not need to create the `internal/tailscale/` directory now — Course 07 does that.
 
 ---
 
 ## Lesson 7 — `internal/server`: Wiring It All Together
 
-This lesson adds the HTTP server. The UI (templates) is added in Course 03, so for now handlers return plain text to verify routing works.
+### What this module does
+
+The server module has two files:
+
+- `server.go` — constructs all dependencies and starts listening. This is the composition root for the whole application.
+- `handlers.go` — implements each HTTP handler, reading from config/manager and writing HTTP responses.
+
+For now, all handlers return plain text. The HTMX UI and templates are added in Course 03 — these plain-text responses are placeholders that let you verify routing is correct before touching the UI layer.
+
+### Key design decisions
+
+**Why is `server.go` the composition root?**  
+`main.go` is deliberately kept thin. `server.Start` is where all the wiring happens: which registrar, which runners, which state file, which manager, which mux. This keeps `main.go` readable and makes it easy to see the full dependency graph in one place.
+
+**Why a `handler` struct rather than standalone functions?**  
+Handlers need access to shared state — the config and the session manager. In Go, the idiomatic way to thread shared state into handler functions is to hang them on a struct and pass that struct around. The alternative (global variables) makes testing and reasoning about state harder.
+
+**How does SSE work?**  
+Server-Sent Events is a one-way HTTP stream from server to browser. The client opens a persistent `GET /events` connection; the server never closes it, instead writing `event: ...\ndata: ...\n\n` frames as events occur. The `http.Flusher` interface is required to push each frame to the client immediately rather than buffering it.
 
 ### `internal/server/server.go`
 
@@ -998,21 +1156,14 @@ import (
     "os"
     "path/filepath"
 
-    "github.com/yourusername/workspace-portal/internal/config"
-    fsmod "github.com/yourusername/workspace-portal/internal/fs"
-    "github.com/yourusername/workspace-portal/internal/session"
-    "github.com/yourusername/workspace-portal/internal/tailscale"
+    "workspace-portal/internal/config"
+    "workspace-portal/internal/session"
 )
 
 // Start builds all dependencies and starts the HTTP server.
 func Start(cfg *config.Config) error {
-    // Build registrar
-    var registrar session.Registrar
-    if cfg.Tailscale.Enabled {
-        registrar = &tailscale.Serve{Binary: cfg.Tailscale.Binary}
-    } else {
-        registrar = &session.NoopRegistrar{}
-    }
+    // Tailscale registrar — NoopRegistrar until Course 07
+    var registrar session.Registrar = &session.NoopRegistrar{}
 
     // Build runners
     ocRunner := &session.OCRunner{
@@ -1024,7 +1175,7 @@ func Start(cfg *config.Config) error {
         Password: cfg.Secret("vscode-password"),
     }
 
-    // State file path
+    // State file lives in the user's local data directory
     stateDir, _ := os.UserHomeDir()
     stateFile := filepath.Join(stateDir, ".local", "share", "workspace-portal", "sessions.json")
 
@@ -1052,18 +1203,23 @@ func Start(cfg *config.Config) error {
 }
 ```
 
+> **Note on the Tailscale import:** When you implement Course 07, you will add a `cfg.Tailscale.Enabled` branch here that imports `workspace-portal/internal/tailscale`. For now, that import is omitted so the project compiles without the package.
+
 ### `internal/server/handlers.go`
+
+The `// TODO Course 03` comments mark where templates will replace the plain-text responses. This is intentional — you can verify routing and data plumbing before committing to the UI layer.
 
 ```go
 package server
 
 import (
+    "encoding/json"
     "fmt"
     "net/http"
 
-    "github.com/yourusername/workspace-portal/internal/config"
-    fsmod "github.com/yourusername/workspace-portal/internal/fs"
-    "github.com/yourusername/workspace-portal/internal/session"
+    "workspace-portal/internal/config"
+    fsmod "workspace-portal/internal/fs"
+    "workspace-portal/internal/session"
 )
 
 type handler struct {
@@ -1125,8 +1281,8 @@ func (h *handler) sessionsStop(w http.ResponseWriter, r *http.Request) {
 }
 
 // events streams Server-Sent Events to the browser.
+// The connection stays open until the client disconnects (r.Context().Done()).
 func (h *handler) events(w http.ResponseWriter, r *http.Request) {
-    // SSE requires these headers
     w.Header().Set("Content-Type", "text/event-stream")
     w.Header().Set("Cache-Control", "no-cache")
     w.Header().Set("Connection", "keep-alive")
@@ -1137,11 +1293,10 @@ func (h *handler) events(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Send a heartbeat immediately so the browser knows the connection is alive
+    // Heartbeat so the browser knows the connection is alive immediately
     fmt.Fprintf(w, ": heartbeat\n\n")
     flusher.Flush()
 
-    // Fan out events from the manager channel to this client
     for {
         select {
         case <-r.Context().Done():
@@ -1161,7 +1316,7 @@ func (h *handler) static(w http.ResponseWriter, r *http.Request) {
 
 ### Verify the server runs
 
-Create a minimal `config.yaml`:
+Create a minimal `config.yaml` (gitignored, so it stays local):
 
 ```yaml
 workspaces_root: ~/workspaces
@@ -1170,8 +1325,11 @@ portal_port: 3000
 
 ```bash
 go run ./cmd/portal
+# workspace-portal starting on :3000
 # listening on :3000
 ```
+
+In a second terminal:
 
 ```bash
 curl http://localhost:3000/
@@ -1184,24 +1342,27 @@ curl http://localhost:3000/fs/list
 # ...
 ```
 
-The server works. The UI is plain text for now — that changes in Course 03.
+The server works. The responses are plain text for now — that changes in Course 03.
 
 ---
 
 ## Lesson 8 — Running Tests
 
+With all modules implemented, run the full test suite:
+
 ```bash
 go test ./...
 ```
 
-All tests should pass. Fix any compilation errors (likely import paths) before continuing.
+All tests should pass. The most likely failure at this point is an import path mismatch — make sure every import uses `workspace-portal/internal/...` (matching your `go.mod` module name), not a GitHub URL.
+
+Once the basic suite passes, run it again with the race detector:
 
 ```bash
-# Run with race detector — finds concurrency bugs
 go test -race ./...
 ```
 
-The `-race` flag instruments the binary to detect data races. Run it regularly — the session manager uses shared state across goroutines and race conditions are easy to introduce.
+The `-race` flag compiles the binary with race detection instrumentation. It catches data races — cases where two goroutines access the same memory concurrently and at least one is writing, without synchronisation. The session manager is the most likely source: it uses `sync.Mutex` around the session map, but any mutation path you add later that skips the lock will be caught here. Run `-race` regularly throughout development, not just at the end.
 
 ---
 
