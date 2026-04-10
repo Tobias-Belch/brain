@@ -472,8 +472,8 @@ import (
 
 // DirEntry describes one directory in the tree.
 type DirEntry struct {
-    Path        string // absolute path
-    Name        string // basename
+    Path        string // absolute path to this entry (includes Name as the final element)
+    Name        string // basename (final path element only)
     IsGit       bool   // contains a git repo
     HasChildren bool   // has non-pruned subdirectories
 }
