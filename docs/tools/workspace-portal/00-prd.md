@@ -156,13 +156,13 @@ Contains `htmx.min.js` only. Embedded via `go:embed`. No other static assets; al
 `com.workspace-portal.plist.tmpl` — launchd plist template with placeholders for binary path, config path, log path. `install.sh` — substitutes values, writes to `~/Library/LaunchAgents/`, runs `launchctl bootstrap`.
 
 **`deploy/docker/Dockerfile`**
-Multi-stage: `golang:alpine` build stage → `alpine:latest` runtime stage. Copies binary only. Exposes port 3000. Entrypoint: `workspace-portal`.
+Multi-stage: `golang:alpine` build stage → `alpine:latest` runtime stage. Copies binary only. Exposes port 4000. Entrypoint: `workspace-portal`.
 
 ### Config schema (`config.yaml`)
 
 ```
 workspaces_root     string    (required)
-portal_port         int       (default: 3000)
+portal_port         int       (default: 4000)
 secrets_dir         string    (default: .secrets, relative to config file)
 oc.binary           string    (default: opencode)
 oc.port_range       [int,int] (default: [4100, 4199])

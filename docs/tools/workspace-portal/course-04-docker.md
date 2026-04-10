@@ -163,7 +163,7 @@ WORKDIR /home/portal
 COPY --from=builder /portal /usr/local/bin/portal
 
 # The portal listens on this port (configurable via PORTAL_PORTAL_PORT env var)
-EXPOSE 3000
+EXPOSE 4000
 
 # Use exec form (not shell form) so the process receives signals directly
 ENTRYPOINT ["portal"]
@@ -200,13 +200,13 @@ Run it with a test config:
 
 ```bash
 docker run --rm \
-  -p 3000:3000 \
+  -p 4000:4000 \
   -e PORTAL_WORKSPACES_ROOT=/workspaces \
   -v ~/workspaces:/workspaces:ro \
   workspace-portal:dev
 ```
 
-Open `http://localhost:3000` — the portal should show your workspaces tree.
+Open `http://localhost:4000` — the portal should show your workspaces tree.
 
 ---
 
@@ -238,7 +238,7 @@ All config values can be passed as env vars (prefix `PORTAL_`):
 ```bash
 docker run \
   -e PORTAL_WORKSPACES_ROOT=/workspaces \
-  -e PORTAL_PORTAL_PORT=3000 \
+  -e PORTAL_PORTAL_PORT=4000 \
   -e PORTAL_OC_BINARY=/usr/local/bin/opencode \
   workspace-portal:dev
 ```
@@ -288,10 +288,10 @@ services:
       context: ../..          # repo root
       dockerfile: deploy/docker/Dockerfile
     ports:
-      - "3000:3000"
+      - "4000:4000"
     environment:
       PORTAL_WORKSPACES_ROOT: /workspaces
-      PORTAL_PORTAL_PORT: "3000"
+      PORTAL_PORTAL_PORT: "4000"
       PORTAL_OC_BINARY: opencode
       PORTAL_VSCODE_BINARY: code-server
     volumes:
@@ -389,7 +389,7 @@ When the portal spawns `opencode --port 4101`, that process binds `127.0.0.1:410
 
 ```yaml
 ports:
-  - "3000:3000"       # portal
+  - "4000:4000"       # portal
   - "4100-4199:4100-4199"  # OC sessions
   - "4200-4299:4200-4299"  # VS Code sessions
 ```
@@ -404,7 +404,7 @@ Docker can monitor container health and restart it (or report it unhealthy) if a
 
 ```dockerfile
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:3000/ || exit 1
+  CMD wget -qO- http://localhost:4000/ || exit 1
 ```
 
 `wget` (provided by Alpine's busybox) fetches the portal root. If it returns non-zero, the container is marked unhealthy after 3 failures. Docker Compose and orchestrators (Kubernetes, Swarm) can restart unhealthy containers.

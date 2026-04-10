@@ -847,7 +847,7 @@ go build ./...
 go run ./cmd/portal
 ```
 
-Open `http://localhost:3000` in a browser. You should see:
+Open `http://localhost:4000` in a browser. You should see:
 - A dark-themed portal with a directory tree
 - Clicking a `▶` arrow expands the directory and loads children
 - Clicking "OpenCode" or "VS" starts a session (it will fail gracefully if OpenCode/code-server are not installed)
@@ -942,7 +942,7 @@ func newTestServer(t *testing.T, mgr session.ManagerInterface) *httptest.Server 
     t.Helper()
     cfg := &config.Config{
         WorkspacesRoot: t.TempDir(),
-        PortalPort:     3000,
+        PortalPort:     4000,
     }
     srv := server.New(cfg, mgr)
     return httptest.NewServer(srv)

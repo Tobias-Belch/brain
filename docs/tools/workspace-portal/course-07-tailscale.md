@@ -24,7 +24,7 @@ For the workspace-portal, this means:
 
 | Without Tailscale | With Tailscale |
 |---|---|
-| `http://localhost:3000` — only on the machine | `https://my-mac.tail1234.ts.net` — any device on the tailnet |
+| `http://localhost:4000` — only on the machine | `https://my-mac.tail1234.ts.net` — any device on the tailnet |
 | `http://localhost:4101` — OpenCode session, local only | `https://my-mac.tail1234.ts.net:4101` — OpenCode from phone |
 | Self-signed cert or no TLS | Valid Let's Encrypt cert, auto-provisioned |
 | Code Server complains about insecure context | Code Server works: requires HTTPS for clipboard, PWA features |
@@ -34,13 +34,13 @@ For the workspace-portal, this means:
 `tailscale serve` is Tailscale's built-in reverse proxy. When you run:
 
 ```bash
-tailscale serve --bg --https=443 http://localhost:3000
+tailscale serve --bg --https=443 http://localhost:4000
 ```
 
 Tailscale:
 1. Registers a DNS-01 challenge with Let's Encrypt on your behalf
 2. Provisions a TLS certificate for `<machine>.ts.net` (or `<machine>.ts.net:443`)
-3. Terminates HTTPS on the Tailscale daemon and forwards plaintext to `localhost:3000`
+3. Terminates HTTPS on the Tailscale daemon and forwards plaintext to `localhost:4000`
 4. Persists this configuration across reboots (the `--bg` flag)
 
 The portal shells out to the `tailscale` binary to call this for each session port — no SDK, no Tailscale API keys required.
@@ -233,7 +233,7 @@ With MagicDNS and HTTPS enabled, exposing the portal is a single command.
 ### Register the portal
 
 ```bash
-tailscale serve --bg --https=443 http://localhost:3000
+tailscale serve --bg --https=443 http://localhost:4000
 ```
 
 The portal is now accessible at `https://dev-mac.tail1234.ts.net` from any device on your tailnet.
@@ -241,7 +241,7 @@ The portal is now accessible at `https://dev-mac.tail1234.ts.net` from any devic
 ```bash
 tailscale serve status
 # https://dev-mac.tail1234.ts.net (tailnet only)
-# |-- / http://localhost:3000
+# |-- / http://localhost:4000
 ```
 
 The `--bg` flag persists this across reboots and Tailscale restarts. If you restart the machine or restart `tailscaled`, `tailscale serve` automatically resumes.
@@ -316,7 +316,7 @@ This follows the same pattern as the other overrides: env vars take precedence o
 
 ```yaml
 workspaces_root: ~/workspaces
-portal_port: 3000
+portal_port: 4000
 
 tailscale:
   enabled: true
@@ -459,7 +459,7 @@ Then in the test, set `PATH` to include the directory containing the fake binary
 ```bash
 tailscale serve status
 # https://dev-mac.tail1234.ts.net (tailnet only)
-# |-- / http://localhost:3000
+# |-- / http://localhost:4000
 # https://dev-mac.tail1234.ts.net:4101 (tailnet only)
 # |-- / http://localhost:4101
 ```
@@ -495,7 +495,7 @@ tailscale cert dev-mac.tail1234.ts.net 2>&1
 openssl s_client -connect dev-mac.tail1234.ts.net:443 </dev/null 2>/dev/null | openssl x509 -noout -dates
 ```
 
-If the cert is expired, `tailscale serve` usually auto-renews. If it doesn't, run `tailscale serve reset && tailscale serve --bg --https=443 http://localhost:3000` to force re-registration.
+If the cert is expired, `tailscale serve` usually auto-renews. If it doesn't, run `tailscale serve reset && tailscale serve --bg --https=443 http://localhost:4000` to force re-registration.
 
 ### Key expiry breaks remote access
 
@@ -541,7 +541,7 @@ Before relying on Tailscale for daily remote access:
 - [ ] HTTPS certificates are enabled (same DNS page)
 
 ### Portal exposure
-- [ ] `tailscale serve --bg --https=443 http://localhost:3000` has been run
+- [ ] `tailscale serve --bg --https=443 http://localhost:4000` has been run
 - [ ] `tailscale serve status` shows the portal route
 - [ ] `https://<machine>.ts.net` opens the portal from another device on the tailnet
 - [ ] The browser shows a valid certificate (no warning)

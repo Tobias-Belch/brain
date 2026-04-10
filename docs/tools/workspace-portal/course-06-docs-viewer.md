@@ -993,8 +993,8 @@ DOCS_ROOT=~/workspaces go run ./cmd/portal
 ```
 
 1. Watch the terminal — you should see Astro starting up.
-2. Visit `http://localhost:3000` — the nav should show a "Docs" link.
-3. Click "Docs" — you should be proxied to `http://localhost:3000/docs/` and see the Starlight site with your workspace docs in the sidebar.
+2. Visit `http://localhost:4000` — the nav should show a "Docs" link.
+3. Click "Docs" — you should be proxied to `http://localhost:4000/docs/` and see the Starlight site with your workspace docs in the sidebar.
 4. Edit a `.md` file in `~/workspaces` — within a few seconds, the sidebar should update.
 5. `Ctrl-C` — the Astro process should be killed.
 
@@ -1057,7 +1057,7 @@ COPY --chown=portal:portal docs/tsconfig.json ./docs/
 COPY --chown=portal:portal docs/scripts/ ./docs/scripts/
 COPY --chown=portal:portal docs/src/ ./docs/src/
 
-EXPOSE 3000 4300
+EXPOSE 4000 4300
 
 ENTRYPOINT ["./workspace-portal"]
 ```
@@ -1082,14 +1082,14 @@ services:
       context: .
       dockerfile: deploy/docker/Dockerfile
     ports:
-      - "3000:3000"
+      - "4000:4000"
       - "4300:4300"
     volumes:
       - "${WORKSPACES_ROOT:-$HOME/workspaces}:/workspaces:ro"
       - "${SECRETS_DIR:-$HOME/.secrets}:/run/secrets:ro"
     environment:
       PORTAL_WORKSPACES_ROOT: /workspaces
-      PORTAL_PORTAL_PORT: "3000"
+      PORTAL_PORTAL_PORT: "4000"
       PORTAL_DOCS_PORT: "4300"
       PORTAL_DOCS_ROOT: /workspaces
       PORTAL_DOCS_ASTRO_DIR: /app/docs
@@ -1101,7 +1101,7 @@ services:
 ```bash
 docker build -t workspace-portal:latest -f deploy/docker/Dockerfile .
 docker run --rm \
-  -p 3000:3000 -p 4300:4300 \
+  -p 4000:4000 -p 4300:4300 \
   -v ~/workspaces:/workspaces:ro \
   -e PORTAL_WORKSPACES_ROOT=/workspaces \
   -e PORTAL_DOCS_ROOT=/workspaces \
@@ -1109,7 +1109,7 @@ docker run --rm \
   workspace-portal:latest
 ```
 
-Visit `http://localhost:3000/docs` — you should see the Starlight site served from the container.
+Visit `http://localhost:4000/docs` — you should see the Starlight site served from the container.
 
 > **Note on OrbStack:** If you are using OrbStack instead of Docker Desktop, the `docker build` and `docker run` commands are identical. OrbStack provides the same Docker CLI. The only difference is startup time (OrbStack is faster) and memory usage (OrbStack uses less).
 
@@ -1239,7 +1239,7 @@ Add to the launchd plist's `EnvironmentVariables`:
 <string>/Users/yourname/workspaces/fea/lib/workspace-portal/docs</string>
 ```
 
-External clients only need to access port 3000 via the portal's `/docs` reverse proxy.
+External clients only need to access port 4000 via the portal's `/docs` reverse proxy.
 
 ### Summary
 

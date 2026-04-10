@@ -6,7 +6,7 @@ title: "Course 05 — Deployment"
 
 **Goal:** Deploy workspace-portal as a persistent macOS service using `launchd`, and write the `README` and `config.example.yaml` for open-source distribution.  
 **Prerequisite:** [Course 04 — Docker](./course-04-docker.md)  
-**Output:** The portal running permanently on your Mac as a launchd service, accessible at `http://localhost:3000`.
+**Output:** The portal running permanently on your Mac as a launchd service, accessible at `http://localhost:4000`.
 
 ---
 
@@ -241,7 +241,7 @@ workspaces_root: ~/workspaces
 
 # Port the portal HTTP server listens on.
 # Env: PORTAL_PORTAL_PORT
-portal_port: 3000
+portal_port: 4000
 
 # ─── Secrets ──────────────────────────────────────────────────────────────────
 
@@ -378,7 +378,7 @@ cp -r secrets.example .secrets
 
 ```bash
 portal --config ~/.config/workspace-portal/config.yaml
-# Open http://localhost:3000
+# Open http://localhost:4000
 ```
 
 ### 4. Install as a background service
@@ -407,7 +407,7 @@ echo "mysecretpassword" > .secrets/vscode-password
 # Build and run
 cd deploy/docker
 docker compose up --build
-# Open http://localhost:3000
+# Open http://localhost:4000
 ```
 
 ---
@@ -510,7 +510,7 @@ For a personal portal, simpler is fine — just truncate manually when it gets l
 Before considering the portal "production-ready" for daily use:
 
 ### Security
-- [ ] The portal has no authentication. It relies on Tailscale (or your VPN/reverse proxy) for access control. Do not expose port 3000 to the public internet.
+- [ ] The portal has no authentication. It relies on Tailscale (or your VPN/reverse proxy) for access control. Do not expose port 4000 to the public internet.
 - [ ] The `.secrets/` directory has permissions `700` (owner read/write only): `chmod 700 ~/.secrets && chmod 600 ~/.secrets/*`
 - [ ] `config.yaml` does not contain secrets — only references to secret names.
 
@@ -539,7 +539,7 @@ The portal is now:
 1. **Built** — a single static Go binary at `/usr/local/bin/portal`
 2. **Configured** — `~/.config/workspace-portal/config.yaml` with your workspaces root and port ranges
 3. **Running persistently** — launchd starts it on login, restarts it on crash, logs to `~/Library/Logs/`
-4. **Accessible locally** — `http://localhost:3000`
+4. **Accessible locally** — `http://localhost:4000`
 5. **Open-source ready** — example config and secrets, documented README, zero machine-specific values in the repo
 
 To expose the portal and its sessions securely over HTTPS from any device, continue to **[Course 07 — Tailscale Setup](./course-07-tailscale.md)**.

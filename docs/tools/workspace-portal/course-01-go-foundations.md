@@ -896,7 +896,7 @@ func Load(path string) (*Config, error) {
     }
 
     cfg := &Config{
-        PortalPort: 3000,               // default
+        PortalPort: 4000,               // default
         OpenCode: OCConfig{
             Binary:    "opencode",
             PortRange: [2]int{4100, 4199},

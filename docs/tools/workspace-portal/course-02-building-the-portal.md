@@ -252,7 +252,7 @@ type FSConfig struct {
 // defaults returns a Config populated with sensible defaults.
 func defaults() *Config {
     return &Config{
-        PortalPort: 3000,
+        PortalPort: 4000,
         SecretsDir: ".secrets",
         OC: OCConfig{
             Binary:    "opencode",
@@ -1291,22 +1291,22 @@ Create a minimal `config.yaml` (gitignored, so it stays local):
 
 ```yaml
 workspaces_root: ~/workspaces
-portal_port: 3000
+portal_port: 4000
 ```
 
 ```bash
 go run ./cmd/portal
-# workspace-portal starting on :3000
-# listening on :3000
+# workspace-portal starting on :4000
+# listening on :4000
 ```
 
 In a second terminal:
 
 ```bash
-curl http://localhost:3000/
+curl http://localhost:4000/
 # workspace-portal — root: /Users/yourname/workspaces
 
-curl http://localhost:3000/fs/list
+curl http://localhost:4000/fs/list
 # .secrets (git=false children=false)
 # cyber-security (git=false children=true)
 # de (git=false children=true)
