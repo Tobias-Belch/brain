@@ -12,8 +12,7 @@ tags: [buying, grooming, shavers]
 3. [Consumable Costs & Replacement](#3-consumable-costs--replacement)
 4. [Wet vs. Dry Use](#4-wet-vs-dry-use)
 5. [Cleaning](#5-cleaning)
-6. [96M Cassette Compatibility](#6-96m-cassette-compatibility)
-7. [5-Year Cost & Relative Rating](#7-5-year-cost--relative-rating)
+6. [5-Year Cost & Relative Rating](#6-5-year-cost--relative-rating)
 
 ---
 
@@ -133,19 +132,7 @@ All electric shavers: clean after every use. Soap required after wet shaving wit
 
 ---
 
-## 6. 96M Cassette Compatibility
-
-The Braun 96M cassette (Series 9 Pro+ only) is **not compatible** with Series 3 or Series 5 bodies. There is no upgrade path.
-
-| Body | Cassette | 96M fits? |
-|------|----------|-----------|
-| Series 3 (3040s) | 32b / 32s | No |
-| Series 5 (51-B1000s) | 53b / 54b | No |
-| Series 9 Pro+ | 92b / 94b / 96M | Native |
-
----
-
-## 7. 5-Year Cost & Relative Rating
+## 6. 5-Year Cost & Relative Rating
 
 **Assumptions:** Daily use. Electric shavers: 18-month replacement cycle (~3.3 cycles over 5 years). Cartridge: bi-weekly replacement. DE blades: ~75/year. Mid-point of April 2026 German retail price ranges throughout.
 
