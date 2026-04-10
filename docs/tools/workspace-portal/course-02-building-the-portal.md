@@ -56,11 +56,12 @@ The directories map directly to the modules you'll build:
 
 ### `go.mod` — add external dependencies
 
-The portal has two external dependencies: `gopkg.in/yaml.v3` for parsing the config file, and `github.com/caarlos0/env/v11` for struct-tag-driven environment variable overrides. Both have zero transitive dependencies. Everything else — HTTP, file I/O, process management, JSON, concurrency — is covered by the Go standard library.
+The portal has three external dependencies: `gopkg.in/yaml.v3` for parsing the config file, `github.com/caarlos0/env/v11` for struct-tag-driven environment variable overrides, and `github.com/sabhiram/go-gitignore` for parsing `.gitignore` files when listing directories. The first two have zero transitive dependencies. Everything else — HTTP, file I/O, process management, JSON, concurrency — is covered by the Go standard library.
 
 ```bash
 go get gopkg.in/yaml.v3
 go get github.com/caarlos0/env/v11
+go get github.com/sabhiram/go-gitignore
 ```
 
 Your `go.mod` will now look like:
@@ -72,6 +73,7 @@ go 1.22
 
 require (
     github.com/caarlos0/env/v11 v11.4.0
+    github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
     gopkg.in/yaml.v3 v3.0.1
 )
 ```
@@ -231,7 +233,6 @@ type Config struct {
     SecretsDir     string    `yaml:"secrets_dir"`
     OC             OCConfig  `yaml:"oc"               envPrefix:"PORTAL_OC_"`
     VSCode         VSCConfig `yaml:"vscode"           envPrefix:"PORTAL_VSCODE_"`
-    FS             FSConfig  `yaml:"fs"`
 }
 
 // PortRange is a [lo, hi] port pair that unmarshals from "lo-hi" strings in both
@@ -263,10 +264,6 @@ type OCConfig struct {
 type VSCConfig struct {
     Binary    string    `yaml:"binary"     env:"BINARY"`
     PortRange PortRange `yaml:"port_range" env:"PORT_RANGE"`
-}
-
-type FSConfig struct {
-    PruneDirs []string `yaml:"prune_dirs"`
 }
 
 // defaults returns a Config populated with sensible defaults.
@@ -440,7 +437,7 @@ All four tests should pass before continuing.
 
 ### What this module does
 
-The portal needs to display a navigable directory tree rooted at `workspaces_root`. Critically, it should *not* descend into build artefact directories like `node_modules`, `.next`, or `target` — these are noisy, large, and irrelevant to navigation.
+The portal needs to display a navigable directory tree rooted at `workspaces_root`. Critically, it should *not* descend into build artefact directories like `node_modules`, `.next`, or `target` — these are noisy, large, and irrelevant to navigation. It should also respect `.gitignore` files, so any directory a project already marks as ignored is also hidden here — without the user having to configure anything separately.
 
 This module provides a single function, `List`, that returns the immediate children of a given path with those directories filtered out. It also annotates each entry with two flags that the UI needs: `IsGit` (to show a git badge) and `HasChildren` (to show an expand arrow).
 
@@ -449,8 +446,13 @@ This module provides a single function, `List`, that returns the immediate child
 **Why only immediate children, not a full recursive tree?**  
 The UI will load children lazily on expand — so we only need one level at a time. Recursing the whole workspace tree upfront would be slow and unnecessary.
 
-**Why a hardcoded `defaultPrune` map plus a config `extraPrune` list?**  
-Most pruned directories (`node_modules`, `dist`, etc.) are universally unwanted. Hardcoding them means users don't have to rediscover the list. The `extraPrune` config field lets you add project-specific additions (e.g. `vendor/` for some Go setups).
+**Why a hardcoded `defaultPrune` map?**  
+Most pruned directories (`node_modules`, `dist`, etc.) are universally unwanted. Hardcoding them means users don't have to rediscover the list. There is no user-configurable extra prune list — `.gitignore` files already express user-level exclusion preferences, so duplicating that mechanism in the portal config would create two places to maintain the same information.
+
+**Why respect `.gitignore` files?**  
+Git already tracks which directories a project considers ignorable. By loading `.gitignore` files from ancestor directories (walking up from the listed path to `workspaces_root`), the portal automatically hides anything the user has already decided isn't worth tracking — generated directories, local secrets, toolchain caches. This is zero-configuration from the user's perspective: write a `.gitignore` once, get consistent filtering everywhere.
+
+`github.com/sabhiram/go-gitignore` implements the full gitignore matching algorithm (negations, `**` globs, anchored patterns) with a single dependency and no transitive dependencies.
 
 **Why detect git repos at this layer?**  
 The directory listing and git detection happen in the same `os.ReadDir` pass. Doing it here avoids a second pass later and keeps the data clean for the handler.
@@ -464,6 +466,8 @@ import (
     "os"
     "path/filepath"
     "sort"
+
+    gitignore "github.com/sabhiram/go-gitignore"
 )
 
 // DirEntry describes one directory in the tree.
@@ -488,15 +492,11 @@ var defaultPrune = map[string]bool{
 }
 
 // List returns the immediate non-pruned children of path.
-// extraPrune is an additive list from config.
-func List(path string, extraPrune []string) ([]DirEntry, error) {
-    pruned := make(map[string]bool, len(defaultPrune)+len(extraPrune))
-    for k, v := range defaultPrune {
-        pruned[k] = v
-    }
-    for _, name := range extraPrune {
-        pruned[name] = true
-    }
+// It respects .gitignore files found in path and its ancestors up to root.
+// root is the workspaces root — gitignore walk stops there.
+func List(path, root string) ([]DirEntry, error) {
+    // Collect .gitignore rules from ancestor directories (root → path).
+    ignorer := loadGitignores(path, root)
 
     entries, err := os.ReadDir(path)
     if err != nil {
@@ -508,16 +508,21 @@ func List(path string, extraPrune []string) ([]DirEntry, error) {
         if !e.IsDir() {
             continue
         }
-        if pruned[e.Name()] {
+        if defaultPrune[e.Name()] {
             continue
         }
         absPath := filepath.Join(path, e.Name())
+        // Check .gitignore rules using a path relative to root for matching.
+        rel, err := filepath.Rel(root, absPath)
+        if err == nil && ignorer != nil && ignorer.MatchesPath(rel) {
+            continue
+        }
         entry := DirEntry{
             Path:  absPath,
             Name:  e.Name(),
             IsGit: isGitRepo(absPath),
         }
-        entry.HasChildren = hasNonPrunedChildren(absPath, pruned)
+        entry.HasChildren = hasNonPrunedChildren(absPath, root, ignorer)
         result = append(result, entry)
     }
 
@@ -525,6 +530,36 @@ func List(path string, extraPrune []string) ([]DirEntry, error) {
         return result[i].Name < result[j].Name
     })
     return result, nil
+}
+
+// loadGitignores walks from root up to path, collecting all .gitignore files,
+// and returns a compiled matcher. Returns nil if no .gitignore files are found.
+func loadGitignores(path, root string) *gitignore.GitIgnore {
+    // Collect .gitignore file paths from root down to path.
+    var files []string
+    current := path
+    for {
+        candidate := filepath.Join(current, ".gitignore")
+        if _, err := os.Stat(candidate); err == nil {
+            files = append([]string{candidate}, files...) // prepend so root wins
+        }
+        if current == root {
+            break
+        }
+        parent := filepath.Dir(current)
+        if parent == current {
+            break
+        }
+        current = parent
+    }
+    if len(files) == 0 {
+        return nil
+    }
+    ig, err := gitignore.CompileIgnoreFiles(files...)
+    if err != nil {
+        return nil
+    }
+    return ig
 }
 
 // isGitRepo returns true if the directory contains a git repository.
@@ -546,15 +581,22 @@ func isGitRepo(path string) bool {
 }
 
 // hasNonPrunedChildren returns true if path contains at least one non-pruned subdirectory.
-func hasNonPrunedChildren(path string, pruned map[string]bool) bool {
+func hasNonPrunedChildren(path, root string, ignorer *gitignore.GitIgnore) bool {
     entries, err := os.ReadDir(path)
     if err != nil {
         return false
     }
     for _, e := range entries {
-        if e.IsDir() && !pruned[e.Name()] {
-            return true
+        if !e.IsDir() || defaultPrune[e.Name()] {
+            continue
         }
+        if ignorer != nil {
+            rel, err := filepath.Rel(root, filepath.Join(path, e.Name()))
+            if err == nil && ignorer.MatchesPath(rel) {
+                continue
+            }
+        }
+        return true
     }
     return false
 }
@@ -564,7 +606,7 @@ func hasNonPrunedChildren(path string, pruned map[string]bool) bool {
 
 The tests build a synthetic directory tree in a temp directory. This is the standard Go testing pattern for file system code — never test against real directories you don't control.
 
-The tree covers all the cases worth asserting: a pruned directory is absent, a dotdir is present, git is detected, and `HasChildren` is accurate.
+The tree covers all the cases worth asserting: a pruned directory is absent, a dotdir is present, git is detected, `HasChildren` is accurate, and a `.gitignore`-excluded directory is absent.
 
 ```go
 package fs
@@ -580,8 +622,9 @@ func TestList(t *testing.T) {
     // root/
     //   project-a/      (git repo)
     //   project-b/      (no git, has children)
-    //   node_modules/   (should be pruned)
+    //   node_modules/   (should be pruned by defaultPrune)
     //   .secrets/       (dotdir, should appear — we show all)
+    //   ignored-dir/    (should be pruned via .gitignore)
     root, _ := os.MkdirTemp("", "portal-fs*")
     defer os.RemoveAll(root)
 
@@ -589,8 +632,10 @@ func TestList(t *testing.T) {
     os.MkdirAll(filepath.Join(root, "project-b", "src"), 0755)
     os.MkdirAll(filepath.Join(root, "node_modules"), 0755)
     os.MkdirAll(filepath.Join(root, ".secrets"), 0755)
+    os.MkdirAll(filepath.Join(root, "ignored-dir"), 0755)
+    os.WriteFile(filepath.Join(root, ".gitignore"), []byte("ignored-dir\n"), 0644)
 
-    entries, err := List(root, nil)
+    entries, err := List(root, root)
     if err != nil {
         t.Fatal(err)
     }
@@ -602,6 +647,9 @@ func TestList(t *testing.T) {
 
     if _, ok := byName["node_modules"]; ok {
         t.Error("node_modules should be pruned")
+    }
+    if _, ok := byName["ignored-dir"]; ok {
+        t.Error("ignored-dir should be excluded by .gitignore")
     }
     if _, ok := byName[".secrets"]; !ok {
         t.Error(".secrets should appear")
@@ -1204,7 +1252,7 @@ func (h *handler) fsList(w http.ResponseWriter, r *http.Request) {
     if path == "" {
         path = h.cfg.WorkspacesRoot
     }
-    entries, err := fsmod.List(path, h.cfg.FS.PruneDirs)
+    entries, err := fsmod.List(path, h.cfg.WorkspacesRoot)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return

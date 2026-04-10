@@ -41,6 +41,7 @@ A self-hosted web portal called **workspace-portal** — a small Go HTTP server 
 4. As a remote developer, I want directories that contain a git repo (`.git` dir, `.git` file for worktrees, or a `.bare` bare repo) to be visually distinguished from plain directories, so that I can tell at a glance which entries are version-controlled projects.
 5. As a remote developer, I want build artifact directories (`node_modules`, `dist`, `.next`, `.turbo`, `target`, etc.) to be automatically hidden when I expand a directory, so that the tree stays navigable and doesn't show irrelevant internals.
 6. As a remote developer, I want git internals (`.git/objects`, `.git/refs`, `.bare/objects`, `.bare/refs`, etc.) to be automatically hidden, so that expanding a directory never shows git plumbing noise.
+6a. As a remote developer, I want the portal to respect `.gitignore` files when listing directories, so that any files or directories already excluded from version control are also hidden in the tree — without me needing to duplicate that configuration anywhere.
 7. As a remote developer, I want the portal to show every directory — including dotdirs, grouping dirs, and dirs without git — so that I can open any directory as a session context regardless of whether it is a recognised project type.
 8. As a remote developer, I want to see the full relative path of each directory row, so that I always know where I am in the tree.
 9. As a remote developer, I want the tree to expand lazily on demand (one level at a time, fetched from the server), so that the initial page load is fast even with a large workspaces root.
@@ -101,7 +102,7 @@ A self-hosted web portal called **workspace-portal** — a small Go HTTP server 
 
 44. As a new self-hoster cloning the repo, I want a clear README with step-by-step setup instructions for both native macOS and Docker deployments, so that I can be up and running in under 30 minutes.
 45. As a new self-hoster, I want all machine-specific values (paths, hostnames, passwords) documented in `config.example.yaml` and `.secrets.example/`, so that I know exactly what to fill in for my own setup.
-46. As a contributor, I want the Go codebase to use only two external dependencies (`gopkg.in/yaml.v3` for config parsing and `github.com/caarlos0/env/v11` for struct-tag-driven env overrides, both with zero transitive dependencies) and rely on the standard library for everything else, so that the dependency surface is minimal and auditable.
+46. As a contributor, I want the Go codebase to use only three external dependencies (`gopkg.in/yaml.v3` for config parsing, `github.com/caarlos0/env/v11` for struct-tag-driven env overrides, and `github.com/sabhiram/go-gitignore` for `.gitignore` parsing, all with zero transitive dependencies) and rely on the standard library for everything else, so that the dependency surface is minimal and auditable.
 
 ---
 
@@ -120,7 +121,7 @@ A self-hosted web portal called **workspace-portal** — a small Go HTTP server 
 Loads configuration from (in priority order): CLI flag `--config`, env var `PORTAL_CONFIG`, `./config.yaml`, `~/.config/workspace-portal/config.yaml`. Merges with env var overrides via `env` struct tags and `github.com/caarlos0/env/v11` — all tagged fields are covered automatically; adding a new config field requires only a matching `env:"..."` tag, not a code change in a separate override function. Port ranges are a named `PortRange` type that implements `encoding.TextUnmarshaler`, so both `yaml.v3` and `caarlos0/env` parse the `"lo-hi"` string format automatically with no special-casing in `Load`. Returns an empty string when a secret is not found in any source, and logs a warning so misconfiguration is visible in the process log. Exposes a single `Config` struct. Validates required fields at startup.
 
 **`internal/fs`**
-Provides `List(path string) ([]DirEntry, error)` — reads immediate children of a directory, prunes known build/git-internal dirs, annotates each entry with `IsGit` (has `.git` dir, `.git` file, or `.bare/HEAD`) and `HasChildren` (has non-pruned subdirs). Pruned dir names are a hardcoded default set, additive with `config.fs.prune_dirs`. Does not recurse — the tree is navigated lazily by the browser.
+Provides `List(path string) ([]DirEntry, error)` — reads immediate children of a directory, prunes known build/git-internal dirs, and respects `.gitignore` rules found in ancestor directories (using the same algorithm as git). Annotates each entry with `IsGit` (has `.git` dir, `.git` file, or `.bare/HEAD`) and `HasChildren` (has non-pruned subdirs). Pruned dir names are a hardcoded default set; there is no user-configurable extra prune list — `.gitignore` files provide user-level exclusion. Does not recurse — the tree is navigated lazily by the browser.
 
 **`internal/session/manager`**
 Maintains in-memory session state, persisted to a JSON state file on every mutation. Assigns ports from configured ranges (OpenCode range, VS Code range) by scanning for the first port not in use (checked via `net.Listen`). On startup, reads the state file and validates each entry by checking the process PID; removes orphans. Exposes: `Start(type, dir) (Session, error)`, `Stop(id) error`, `List() []Session`, `Get(id) (Session, bool)`.
@@ -169,7 +170,6 @@ oc.port_range       [int,int] (default: [4100, 4199])
 oc.flags            []string  (default: ["web", "--mdns"])
 vscode.binary       string    (default: code-server)
 vscode.port_range   [int,int] (default: [4200, 4299])
-fs.prune_dirs       []string  (default: [])
 ```
 
 Tailscale config (`tailscale.enabled`, `tailscale.binary`) is added in Course 07.
@@ -219,7 +219,7 @@ A good test verifies **external behaviour through the module's public interface*
 Test that the config struct is correctly populated from: a YAML file only; env vars only; env vars overriding YAML; missing required fields producing an error; secrets resolved from `.secrets/` dir; secrets resolved from `/run/secrets/` fallback; secrets resolved from env var override.
 
 **`internal/fs`**
-Test `List()` with a temporary directory tree: default prune list hides `node_modules`, `dist`, `.git` internals; custom prune list from config is applied additively; `IsGit` is true for a dir with a `.git` directory, a `.git` file, and a `.bare/HEAD`; `HasChildren` is false for a leaf dir and true for a dir with non-pruned children.
+Test `List()` with a temporary directory tree: default prune list hides `node_modules`, `dist`, `.git` internals; `.gitignore` rules in ancestor directories are respected (entries matched by `.gitignore` are excluded); `IsGit` is true for a dir with a `.git` directory, a `.git` file, and a `.bare/HEAD`; `HasChildren` is false for a leaf dir and true for a dir with non-pruned children.
 
 **`internal/session/manager`**
 Test port assignment: returns first free port in range; skips ports already in session list; skips ports in use by `net.Listen`; errors when range is exhausted. Test orphan detection: a session with a dead PID is removed on startup load. Test state persistence: `Start` and `Stop` write to the state file; a new manager instance reads the same state.
@@ -381,7 +381,7 @@ dev:            make -j2 docs-dev go-dev   # parallel
 
 - The portal was designed with the constraint that it must be operable from a mobile phone browser with no native app. All interactions must be one or two taps maximum for common actions (open session, stop session).
 - The HTMX approach was chosen specifically to avoid any JavaScript build tooling, keeping the project simple to fork, modify, and self-host without requiring Node.js or a bundler on the host machine. The docs viewer is the one deliberate exception: Astro is used because full MDX rendering and live reload justify the Node.js dependency.
-- `gopkg.in/yaml.v3` is the only external Go dependency. This is a deliberate constraint to keep the dependency surface auditable and the binary lean.
-- The directory tree intentionally shows all directories including dotdirs. The portal is a directory navigator, not a project manager. Filtering is done only for directories that are never useful to open (build artifacts, git object stores).
+- `gopkg.in/yaml.v3`, `github.com/caarlos0/env/v11`, and `github.com/sabhiram/go-gitignore` are the only external Go dependencies. This is a deliberate constraint to keep the dependency surface auditable and the binary lean.
+- The directory tree intentionally shows all directories including dotdirs. The portal is a directory navigator, not a project manager. Filtering is done only for directories that are never useful to open (build artifacts, git object stores), plus whatever the user has already expressed should be ignored via `.gitignore` files — no separate portal-specific prune configuration is required.
 - Session state is persisted to an XDG-compliant path (`~/.local/share/workspace-portal/`) so it survives portal restarts and does not pollute the workspaces directory.
 - The open-source design intent means all machine-specific values must flow through config/env vars. The repo must be cloneable by anyone and functional with only a filled-in `config.yaml` and `.secrets/` directory.
