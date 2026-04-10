@@ -522,7 +522,7 @@ func List(path, root string) ([]DirEntry, error) {
             Name:  e.Name(),
             IsGit: isGitRepo(absPath),
         }
-        entry.HasChildren = hasNonPrunedChildren(absPath, root, ignorer)
+        entry.HasChildren = hasVisibleSubdirs(absPath, root, ignorer)
         result = append(result, entry)
     }
 
@@ -580,8 +580,10 @@ func isGitRepo(path string) bool {
     return false
 }
 
-// hasNonPrunedChildren returns true if path contains at least one non-pruned subdirectory.
-func hasNonPrunedChildren(path, root string, ignorer *gitignore.GitIgnore) bool {
+// hasVisibleSubdirs returns true if path contains at least one subdirectory
+// that is neither in the default prune set nor excluded by .gitignore rules.
+// Files are not considered.
+func hasVisibleSubdirs(path, root string, ignorer *gitignore.GitIgnore) bool {
     entries, err := os.ReadDir(path)
     if err != nil {
         return false
