@@ -54,12 +54,13 @@ The directories map directly to the modules you'll build:
 
 > **No `src/` directory:** Go does not treat `src/` as special. The idiomatic layout places packages directly under named directories (`cmd/`, `internal/`, etc.) at the module root. A top-level `src/` is a Java/Maven habit — avoid it in Go.
 
-### `go.mod` — add the only external dependency
+### `go.mod` — add external dependencies
 
-The portal has exactly one external dependency: `gopkg.in/yaml.v3` for parsing the config file. Everything else — HTTP, file I/O, process management, JSON, concurrency — is covered by the Go standard library.
+The portal has two external dependencies: `gopkg.in/yaml.v3` for parsing the config file, and `github.com/caarlos0/env/v11` for struct-tag-driven environment variable overrides. Both have zero transitive dependencies. Everything else — HTTP, file I/O, process management, JSON, concurrency — is covered by the Go standard library.
 
 ```bash
 go get gopkg.in/yaml.v3
+go get github.com/caarlos0/env/v11
 ```
 
 Your `go.mod` will now look like:
@@ -69,7 +70,10 @@ module workspace-portal
 
 go 1.22
 
-require gopkg.in/yaml.v3 v3.0.1
+require (
+    github.com/caarlos0/env/v11 v11.4.0
+    gopkg.in/yaml.v3 v3.0.1
+)
 ```
 
 ### `cmd/portal/main.go` — the entry point
@@ -191,6 +195,15 @@ Go's zero values (`0`, `""`, `false`) are not always sensible defaults. A port o
 **Why accept a missing file?**  
 `os.IsNotExist(err)` lets the portal start with defaults + env vars even if no `config.yaml` exists. This is useful in Docker or CI environments where you inject everything via environment variables.
 
+**Why `env` struct tags and `caarlos0/env` instead of a manual `applyEnvOverrides`?**  
+The manual approach — a function that reads `os.Getenv` for each field — has a silent failure mode: if you add a new field to the config struct, you must remember to add a matching `os.Getenv` call. Forget it, and that field can never be set by env var without any error or warning. This is the worst kind of bug — it fails silently and only at runtime, in production, for someone who tried to configure their deployment.
+
+The `env` tag approach solves this by colocating the env var name with the field declaration. When you add a field, you add its `env` tag at the same time, in the same place. There is no separate function to keep in sync. `env.ParseWithOptions` then drives all fields automatically — the caller adds no code.
+
+`github.com/caarlos0/env/v11` was chosen specifically because it has **zero transitive dependencies** — adding it costs one line in `go.mod` with no dependency tree attached. The `env:"..."` tag convention also directly mirrors the `yaml:"..."` and `json:"..."` tags students already know.
+
+`PortRange [2]int` is the one exception: `[2]int` has no standard string representation, so `env` cannot parse it. Two env vars in `"lo-hi"` format are handled by the small `parsePortRange` helper, which is called explicitly after `env.ParseWithOptions`. This keeps the exception isolated and visible rather than hiding it inside the library.
+
 **Why a `Secret` method?**  
 Secrets (like `vscode-password`) should never live in the main config file, which is likely shared or version-controlled. The `Secret` method resolves them from env vars first, then from files in a `.secrets/` directory, then from Docker secrets (`/run/secrets/`). The caller doesn't care where the value came from. If no source provides a value, `Secret` returns an empty string and logs a warning — the empty string is intentional (it avoids a hard failure for optional secrets), but the warning makes misconfiguration visible immediately in the process log rather than producing a silent auth bypass.
 
@@ -207,28 +220,29 @@ import (
     "strconv"
     "strings"
 
+    "github.com/caarlos0/env/v11"
     "gopkg.in/yaml.v3"
 )
 
 // Config holds all portal configuration.
 type Config struct {
-    WorkspacesRoot string    `yaml:"workspaces_root"`
-    PortalPort     int       `yaml:"portal_port"`
+    WorkspacesRoot string    `yaml:"workspaces_root" env:"PORTAL_WORKSPACES_ROOT"`
+    PortalPort     int       `yaml:"portal_port"      env:"PORTAL_PORT"`
     SecretsDir     string    `yaml:"secrets_dir"`
-    OC             OCConfig  `yaml:"oc"`
-    VSCode         VSCConfig `yaml:"vscode"`
+    OC             OCConfig  `yaml:"oc"               envPrefix:"PORTAL_OC_"`
+    VSCode         VSCConfig `yaml:"vscode"           envPrefix:"PORTAL_VSCODE_"`
     FS             FSConfig  `yaml:"fs"`
 }
 
 type OCConfig struct {
-    Binary    string   `yaml:"binary"`
-    PortRange [2]int   `yaml:"port_range"`
-    Flags     []string `yaml:"flags"`
+    Binary    string   `yaml:"binary" env:"BINARY"`
+    PortRange [2]int   `yaml:"port_range"`             // parsed separately — see parsePortRange
+    Flags     []string `yaml:"flags"  env:"FLAGS"`
 }
 
 type VSCConfig struct {
-    Binary    string `yaml:"binary"`
-    PortRange [2]int `yaml:"port_range"`
+    Binary    string `yaml:"binary" env:"BINARY"`
+    PortRange [2]int `yaml:"port_range"`             // parsed separately — see parsePortRange
 }
 
 type FSConfig struct {
@@ -268,8 +282,19 @@ func Load(path string) (*Config, error) {
         }
     }
 
-    // Apply env var overrides
-    applyEnvOverrides(cfg)
+    // Apply env var overrides for all tagged fields automatically.
+    // env.ParseWithOptions only sets fields that have a matching env var present,
+    // so YAML values are preserved unless the env var is explicitly set.
+    if err := env.ParseWithOptions(cfg, env.Options{
+        SetDefaultsForZeroValuesOnly: true,
+    }); err != nil {
+        return nil, fmt.Errorf("applying env overrides: %w", err)
+    }
+
+    // Port ranges use a "lo-hi" string format (e.g. "4100-4199") which env cannot
+    // parse into [2]int natively. Handle them as the one explicit exception.
+    parsePortRange("PORTAL_OC_PORT_RANGE", &cfg.OC.PortRange)
+    parsePortRange("PORTAL_VSCODE_PORT_RANGE", &cfg.VSCode.PortRange)
 
     // Expand ~ in workspaces root
     if strings.HasPrefix(cfg.WorkspacesRoot, "~/") {
@@ -312,36 +337,24 @@ func (cfg *Config) Secret(name string) string {
     return ""
 }
 
-// applyEnvOverrides checks env vars and overrides config values.
-func applyEnvOverrides(cfg *Config) {
-    if v := os.Getenv("PORTAL_WORKSPACES_ROOT"); v != "" {
-        cfg.WorkspacesRoot = v
+// parsePortRange reads an env var in "lo-hi" format (e.g. "4100-4199") and
+// sets the target [2]int in place. It is the only field that env cannot handle
+// natively because [2]int has no standard string representation.
+func parsePortRange(envKey string, target *[2]int) {
+    v := os.Getenv(envKey)
+    if v == "" {
+        return
     }
-    if v := os.Getenv("PORTAL_PORT"); v != "" {
-        if n, err := strconv.Atoi(v); err == nil {
-            cfg.PortalPort = n
-        }
+    parts := strings.SplitN(v, "-", 2)
+    if len(parts) != 2 {
+        return
     }
-    if v := os.Getenv("PORTAL_OC_BINARY"); v != "" {
-        cfg.OC.Binary = v
+    lo, errLo := strconv.Atoi(parts[0])
+    hi, errHi := strconv.Atoi(parts[1])
+    if errLo != nil || errHi != nil {
+        return
     }
-    if v := os.Getenv("PORTAL_VSCODE_BINARY"); v != "" {
-        cfg.VSCode.Binary = v
-    }
-    if v := os.Getenv("PORTAL_OC_PORT_RANGE"); v != "" {
-        if parts := strings.SplitN(v, "-", 2); len(parts) == 2 {
-            lo, _ := strconv.Atoi(parts[0])
-            hi, _ := strconv.Atoi(parts[1])
-            cfg.OC.PortRange = [2]int{lo, hi}
-        }
-    }
-    if v := os.Getenv("PORTAL_VSCODE_PORT_RANGE"); v != "" {
-        if parts := strings.SplitN(v, "-", 2); len(parts) == 2 {
-            lo, _ := strconv.Atoi(parts[0])
-            hi, _ := strconv.Atoi(parts[1])
-            cfg.VSCode.PortRange = [2]int{lo, hi}
-        }
-    }
+    *target = [2]int{lo, hi}
 }
 ```
 
@@ -350,6 +363,8 @@ func applyEnvOverrides(cfg *Config) {
 The tests cover the four meaningful behaviours: missing file, file with values, env var override, and secret resolution. Each test is independent — it creates its own temp files and cleans up with `defer`.
 
 Notice the test for defaults: it expects an *error* because `workspaces_root` is required and no file is present. This is the right thing to test — "missing required field fails loudly" is a behaviour worth protecting.
+
+The `TestEnvOverride` test sets `PORTAL_PORT` via `t.Setenv` and confirms that `Load` picks it up. This exercises `env.ParseWithOptions` indirectly — if a new field is added with a correct `env` tag, no test change is needed to cover the mechanism; you only need to add a test for the specific field's value.
 
 ```go
 package config

@@ -101,7 +101,7 @@ A self-hosted web portal called **workspace-portal** — a small Go HTTP server 
 
 44. As a new self-hoster cloning the repo, I want a clear README with step-by-step setup instructions for both native macOS and Docker deployments, so that I can be up and running in under 30 minutes.
 45. As a new self-hoster, I want all machine-specific values (paths, hostnames, passwords) documented in `config.example.yaml` and `.secrets.example/`, so that I know exactly what to fill in for my own setup.
-46. As a contributor, I want the Go codebase to use only one external dependency (`gopkg.in/yaml.v3`) and rely on the standard library for everything else, so that the dependency surface is minimal and auditable.
+46. As a contributor, I want the Go codebase to use only two external dependencies (`gopkg.in/yaml.v3` for config parsing and `github.com/caarlos0/env/v11` for struct-tag-driven env overrides, both with zero transitive dependencies) and rely on the standard library for everything else, so that the dependency surface is minimal and auditable.
 
 ---
 
@@ -117,7 +117,7 @@ A self-hosted web portal called **workspace-portal** — a small Go HTTP server 
 ### Modules
 
 **`internal/config`**
-Loads configuration from (in priority order): CLI flag `--config`, env var `PORTAL_CONFIG`, `./config.yaml`, `~/.config/workspace-portal/config.yaml`. Merges with env var overrides (`PORTAL_` prefix). Resolves secrets from env var → `{secrets_dir}/{name}` → `/run/secrets/{name}`. Returns an empty string when a secret is not found in any source, and logs a warning so misconfiguration is visible in the process log. Exposes a single `Config` struct. Validates required fields at startup.
+Loads configuration from (in priority order): CLI flag `--config`, env var `PORTAL_CONFIG`, `./config.yaml`, `~/.config/workspace-portal/config.yaml`. Merges with env var overrides via `env` struct tags and `github.com/caarlos0/env/v11` — all tagged fields are covered automatically; adding a new config field requires only a matching `env:"..."` tag, not a code change in a separate override function. Port ranges use a custom `"lo-hi"` string format and are handled by an explicit `parsePortRange` helper. Returns an empty string when a secret is not found in any source, and logs a warning so misconfiguration is visible in the process log. Exposes a single `Config` struct. Validates required fields at startup.
 
 **`internal/fs`**
 Provides `List(path string) ([]DirEntry, error)` — reads immediate children of a directory, prunes known build/git-internal dirs, annotates each entry with `IsGit` (has `.git` dir, `.git` file, or `.bare/HEAD`) and `HasChildren` (has non-pruned subdirs). Pruned dir names are a hardcoded default set, additive with `config.fs.prune_dirs`. Does not recurse — the tree is navigated lazily by the browser.
@@ -174,7 +174,7 @@ fs.prune_dirs       []string  (default: [])
 
 Tailscale config (`tailscale.enabled`, `tailscale.binary`) is added in Course 07.
 
-Env var override format: `PORTAL_{SECTION}_{KEY}` (e.g. `PORTAL_OC_PORT_RANGE=4100-4199`).
+Env var override format: declared via `env:"..."` struct tags (e.g. `env:"PORTAL_PORT"`). Nested structs use `envPrefix` (e.g. `envPrefix:"PORTAL_OC_"` on `OCConfig`). Port ranges use a custom `"lo-hi"` format handled by a separate helper (e.g. `PORTAL_OC_PORT_RANGE=4100-4199`).
 
 ### Secrets
 
