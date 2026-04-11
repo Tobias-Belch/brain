@@ -823,7 +823,7 @@ There are two session types — OpenCode and VS Code — which are launched diff
 | File | Responsibility |
 |---|---|
 | `runner.go` | The `Runner` interface and `Session` struct — the shared contract. |
-| `oc.go` | The OpenCode-specific `Runner` implementation. |
+| `opencode.go` | The OpenCode-specific `Runner` implementation. |
 | `vscode.go` | The VS Code-specific `Runner` implementation. |
 | `manager.go` | Orchestration — port assignment, lifecycle, state persistence, SSE. |
 
@@ -895,7 +895,7 @@ type Runner interface {
 }
 ```
 
-### `internal/session/oc.go`
+### `internal/session/opencode.go`
 
 `OCRunner` launches the `opencode` binary with a port flag and optional CORS origin. `cmd.Start()` (not `cmd.Run()`) is used because we want the process to keep running after `Start` returns — `Run` would block until the process exits.
 

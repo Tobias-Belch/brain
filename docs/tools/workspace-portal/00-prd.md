@@ -281,7 +281,7 @@ The Astro content collection is populated by a Node.js build-time helper script 
 
 **`internal/docs/runner.go`**
 
-Implements the `Runner` interface (same as `internal/session/oc.go` and `internal/session/vscode.go`):
+Implements the `Runner` interface (same as `internal/session/opencode.go` and `internal/session/vscode.go`):
 
 - Spawns `{node_binary} {astro_binary} dev --port {port} --host 127.0.0.1` in the `docs/` directory, with `DOCS_ROOT={docs_root}` env var set.
 - Health-checks by polling `http://127.0.0.1:{port}/` until 200 or 30-second timeout.
