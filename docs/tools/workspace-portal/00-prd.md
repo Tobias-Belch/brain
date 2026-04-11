@@ -127,13 +127,13 @@ Provides `List(path string) ([]DirEntry, error)` — reads immediate children of
 Maintains in-memory session state, persisted to a JSON state file on every mutation. Assigns ports from configured ranges (OpenCode range, VS Code range) by scanning for the first port not in use (checked via `net.Listen`). On startup, reads the state file and validates each entry by checking the process PID; removes orphans. Exposes: `Start(type, dir) (Session, error)`, `Stop(id) error`, `List() []Session`, `Get(id) (Session, bool)`.
 
 **`internal/session/oc`**
-Implements the OpenCode process lifecycle: spawn `opencode web --port {port} {extra_flags}` in the target directory, health-check by polling `http://localhost:{port}` until 200 or timeout, kill on stop. Returns a `Runner` interface consumed by the session manager.
+Implements the OpenCode process lifecycle: spawn `opencode web --port {port} {extra_flags}` in the target directory, health-check by polling `http://localhost:{port}` until 200 or timeout, kill on stop. Returns a `SessionFactory` interface consumed by the session manager.
 
 **`internal/session/vscode`**
-Implements the code-server process lifecycle: spawn `code-server --bind-addr 127.0.0.1:{port} {dir}` with `PASSWORD` env var, health-check, kill on stop. Returns a `Runner` interface.
+Implements the code-server process lifecycle: spawn `code-server --bind-addr 127.0.0.1:{port} {dir}` with `PASSWORD` env var, health-check, kill on stop. Returns a `SessionFactory` interface.
 
 **`internal/tailscale`**
-Optional integration, implemented in Course 07. Gated by `config.tailscale.enabled`. Exposes `Register(port int) (url string, error)` and `Deregister(port int) error`. Shells out to the `tailscale` binary. If disabled, `Register` is a no-op returning an empty URL. The session manager calls these hooks around `Runner.Start/Stop` — it does not know whether Tailscale is enabled.
+ Optional integration, implemented in Course 07. Gated by `config.tailscale.enabled`. Exposes `Register(port int) (url string, error)` and `Deregister(port int) error`. Shells out to the `tailscale` binary. If disabled, `Register` is a no-op returning an empty URL. The session manager calls these hooks around `SessionFactory.Start/Stop` — it does not know whether Tailscale is enabled.
 
 **`internal/server`**
 Sets up the HTTP mux, registers all routes, serves embedded static assets and templates. Handlers return HTML fragments (HTMX targets) or full pages. Routes:
@@ -239,7 +239,7 @@ Documentation for projects in the workspaces root is scattered across individual
 
 ### Solution
 
-A documentation viewer integrated into the portal at `GET /docs/**`. The viewer is powered by **Astro Starlight** — a full-featured documentation site framework with sidebar navigation, search, syntax highlighting, and full MDX component rendering. The Astro dev server runs as a child process managed by the portal (using the same `Runner` pattern as OpenCode and code-server). It watches the `docs_root` directory for changes to `.md` and `.mdx` files and hot-reloads without a manual rebuild. The portal proxies all `/docs/**` traffic to it.
+A documentation viewer integrated into the portal at `GET /docs/**`. The viewer is powered by **Astro Starlight** — a full-featured documentation site framework with sidebar navigation, search, syntax highlighting, and full MDX component rendering. The Astro dev server runs as a child process managed by the portal (using the same `SessionFactory` pattern as OpenCode and code-server). It watches the `docs_root` directory for changes to `.md` and `.mdx` files and hot-reloads without a manual rebuild. The portal proxies all `/docs/**` traffic to it.
 
 ---
 
@@ -279,9 +279,9 @@ The Astro content collection is populated by a Node.js build-time helper script 
 
 #### New module: `internal/docs`
 
-**`internal/docs/runner.go`**
+**`internal/docs/session.go`**
 
-Implements the `Runner` interface (same as `internal/session/opencode.go` and `internal/session/vscode.go`):
+Implements the `SessionFactory` interface (same as `internal/session/opencode.go` and `internal/session/vscode.go`):
 
 - Spawns `{node_binary} {astro_binary} dev --port {port} --host 127.0.0.1` in the `docs/` directory, with `DOCS_ROOT={docs_root}` env var set.
 - Health-checks by polling `http://127.0.0.1:{port}/` until 200 or 30-second timeout.

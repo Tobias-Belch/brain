@@ -812,7 +812,7 @@ func TestIsGitRepo(t *testing.T) {
 
 ---
 
-## Lesson 4 — `internal/session`: The Runner Interface
+## Lesson 4 — `internal/session`: The SessionFactory Interface
 
 ### What this module does
 
@@ -822,20 +822,20 @@ There are two session types — OpenCode and VS Code — which are launched diff
 
 | File | Responsibility |
 |---|---|
-| `runner.go` | The `Runner` interface and `Session` struct — the shared contract. |
-| `opencode.go` | The OpenCode-specific `Runner` implementation. |
-| `vscode.go` | The VS Code-specific `Runner` implementation. |
+| `session.go` | The `SessionFactory` interface and `Session` struct — the shared contract. |
+| `opencode.go` | The OpenCode-specific `SessionFactory` implementation. |
+| `vscode.go` | The VS Code-specific `SessionFactory` implementation. |
 | `manager.go` | Orchestration — port assignment, lifecycle, state persistence, SSE. |
 
 ### Key design decisions
 
-**Why define a `Runner` interface before writing the implementations?**  
-The `Manager` in `manager.go` needs to start and stop sessions without knowing which type they are. By programming against the `Runner` interface, the manager is completely decoupled from the OpenCode and VS Code specifics. You can add a third session type later without touching the manager, and you can inject a fake `Runner` in tests.
+**Why define a `SessionFactory` interface before writing the implementations?**  
+The `Manager` in `manager.go` needs to start and stop sessions without knowing which type they are. By programming against the `SessionFactory` interface, the manager is completely decoupled from the OpenCode and VS Code specifics. You can add a third session type later without touching the manager, and you can inject a fake `SessionFactory` in tests.
 
 This is the same principle as TypeScript interfaces — the difference is that Go satisfies interfaces implicitly (no `implements` keyword).
 
-**Why keep `Session` in `runner.go` rather than `manager.go`?**  
-`Session` is the data shape shared by the runner, the manager, and the HTTP handlers. Defining it in `runner.go` (the foundational file) avoids circular imports and makes it clear that it belongs to the `session` package as a whole, not just to the manager.
+**Why keep `Session` in `session.go` rather than `manager.go`?**  
+`Session` is the data shape shared by the runner, the manager, and the HTTP handlers. Defining it in `session.go` (the foundational file) avoids circular imports and makes it clear that it belongs to the `session` package as a whole, not just to the manager.
 
 **Why is `Type` a named `SessionType` and not a bare `string`?**  
 Go has no enum keyword. The idiomatic substitute is a **named string type** plus package-level constants:
@@ -853,9 +853,9 @@ Using a named type gives you meaningful type safety: the compiler will reject a 
 
 Go does **not** provide exhaustiveness checking on `switch` statements over a named type (the compiler won't warn you if you add a new constant and miss a case). If you want that guarantee, the `exhaustive` linter flag can enforce it.
 
-### `internal/session/runner.go`
+### `internal/session/session.go`
 
-The `Runner` interface defines the three things the manager needs from any session type: start it, stop it, and get the URL to health-check it.
+The `SessionFactory` interface defines the three things the manager needs from any session type: start it, stop it, and get the URL to health-check it.
 
 ```go
 package session
@@ -883,8 +883,8 @@ type Session struct {
     URL       string      `json:"url"` // set after health check passes
 }
 
-// Runner is implemented by each session type (OpenCode, VS Code).
-type Runner interface {
+// SessionFactory is implemented by each session type (OpenCode, VS Code).
+type SessionFactory interface {
     // Start launches the process. Returns when the process has started
     // (not necessarily healthy yet).
     Start(dir string, port int) (pid int, err error)
@@ -897,7 +897,7 @@ type Runner interface {
 
 ### `internal/session/opencode.go`
 
-`OCRunner` launches the `opencode` binary with a port flag and optional CORS origin. `cmd.Start()` (not `cmd.Run()`) is used because we want the process to keep running after `Start` returns — `Run` would block until the process exits.
+`OCSessionFactory` launches the `opencode` binary with a port flag and optional CORS origin. `cmd.Start()` (not `cmd.Run()`) is used because we want the process to keep running after `Start` returns — `Run` would block until the process exits.
 
 ```go
 package session
@@ -909,14 +909,14 @@ import (
     "strconv"
 )
 
-// OCRunner starts and stops OpenCode processes.
-type OCRunner struct {
+// OCSessionFactory is a configured factory for OpenCode sessions.
+type OCSessionFactory struct {
     Binary     string
     Flags      []string
     CORSOrigin string
 }
 
-func (r *OCRunner) Start(dir string, port int) (int, error) {
+func (r *OCSessionFactory) Start(dir string, port int) (int, error) {
     args := append([]string{}, r.Flags...)
     args = append(args, "--port", strconv.Itoa(port))
     if r.CORSOrigin != "" {
@@ -931,7 +931,7 @@ func (r *OCRunner) Start(dir string, port int) (int, error) {
     return cmd.Process.Pid, nil
 }
 
-func (r *OCRunner) Stop(pid int) error {
+func (r *OCSessionFactory) Stop(pid int) error {
     proc, err := os.FindProcess(pid)
     if err != nil {
         return nil // already gone
@@ -939,14 +939,14 @@ func (r *OCRunner) Stop(pid int) error {
     return proc.Kill()
 }
 
-func (r *OCRunner) HealthURL(port int) string {
+func (r *OCSessionFactory) HealthURL(port int) string {
     return fmt.Sprintf("http://localhost:%d", port)
 }
 ```
 
 ### `internal/session/vscode.go`
 
-`VSCodeRunner` launches `code-server`. The password is passed as an environment variable (`PASSWORD=...`) rather than a flag, because that is how code-server's auth is designed. `os.Environ()` copies the current process environment so the child inherits `PATH` and everything else it needs.
+`VSCodeSessionFactory` launches `code-server`. The password is passed as an environment variable (`PASSWORD=...`) rather than a flag, because that is how code-server's auth is designed. `os.Environ()` copies the current process environment so the child inherits `PATH` and everything else it needs.
 
 ```go
 package session
@@ -957,13 +957,13 @@ import (
     "os/exec"
 )
 
-// VSCodeRunner starts and stops code-server processes.
-type VSCodeRunner struct {
+// VSCodeSessionFactory is a configured factory for VS Code (code-server) sessions.
+type VSCodeSessionFactory struct {
     Binary   string
     Password string
 }
 
-func (r *VSCodeRunner) Start(dir string, port int) (int, error) {
+func (r *VSCodeSessionFactory) Start(dir string, port int) (int, error) {
     cmd := exec.Command(r.Binary,
         "--bind-addr", fmt.Sprintf("127.0.0.1:%d", port),
         "--auth", "password",
@@ -976,7 +976,7 @@ func (r *VSCodeRunner) Start(dir string, port int) (int, error) {
     return cmd.Process.Pid, nil
 }
 
-func (r *VSCodeRunner) Stop(pid int) error {
+func (r *VSCodeSessionFactory) Stop(pid int) error {
     proc, err := os.FindProcess(pid)
     if err != nil {
         return nil
@@ -984,7 +984,7 @@ func (r *VSCodeRunner) Stop(pid int) error {
     return proc.Kill()
 }
 
-func (r *VSCodeRunner) HealthURL(port int) string {
+func (r *VSCodeSessionFactory) HealthURL(port int) string {
     return fmt.Sprintf("http://localhost:%d", port)
 }
 ```
@@ -1009,13 +1009,13 @@ The manager is the most complex part of the portal. It owns the runtime state of
 The manager sends events synchronously (no goroutine). If the HTTP handler is slow to consume them, a blocking send would deadlock the manager. A buffer of 64 means the manager can fire 64 events before it blocks — more than enough for any realistic load. This is a pragmatic choice, not a scalable pub/sub system.
 
 **Why a `runners` map instead of named `ocRunner`/`vsRunner` fields?**  
-The original design had four fields — `ocRunner Runner`, `vsRunner Runner`, `ocRange [2]int`, `vsRange [2]int`. The names carry meaning that the types don't enforce: nothing prevents passing an `OCRunner` as `vsRunner` at the call site. The map collapses these into a single `map[SessionType]registeredRunner`, where the key is the type discriminator and the value carries both the runner and its port range as a cohesive unit. Adding a third session type later requires no struct change — just one more `Register()` call.
+The original design had four fields — `ocRunner SessionFactory`, `vsRunner SessionFactory`, `ocRange [2]int`, `vsRange [2]int`. The names carry meaning that the types don't enforce: nothing prevents passing an `OCSessionFactory` as `vsRunner` at the call site. The map collapses these into a single `map[SessionType]registeredFactory`, where the key is the type discriminator and the value carries both the runner and its port range as a cohesive unit. Adding a third session type later requires no struct change — just one more `Register()` call.
 
-**Why is `registeredRunner` unexported but `Register()` exported?**  
+**Why is `registeredFactory` unexported but `Register()` exported?**  
 The caller (`server.go`) needs to construct registrations but has no legitimate reason to inspect or embed the struct directly. An unexported type with an exported constructor is Go's standard way to express this: you can create values of the type via the factory function, but you can't name the type itself outside the package. This prevents the call site from bypassing the constructor and constructing a half-initialised struct directly.
 
-**Why variadic `...registeredRunner` rather than `map[SessionType]registeredRunner`?**  
-A map literal requires naming the value type — which is unexported and therefore unavailable to the caller. A variadic argument accepts any number of `registeredRunner` values returned by `Register()` without the caller ever needing to name the type.
+**Why variadic `...registeredFactory` rather than `map[SessionType]registeredFactory`?**  
+A map literal requires naming the value type — which is unexported and therefore unavailable to the caller. A variadic argument accepts any number of `registeredFactory` values returned by `Register()` without the caller ever needing to name the type.
 
 
 State persistence is cheap (a small JSON file) and the cost of losing it (all sessions appear stopped after a portal restart) is high. Writing on every change is the right tradeoff here.
@@ -1051,19 +1051,19 @@ import (
     "github.com/google/uuid"
 )
 
-// registeredRunner pairs a SessionType, its Runner, and its port range.
+// registeredFactory pairs a SessionType, its SessionFactory, and its port range.
 // Keeping them together means the Manager stays fully abstract —
 // it never needs to name a concrete type.
-type registeredRunner struct {
+type registeredFactory struct {
     sessionType SessionType
-    runner      Runner
+    factory      SessionFactory
     portRange   [2]int
 }
 
-// Register constructs a registeredRunner. This is the only way to create one
+// Register constructs a registeredFactory. This is the only way to create one
 // outside this package — the struct itself is unexported.
-func Register(sessionType SessionType, runner Runner, portRange [2]int) registeredRunner {
-    return registeredRunner{sessionType: sessionType, runner: runner, portRange: portRange}
+func Register(sessionType SessionType, factory SessionFactory, portRange [2]int) registeredFactory {
+    return registeredFactory{sessionType: sessionType, factory: factory, portRange: portRange}
 }
 
 // Manager manages the lifecycle of all running sessions.
@@ -1072,7 +1072,7 @@ type Manager struct {
     sessions  map[string]*Session
     stateFile string
     events    chan Event // SSE event broadcast channel
-    runners   map[SessionType]registeredRunner
+    runners   map[SessionType]registeredFactory
 }
 
 // Event is sent on the SSE channel when session state changes.
@@ -1082,10 +1082,10 @@ type Event struct {
 }
 
 // NewManager creates a Manager, loads persisted state, and removes orphans.
-// Each runner is registered via Register() and passed as a variadic argument,
-// keeping the unexported registeredRunner type out of the caller's namespace.
-func NewManager(stateFile string, registrations ...registeredRunner) *Manager {
-    runners := make(map[SessionType]registeredRunner, len(registrations))
+// Each factory is registered via Register() and passed as a variadic argument,
+// keeping the unexported registeredFactory type out of the caller's namespace.
+func NewManager(stateFile string, registrations ...registeredFactory) *Manager {
+    runners := make(map[SessionType]registeredFactory, len(registrations))
     for _, r := range registrations {
         runners[r.sessionType] = r
     }
@@ -1132,7 +1132,7 @@ func (m *Manager) Start(sessionType SessionType, dir string) (*Session, error) {
         return nil, err
     }
 
-    pid, err := reg.runner.Start(dir, port)
+    pid, err := reg.factory.Start(dir, port)
     if err != nil {
         return nil, err
     }
@@ -1155,7 +1155,7 @@ func (m *Manager) Start(sessionType SessionType, dir string) (*Session, error) {
 
     // Health check runs in a goroutine — it blocks until the process responds,
     // then updates s.URL and sends the "healthy" event.
-    go m.waitHealthy(s, reg.runner.HealthURL(port))
+    go m.waitHealthy(s, reg.factory.HealthURL(port))
 
     return s, nil
 }
@@ -1172,7 +1172,7 @@ func (m *Manager) Stop(id string) error {
     m.mu.Unlock()
 
     if reg, ok := m.runners[s.Type]; ok {
-        reg.runner.Stop(s.PID)
+        reg.factory.Stop(s.PID)
     }
     m.saveState()
     m.events <- Event{Type: "stopped", Session: s}
@@ -1328,18 +1328,18 @@ func Start(cfg *config.Config) error {
     stateDir, _ := os.UserHomeDir()
     stateFile := filepath.Join(stateDir, ".local", "share", "workspace-portal", "sessions.json")
 
-    // Build manager — each runner is paired with its type and port range via Register().
-    // The registeredRunner type is unexported; Register() is the only way in.
+    // Build manager — each factory is paired with its type and port range via Register().
+    // The registeredFactory type is unexported; Register() is the only way in.
     manager := session.NewManager(
         stateFile,
         session.Register(
             session.SessionTypeOpenCode,
-            &session.OCRunner{Binary: cfg.OC.Binary, Flags: cfg.OC.Flags},
+            &session.OCSessionFactory{Binary: cfg.OC.Binary, Flags: cfg.OC.Flags},
             cfg.OC.PortRange,
         ),
         session.Register(
             session.SessionTypeVSCode,
-            &session.VSCodeRunner{Binary: cfg.VSCode.Binary, Password: cfg.Secret("vscode-password")},
+            &session.VSCodeSessionFactory{Binary: cfg.VSCode.Binary, Password: cfg.Secret("vscode-password")},
             cfg.VSCode.PortRange,
         ),
     )
