@@ -837,6 +837,22 @@ This is the same principle as TypeScript interfaces — the difference is that G
 **Why keep `Session` in `runner.go` rather than `manager.go`?**  
 `Session` is the data shape shared by the runner, the manager, and the HTTP handlers. Defining it in `runner.go` (the foundational file) avoids circular imports and makes it clear that it belongs to the `session` package as a whole, not just to the manager.
 
+**Why is `Type` a named `SessionType` and not a bare `string`?**  
+Go has no enum keyword. The idiomatic substitute is a **named string type** plus package-level constants:
+
+```go
+type SessionType string
+
+const (
+    SessionTypeOpenCode SessionType = "opencode"
+    SessionTypeVSCode   SessionType = "vscode"
+)
+```
+
+Using a named type gives you meaningful type safety: the compiler will reject a bare string literal wherever a `SessionType` is expected, so you can't accidentally pass `"opencdoe"` without it being caught. The constants also give IDEs something to autocomplete. Because `SessionType` has the underlying type `string`, it serialises to/from JSON and YAML as a plain string — no extra marshalling code needed.
+
+Go does **not** provide exhaustiveness checking on `switch` statements over a named type (the compiler won't warn you if you add a new constant and miss a case). If you want that guarantee, the `exhaustive` linter flag can enforce it.
+
 ### `internal/session/runner.go`
 
 The `Runner` interface defines the three things the manager needs from any session type: start it, stop it, and get the URL to health-check it.
@@ -846,15 +862,25 @@ package session
 
 import "time"
 
+// SessionType identifies which editor a session runs.
+// Using a named string type (rather than bare string) makes the compiler
+// reject accidental string literals wherever a SessionType is expected.
+type SessionType string
+
+const (
+    SessionTypeOpenCode SessionType = "opencode"
+    SessionTypeVSCode   SessionType = "vscode"
+)
+
 // Session holds the state of a running session.
 type Session struct {
-    ID        string    `json:"id"`
-    Type      string    `json:"type"`    // "opencode" or "vscode"
-    Dir       string    `json:"dir"`
-    Port      int       `json:"port"`
-    PID       int       `json:"pid"`
-    StartedAt time.Time `json:"started_at"`
-    URL       string    `json:"url"`     // set after health check passes
+    ID        string      `json:"id"`
+    Type      SessionType `json:"type"`
+    Dir       string      `json:"dir"`
+    Port      int         `json:"port"`
+    PID       int         `json:"pid"`
+    StartedAt time.Time   `json:"started_at"`
+    URL       string      `json:"url"` // set after health check passes
 }
 
 // Runner is implemented by each session type (OpenCode, VS Code).
@@ -1070,14 +1096,14 @@ func (m *Manager) List() []*Session {
 }
 
 // Start launches a new session for the given directory and type.
-func (m *Manager) Start(sessionType, dir string) (*Session, error) {
+func (m *Manager) Start(sessionType SessionType, dir string) (*Session, error) {
     var runner Runner
     var portRange [2]int
     switch sessionType {
-    case "opencode":
+    case SessionTypeOpenCode:
         runner = m.ocRunner
         portRange = m.ocRange
-    case "vscode":
+    case SessionTypeVSCode:
         runner = m.vsRunner
         portRange = m.vsRange
     default:
@@ -1134,7 +1160,7 @@ func (m *Manager) Stop(id string) error {
     m.mu.Unlock()
 
     var runner Runner
-    if s.Type == "opencode" {
+    if s.Type == SessionTypeOpenCode {
         runner = m.ocRunner
     } else {
         runner = m.vsRunner
@@ -1199,7 +1225,7 @@ func (m *Manager) nextPort(r [2]int) (int, error) {
 }
 
 // findByDirAndType returns an existing session if one is already running.
-func (m *Manager) findByDirAndType(dir, sessionType string) *Session {
+func (m *Manager) findByDirAndType(dir string, sessionType SessionType) *Session {
     m.mu.Lock()
     defer m.mu.Unlock()
     for _, s := range m.sessions {
