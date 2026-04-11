@@ -1008,7 +1008,16 @@ The manager is the most complex part of the portal. It owns the runtime state of
 **Why a buffered `events` channel of size 64?**  
 The manager sends events synchronously (no goroutine). If the HTTP handler is slow to consume them, a blocking send would deadlock the manager. A buffer of 64 means the manager can fire 64 events before it blocks — more than enough for any realistic load. This is a pragmatic choice, not a scalable pub/sub system.
 
-**Why save state after every mutation?**  
+**Why a `runners` map instead of named `ocRunner`/`vsRunner` fields?**  
+The original design had four fields — `ocRunner Runner`, `vsRunner Runner`, `ocRange [2]int`, `vsRange [2]int`. The names carry meaning that the types don't enforce: nothing prevents passing an `OCRunner` as `vsRunner` at the call site. The map collapses these into a single `map[SessionType]registeredRunner`, where the key is the type discriminator and the value carries both the runner and its port range as a cohesive unit. Adding a third session type later requires no struct change — just one more `Register()` call.
+
+**Why is `registeredRunner` unexported but `Register()` exported?**  
+The caller (`server.go`) needs to construct registrations but has no legitimate reason to inspect or embed the struct directly. An unexported type with an exported constructor is Go's standard way to express this: you can create values of the type via the factory function, but you can't name the type itself outside the package. This prevents the call site from bypassing the constructor and constructing a half-initialised struct directly.
+
+**Why variadic `...registeredRunner` rather than `map[SessionType]registeredRunner`?**  
+A map literal requires naming the value type — which is unexported and therefore unavailable to the caller. A variadic argument accepts any number of `registeredRunner` values returned by `Register()` without the caller ever needing to name the type.
+
+
 State persistence is cheap (a small JSON file) and the cost of losing it (all sessions appear stopped after a portal restart) is high. Writing on every change is the right tradeoff here.
 
 **Why check `proc.Signal(0)` to detect orphans?**  
@@ -1042,16 +1051,28 @@ import (
     "github.com/google/uuid"
 )
 
+// registeredRunner pairs a SessionType, its Runner, and its port range.
+// Keeping them together means the Manager stays fully abstract —
+// it never needs to name a concrete type.
+type registeredRunner struct {
+    sessionType SessionType
+    runner      Runner
+    portRange   [2]int
+}
+
+// Register constructs a registeredRunner. This is the only way to create one
+// outside this package — the struct itself is unexported.
+func Register(sessionType SessionType, runner Runner, portRange [2]int) registeredRunner {
+    return registeredRunner{sessionType: sessionType, runner: runner, portRange: portRange}
+}
+
 // Manager manages the lifecycle of all running sessions.
 type Manager struct {
     mu        sync.Mutex
     sessions  map[string]*Session
     stateFile string
     events    chan Event // SSE event broadcast channel
-    ocRunner  Runner
-    vsRunner  Runner
-    ocRange   [2]int
-    vsRange   [2]int
+    runners   map[SessionType]registeredRunner
 }
 
 // Event is sent on the SSE channel when session state changes.
@@ -1061,19 +1082,18 @@ type Event struct {
 }
 
 // NewManager creates a Manager, loads persisted state, and removes orphans.
-func NewManager(
-    stateFile string,
-    ocRunner, vsRunner Runner,
-    ocRange, vsRange [2]int,
-) *Manager {
+// Each runner is registered via Register() and passed as a variadic argument,
+// keeping the unexported registeredRunner type out of the caller's namespace.
+func NewManager(stateFile string, registrations ...registeredRunner) *Manager {
+    runners := make(map[SessionType]registeredRunner, len(registrations))
+    for _, r := range registrations {
+        runners[r.sessionType] = r
+    }
     m := &Manager{
         sessions:  make(map[string]*Session),
         stateFile: stateFile,
         events:    make(chan Event, 64),
-        ocRunner:  ocRunner,
-        vsRunner:  vsRunner,
-        ocRange:   ocRange,
-        vsRange:   vsRange,
+        runners:   runners,
     }
     m.loadState()
     return m
@@ -1097,16 +1117,8 @@ func (m *Manager) List() []*Session {
 
 // Start launches a new session for the given directory and type.
 func (m *Manager) Start(sessionType SessionType, dir string) (*Session, error) {
-    var runner Runner
-    var portRange [2]int
-    switch sessionType {
-    case SessionTypeOpenCode:
-        runner = m.ocRunner
-        portRange = m.ocRange
-    case SessionTypeVSCode:
-        runner = m.vsRunner
-        portRange = m.vsRange
-    default:
+    reg, ok := m.runners[sessionType]
+    if !ok {
         return nil, fmt.Errorf("unknown session type: %s", sessionType)
     }
 
@@ -1115,12 +1127,12 @@ func (m *Manager) Start(sessionType SessionType, dir string) (*Session, error) {
         return existing, nil
     }
 
-    port, err := m.nextPort(portRange)
+    port, err := m.nextPort(reg.portRange)
     if err != nil {
         return nil, err
     }
 
-    pid, err := runner.Start(dir, port)
+    pid, err := reg.runner.Start(dir, port)
     if err != nil {
         return nil, err
     }
@@ -1143,7 +1155,7 @@ func (m *Manager) Start(sessionType SessionType, dir string) (*Session, error) {
 
     // Health check runs in a goroutine — it blocks until the process responds,
     // then updates s.URL and sends the "healthy" event.
-    go m.waitHealthy(s, runner.HealthURL(port))
+    go m.waitHealthy(s, reg.runner.HealthURL(port))
 
     return s, nil
 }
@@ -1159,13 +1171,9 @@ func (m *Manager) Stop(id string) error {
     delete(m.sessions, id)
     m.mu.Unlock()
 
-    var runner Runner
-    if s.Type == SessionTypeOpenCode {
-        runner = m.ocRunner
-    } else {
-        runner = m.vsRunner
+    if reg, ok := m.runners[s.Type]; ok {
+        reg.runner.Stop(s.PID)
     }
-    runner.Stop(s.PID)
     m.saveState()
     m.events <- Event{Type: "stopped", Session: s}
     return nil
@@ -1316,24 +1324,24 @@ import (
 
 // Start builds all dependencies and starts the HTTP server.
 func Start(cfg *config.Config) error {
-    // Build runners
-    ocRunner := &session.OCRunner{
-        Binary: cfg.OC.Binary,
-        Flags:  cfg.OC.Flags,
-    }
-    vsRunner := &session.VSCodeRunner{
-        Binary:   cfg.VSCode.Binary,
-        Password: cfg.Secret("vscode-password"),
-    }
-
     // State file lives in the user's local data directory
     stateDir, _ := os.UserHomeDir()
     stateFile := filepath.Join(stateDir, ".local", "share", "workspace-portal", "sessions.json")
 
-    // Build manager
+    // Build manager — each runner is paired with its type and port range via Register().
+    // The registeredRunner type is unexported; Register() is the only way in.
     manager := session.NewManager(
-        stateFile, ocRunner, vsRunner,
-        cfg.OC.PortRange, cfg.VSCode.PortRange,
+        stateFile,
+        session.Register(
+            session.SessionTypeOpenCode,
+            &session.OCRunner{Binary: cfg.OC.Binary, Flags: cfg.OC.Flags},
+            cfg.OC.PortRange,
+        ),
+        session.Register(
+            session.SessionTypeVSCode,
+            &session.VSCodeRunner{Binary: cfg.VSCode.Binary, Password: cfg.Secret("vscode-password")},
+            cfg.VSCode.PortRange,
+        ),
     )
 
     // HTTP mux
