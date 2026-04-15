@@ -835,7 +835,7 @@ The `Manager` in `manager.go` needs to start and stop sessions without knowing w
 This is the same principle as TypeScript interfaces — the difference is that Go satisfies interfaces implicitly (no `implements` keyword).
 
 **Why keep `Session` in `session.go` rather than `manager.go`?**  
-`Session` is the data shape shared by the runner, the manager, and the HTTP handlers. Defining it in `session.go` (the foundational file) avoids circular imports and makes it clear that it belongs to the `session` package as a whole, not just to the manager.
+`Session` is the data shape shared by the session factories, the manager, and the HTTP handlers. Defining it in `session.go` (the foundational file) avoids circular imports and makes it clear that it belongs to the `session` package as a whole, not just to the manager.
 
 **Why is `Type` a named `SessionType` and not a bare `string`?**  
 Go has no enum keyword. The idiomatic substitute is a **named string type** plus package-level constants:
@@ -1009,7 +1009,7 @@ The manager is the most complex part of the portal. It owns the runtime state of
 The manager sends events synchronously (no goroutine). If the HTTP handler is slow to consume them, a blocking send would deadlock the manager. A buffer of 64 means the manager can fire 64 events before it blocks — more than enough for any realistic load. This is a pragmatic choice, not a scalable pub/sub system.
 
 **Why a `runners` map instead of named `ocRunner`/`vsRunner` fields?**  
-The original design had four fields — `ocRunner SessionFactory`, `vsRunner SessionFactory`, `ocRange [2]int`, `vsRange [2]int`. The names carry meaning that the types don't enforce: nothing prevents passing an `OCSessionFactory` as `vsRunner` at the call site. The map collapses these into a single `map[SessionType]registeredFactory`, where the key is the type discriminator and the value carries both the runner and its port range as a cohesive unit. Adding a third session type later requires no struct change — just one more `Register()` call.
+The original design had four fields — `ocRunner SessionFactory`, `vsRunner SessionFactory`, `ocRange [2]int`, `vsRange [2]int`. The names carry meaning that the types don't enforce: nothing prevents passing an `OCSessionFactory` as `vsRunner` at the call site. The map collapses these into a single `map[SessionType]registeredFactory`, where the key is the type discriminator and the value carries both the factory and its port range as a cohesive unit. Adding a third session type later requires no struct change — just one more `Register()` call.
 
 **Why is `registeredFactory` unexported but `Register()` exported?**  
 The caller (`server.go`) needs to construct registrations but has no legitimate reason to inspect or embed the struct directly. An unexported type with an exported constructor is Go's standard way to express this: you can create values of the type via the factory function, but you can't name the type itself outside the package. This prevents the call site from bypassing the constructor and constructing a half-initialised struct directly.
@@ -1017,7 +1017,7 @@ The caller (`server.go`) needs to construct registrations but has no legitimate 
 **Why variadic `...registeredFactory` rather than `map[SessionType]registeredFactory`?**  
 A map literal requires naming the value type — which is unexported and therefore unavailable to the caller. A variadic argument accepts any number of `registeredFactory` values returned by `Register()` without the caller ever needing to name the type.
 
-
+**Why save state after every mutation?**  
 State persistence is cheap (a small JSON file) and the cost of losing it (all sessions appear stopped after a portal restart) is high. Writing on every change is the right tradeoff here.
 
 **Why check `proc.Signal(0)` to detect orphans?**  
@@ -1298,7 +1298,7 @@ For now, all handlers return plain text. The HTMX UI and templates are added in 
 ### Key design decisions
 
 **Why is `server.go` the composition root?**  
-`main.go` is deliberately kept thin. `server.Start` is where all the wiring happens: which registrar, which runners, which state file, which manager, which mux. This keeps `main.go` readable and makes it easy to see the full dependency graph in one place.
+`main.go` is deliberately kept thin. `server.Start` is where all the wiring happens: which factories, which state file, which manager, which mux. This keeps `main.go` readable and makes it easy to see the full dependency graph in one place.
 
 **Why a `handler` struct rather than standalone functions?**  
 Handlers need access to shared state — the config and the session manager. In Go, the idiomatic way to thread shared state into handler functions is to hang them on a struct and pass that struct around. The alternative (global variables) makes testing and reasoning about state harder.
