@@ -902,17 +902,6 @@ const (
     SessionTypeVSCode   SessionType = "vscode"
 )
 
-// EventType identifies the lifecycle event emitted on the SSE channel.
-// Using a named string type (rather than bare string) makes the compiler
-// reject accidental string literals wherever an EventType is expected.
-type EventType string
-
-const (
-    EventTypeStarted EventType = "started"
-    EventTypeHealthy EventType = "healthy"
-    EventTypeStopped EventType = "stopped"
-)
-
 // Session holds the state of a running session.
 type Session struct {
     ID        string      `json:"id"`
@@ -1120,6 +1109,17 @@ type Manager struct {
     events    chan Event // SSE event broadcast channel
     factories map[SessionType]registeredFactory
 }
+
+// EventType identifies the lifecycle event emitted on the SSE channel.
+// Using a named string type (rather than bare string) makes the compiler
+// reject accidental string literals wherever an EventType is expected.
+type EventType string
+
+const (
+    EventTypeStarted EventType = "started"
+    EventTypeHealthy EventType = "healthy"
+    EventTypeStopped EventType = "stopped"
+)
 
 // Event is sent on the SSE channel when session state changes.
 type Event struct {
