@@ -1346,6 +1346,9 @@ Handlers need access to shared state — the config and the session manager. In 
 **How does SSE work?**  
 Server-Sent Events is a one-way HTTP stream from server to browser. The client opens a persistent `GET /events` connection; the server never closes it, instead writing `event: ...\ndata: ...\n\n` frames as events occur. The `http.Flusher` interface is required to push each frame to the client immediately rather than buffering it.
 
+**Why cast `r.FormValue("type")` to `session.SessionType`?**  
+`r.FormValue` always returns a plain `string`. `manager.Start` expects a `session.SessionType`, which is a named string type — the compiler won't accept a bare `string` where a `session.SessionType` is required, even though both have the same underlying type. The explicit cast `session.SessionType(r.FormValue("type"))` is safe here: if the value doesn't match any known constant, `manager.Start` returns an "unknown session type" error, which the handler propagates as a 500.
+
 ### `internal/server/server.go`
 
 ```go
@@ -1454,7 +1457,7 @@ func (h *handler) sessions(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) sessionsStart(w http.ResponseWriter, r *http.Request) {
     r.ParseForm()
-    sessionType := r.FormValue("type")
+    sessionType := session.SessionType(r.FormValue("type"))
     dir := r.FormValue("dir")
 
     s, err := h.manager.Start(sessionType, dir)
