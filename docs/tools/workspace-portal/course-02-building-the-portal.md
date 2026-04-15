@@ -1008,8 +1008,8 @@ The manager is the most complex part of the portal. It owns the runtime state of
 **Why a buffered `events` channel of size 64?**  
 The manager sends events synchronously (no goroutine). If the HTTP handler is slow to consume them, a blocking send would deadlock the manager. A buffer of 64 means the manager can fire 64 events before it blocks — more than enough for any realistic load. This is a pragmatic choice, not a scalable pub/sub system.
 
-**Why a `runners` map instead of named `ocRunner`/`vsRunner` fields?**  
-The original design had four fields — `ocRunner SessionFactory`, `vsRunner SessionFactory`, `ocRange [2]int`, `vsRange [2]int`. The names carry meaning that the types don't enforce: nothing prevents passing an `OCSessionFactory` as `vsRunner` at the call site. The map collapses these into a single `map[SessionType]registeredFactory`, where the key is the type discriminator and the value carries both the factory and its port range as a cohesive unit. Adding a third session type later requires no struct change — just one more `Register()` call.
+**Why a `factories` map instead of named `ocFactory`/`vsFactory` fields?**  
+The original design had four fields — `ocRunner SessionFactory`, `vsRunner SessionFactory`, `ocRange [2]int`, `vsRange [2]int`. The names carry meaning that the types don't enforce: nothing prevents passing an `OCSessionFactory` as `vsFactory` at the call site. The map collapses these into a single `map[SessionType]registeredFactory`, where the key is the type discriminator and the value carries both the factory and its port range as a cohesive unit. Adding a third session type later requires no struct change — just one more `Register()` call.
 
 **Why is `registeredFactory` unexported but `Register()` exported?**  
 The caller (`server.go`) needs to construct registrations but has no legitimate reason to inspect or embed the struct directly. An unexported type with an exported constructor is Go's standard way to express this: you can create values of the type via the factory function, but you can't name the type itself outside the package. This prevents the call site from bypassing the constructor and constructing a half-initialised struct directly.
@@ -1072,7 +1072,7 @@ type Manager struct {
     sessions  map[string]*Session
     stateFile string
     events    chan Event // SSE event broadcast channel
-    runners   map[SessionType]registeredFactory
+    factories map[SessionType]registeredFactory
 }
 
 // Event is sent on the SSE channel when session state changes.
@@ -1085,15 +1085,15 @@ type Event struct {
 // Each factory is registered via Register() and passed as a variadic argument,
 // keeping the unexported registeredFactory type out of the caller's namespace.
 func NewManager(stateFile string, registrations ...registeredFactory) *Manager {
-    runners := make(map[SessionType]registeredFactory, len(registrations))
+    factories := make(map[SessionType]registeredFactory, len(registrations))
     for _, r := range registrations {
-        runners[r.sessionType] = r
+        factories[r.sessionType] = r
     }
     m := &Manager{
         sessions:  make(map[string]*Session),
         stateFile: stateFile,
         events:    make(chan Event, 64),
-        runners:   runners,
+        factories: factories,
     }
     m.loadState()
     return m
@@ -1117,7 +1117,7 @@ func (m *Manager) List() []*Session {
 
 // Start launches a new session for the given directory and type.
 func (m *Manager) Start(sessionType SessionType, dir string) (*Session, error) {
-    reg, ok := m.runners[sessionType]
+    reg, ok := m.factories[sessionType]
     if !ok {
         return nil, fmt.Errorf("unknown session type: %s", sessionType)
     }
@@ -1171,7 +1171,7 @@ func (m *Manager) Stop(id string) error {
     delete(m.sessions, id)
     m.mu.Unlock()
 
-    if reg, ok := m.runners[s.Type]; ok {
+    if reg, ok := m.factories[s.Type]; ok {
         reg.factory.Stop(s.PID)
     }
     m.saveState()
