@@ -1324,13 +1324,7 @@ func (m *Manager) loadState() {
 
 ---
 
-## Lesson 7 — `internal/tailscale`: The Optional Plugin
-
-The Tailscale integration is implemented in [Course 07 — Tailscale Setup](./course-07-tailscale.md). You do not need to create the `internal/tailscale/` directory now — Course 07 covers it in full, including how it hooks into the session manager.
-
----
-
-## Lesson 8 — `internal/server`: Wiring It All Together
+## Lesson 7 — `internal/server`: Wiring It All Together
 
 ### What this module does
 
@@ -1549,7 +1543,7 @@ The server works. The responses are plain text for now — that changes in Cours
 
 ---
 
-## Lesson 9 — Running Tests
+## Lesson 8 — Running Tests
 
 With all modules implemented, run the full test suite:
 
