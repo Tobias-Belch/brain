@@ -902,6 +902,17 @@ const (
     SessionTypeVSCode   SessionType = "vscode"
 )
 
+// EventType identifies the lifecycle event emitted on the SSE channel.
+// Using a named string type (rather than bare string) makes the compiler
+// reject accidental string literals wherever an EventType is expected.
+type EventType string
+
+const (
+    EventTypeStarted EventType = "started"
+    EventTypeHealthy EventType = "healthy"
+    EventTypeStopped EventType = "stopped"
+)
+
 // Session holds the state of a running session.
 type Session struct {
     ID        string      `json:"id"`
@@ -1050,6 +1061,9 @@ A map literal requires naming the value type — which is unexported and therefo
 **Why save state after every mutation?**  
 State persistence is cheap (a small JSON file) and the cost of losing it (all sessions appear stopped after a portal restart) is high. Writing on every change is the right tradeoff here.
 
+**Why is `Event.Type` a named `EventType` and not a bare `string`?**  
+Same reasoning as `SessionType` — a named string type makes the compiler reject arbitrary string literals and gives IDEs something to autocomplete. The three constants (`EventTypeStarted`, `EventTypeHealthy`, `EventTypeStopped`) are the only valid values; the type makes that contract explicit without the verbosity of the interface-based union approach.
+
 **Why check `proc.Signal(0)` to detect orphans?**  
 `os.FindProcess` on Unix never returns an error — it just constructs a process handle. The only way to check if a process is actually alive is to send it signal 0, which does nothing to the process but returns an error if it doesn't exist or you don't have permission.
 
@@ -1109,7 +1123,7 @@ type Manager struct {
 
 // Event is sent on the SSE channel when session state changes.
 type Event struct {
-    Type    string // "started", "healthy", "stopped"
+    Type    EventType
     Session *Session
 }
 
@@ -1183,7 +1197,7 @@ func (m *Manager) Start(sessionType SessionType, dir string) (*Session, error) {
     m.mu.Unlock()
     m.saveState()
 
-    m.events <- Event{Type: "started", Session: s}
+    m.events <- Event{Type: EventTypeStarted, Session: s}
 
     // Health check runs in a goroutine — it blocks until the process responds,
     // then updates s.URL and sends the "healthy" event.
@@ -1207,7 +1221,7 @@ func (m *Manager) Stop(id string) error {
         reg.factory.Stop(s.PID)
     }
     m.saveState()
-    m.events <- Event{Type: "stopped", Session: s}
+    m.events <- Event{Type: EventTypeStopped, Session: s}
     return nil
 }
 
@@ -1233,7 +1247,7 @@ func (m *Manager) waitHealthy(s *Session, healthURL string) {
                 s.URL = healthURL
                 m.mu.Unlock()
                 m.saveState()
-                m.events <- Event{Type: "healthy", Session: s}
+                m.events <- Event{Type: EventTypeHealthy, Session: s}
                 return
             }
         }
