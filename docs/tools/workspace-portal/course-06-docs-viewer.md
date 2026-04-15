@@ -548,21 +548,20 @@ Press `Ctrl-C` when done.
 
 ## Lesson 6 — Implementing `internal/docs/runner.go`
 
-### The `Runner` interface (recap)
+### The `SessionFactory` interface (recap)
 
-From Course 02, the `Runner` interface is:
+From Course 02, the `SessionFactory` interface is:
 
 ```go
-// internal/session/runner.go
-type Runner interface {
-    Start(ctx context.Context) error
-    Stop() error
-    Port() int
-    HealthURL() string
+// internal/session/session.go
+type SessionFactory interface {
+    Start(dir string, port int) (pid int, err error)
+    Stop(pid int) error
+    HealthURL(port int) string
 }
 ```
 
-The docs runner implements this interface to start and stop the Astro dev server process.
+The docs runner does **not** implement `SessionFactory` — it manages a single long-lived child process rather than spawning one process per directory. It defines its own `Runner` struct in the `docs` package with a richer lifecycle (`Start(ctx)`, `Stop()`, `WaitHealthy(ctx)`).
 
 ### Create `internal/docs/runner.go`
 

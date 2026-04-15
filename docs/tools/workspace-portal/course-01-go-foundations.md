@@ -285,7 +285,7 @@ type Runner interface {
 }
 ```
 
-Any struct that has these three methods automatically satisfies `Runner`. This is how the portal's OpenCode and VS Code sessions are interchangeable — both implement `Runner`, the session manager only knows about `Runner`.
+Any struct that has these three methods automatically satisfies `Runner`. This is how the portal's OpenCode and VS Code session factories are interchangeable — both implement `SessionFactory`, the session manager only knows about `SessionFactory`.
 
 There is no `implements` keyword. You never declare that a struct satisfies an interface — the compiler checks it silently at the point of use, when you assign the struct to an interface variable or pass it to a function that expects one. If a method is missing, the error appears there, not on the struct definition.
 
