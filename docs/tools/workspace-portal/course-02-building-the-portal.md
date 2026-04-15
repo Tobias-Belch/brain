@@ -176,6 +176,8 @@ go build ./...
 
 If you get "no Go files" warnings, that's expected — empty directories are ignored by the toolchain.
 
+> **No tests for `cmd/portal/main.go`:** Go does not let you test `main()` directly. Keep `main.go` thin enough that there is nothing to test — if you can write `go run ./cmd/portal` and see the expected output, the entry point is correct.
+
 ---
 
 ## Lesson 2 — `internal/portrange`: Shared Type
@@ -222,6 +224,59 @@ func (p *PortRange) UnmarshalText(text []byte) error {
     *p = PortRange{lo, hi}
     return nil
 }
+```
+
+### `internal/portrange/portrange_test.go`
+
+A table-driven test for `UnmarshalText`. It covers the happy path (valid range), a single-number input (missing separator), non-numeric parts, an empty string, and an input with too many separators.
+
+> **No test for the zero-value PortRange** — there is nothing else to test. `PortRange` is a `[2]int`; once `UnmarshalText` is verified, the rest of the type is just array indexing.
+
+```go
+package portrange
+
+import "testing"
+
+func TestUnmarshalText(t *testing.T) {
+    tests := []struct {
+        input   string
+        want    PortRange
+        wantErr bool
+    }{
+        {"4100-4199", PortRange{4100, 4199}, false},
+        {"80-80", PortRange{80, 80}, false},
+        {"0-65535", PortRange{0, 65535}, false},
+        {"4100", PortRange{}, true},            // missing separator
+        {"abc-4199", PortRange{}, true},        // non-numeric lo
+        {"4100-xyz", PortRange{}, true},        // non-numeric hi
+        {"", PortRange{}, true},                // empty string
+        {"4100-4199-extra", PortRange{}, true}, // too many parts
+    }
+
+    for _, tc := range tests {
+        var p PortRange
+        err := p.UnmarshalText([]byte(tc.input))
+        if tc.wantErr {
+            if err == nil {
+                t.Errorf("input %q: expected error, got nil", tc.input)
+            }
+            continue
+        }
+        if err != nil {
+            t.Errorf("input %q: unexpected error: %v", tc.input, err)
+            continue
+        }
+        if p != tc.want {
+            t.Errorf("input %q: got %v, want %v", tc.input, p, tc.want)
+        }
+    }
+}
+```
+
+Run:
+
+```bash
+go test ./internal/portrange/...
 ```
 
 ---
@@ -1019,6 +1074,8 @@ func (r *VSCodeSessionFactory) HealthURL(port int) string {
 }
 ```
 
+> **No tests for `opencode.go` or `vscode.go`:** Both files shell out to real binaries (`opencode`, `code-server`). Testing them would require a fake binary on `PATH` or abstracting `exec.Command` behind an interface — added complexity with little payoff. The interface they implement (`SessionFactory`) is tested through the manager tests via `fakeFactory`. If you later need to test the exec behaviour, the correct approach is to make the command constructor injectable (e.g. a `cmdFn func(name string, args ...string) *exec.Cmd` field on the struct).
+
 ---
 
 ## Lesson 6 — `internal/session/manager.go`: The Session Manager
@@ -1322,6 +1379,182 @@ func (m *Manager) loadState() {
 }
 ```
 
+### `internal/session/manager_test.go`
+
+The manager tests use a `fakeFactory` that satisfies `SessionFactory` without exec'ing anything. This lets us drive the full lifecycle (start, stop, state persistence, events) without real processes.
+
+The `fakeFactory` design:
+
+```go
+type fakeFactory struct {
+    nextPID int
+}
+func (f *fakeFactory) Start(dir string, port int) (int, error) { return f.nextPID, nil }
+func (f *fakeFactory) Stop(pid int) error                      { return nil }
+func (f *fakeFactory) HealthURL(port int) string               { return "" }
+```
+
+`HealthURL` returns `""` so `waitHealthy` fires an HTTP request to `http://` (which fails immediately) and exits. This is fine — the health check goroutine is a background concern we don't need to observe in these tests.
+
+What the tests cover:
+
+- `TestStart_UnknownType` — unknown `SessionType` returns an error
+- `TestStart_CreatesSession` — correct type, dir, PID, and port are recorded
+- `TestStart_Idempotent` — starting the same dir+type twice returns the same session ID
+- `TestStop_RemovesSession` — session is removed from `List()` after `Stop()`
+- `TestStop_UnknownID` — stopping a non-existent ID returns an error
+- `TestList_Empty` — fresh manager returns an empty slice
+- `TestStateFile_RoundTrip` — state file is written; second manager can load it without panicking
+- `TestEvents_StartSendsEvent` — `EventTypeStarted` event appears in `Events()` channel after `Start()`
+- `TestEvents_StopSendsEvent` — `EventTypeStopped` event appears after `Stop()`
+
+```go
+package session
+
+import (
+    "os"
+    "path/filepath"
+    "testing"
+
+    "workspace-portal/internal/portrange"
+)
+
+type fakeFactory struct {
+    nextPID int
+}
+
+func (f *fakeFactory) Start(dir string, port int) (int, error) { return f.nextPID, nil }
+func (f *fakeFactory) Stop(pid int) error                      { return nil }
+func (f *fakeFactory) HealthURL(port int) string               { return "" }
+
+func newTestManager(t *testing.T, factory *fakeFactory) *Manager {
+    t.Helper()
+    stateFile := filepath.Join(t.TempDir(), "sessions.json")
+    pr := portrange.PortRange{40000, 40099}
+    return NewManager(stateFile, Register(SessionTypeOpenCode, factory, pr))
+}
+
+func TestStart_UnknownType(t *testing.T) {
+    m := newTestManager(t, &fakeFactory{nextPID: 1})
+    _, err := m.Start("vscode", "/some/dir")
+    if err == nil {
+        t.Fatal("expected error for unknown session type, got nil")
+    }
+}
+
+func TestStart_CreatesSession(t *testing.T) {
+    m := newTestManager(t, &fakeFactory{nextPID: 42})
+    s, err := m.Start(SessionTypeOpenCode, "/my/project")
+    if err != nil {
+        t.Fatalf("unexpected error: %v", err)
+    }
+    if s.Type != SessionTypeOpenCode {
+        t.Errorf("got type %q, want %q", s.Type, SessionTypeOpenCode)
+    }
+    if s.Dir != "/my/project" {
+        t.Errorf("got dir %q, want /my/project", s.Dir)
+    }
+    if s.PID != 42 {
+        t.Errorf("got pid %d, want 42", s.PID)
+    }
+    if s.Port < 40000 || s.Port > 40099 {
+        t.Errorf("port %d out of range", s.Port)
+    }
+    if s.ID == "" {
+        t.Error("session ID is empty")
+    }
+}
+
+func TestStart_Idempotent(t *testing.T) {
+    m := newTestManager(t, &fakeFactory{nextPID: 1})
+    s1, _ := m.Start(SessionTypeOpenCode, "/my/project")
+    s2, _ := m.Start(SessionTypeOpenCode, "/my/project")
+    if s1.ID != s2.ID {
+        t.Errorf("expected same session ID on idempotent start; got %q vs %q", s1.ID, s2.ID)
+    }
+}
+
+func TestStop_RemovesSession(t *testing.T) {
+    m := newTestManager(t, &fakeFactory{nextPID: 7})
+    s, _ := m.Start(SessionTypeOpenCode, "/my/project")
+    m.Stop(s.ID)
+    for _, existing := range m.List() {
+        if existing.ID == s.ID {
+            t.Error("session still present after Stop()")
+        }
+    }
+}
+
+func TestStop_UnknownID(t *testing.T) {
+    m := newTestManager(t, &fakeFactory{})
+    if err := m.Stop("does-not-exist"); err == nil {
+        t.Fatal("expected error for unknown session ID, got nil")
+    }
+}
+
+func TestList_Empty(t *testing.T) {
+    m := newTestManager(t, &fakeFactory{})
+    if got := m.List(); len(got) != 0 {
+        t.Errorf("expected empty list, got %d sessions", len(got))
+    }
+}
+
+func TestStateFile_RoundTrip(t *testing.T) {
+    dir := t.TempDir()
+    stateFile := filepath.Join(dir, "sessions.json")
+    pr := portrange.PortRange{40000, 40099}
+    factory := &fakeFactory{nextPID: 99}
+
+    m1 := NewManager(stateFile, Register(SessionTypeOpenCode, factory, pr))
+    m1.Start(SessionTypeOpenCode, "/persisted/project")
+
+    if _, err := os.Stat(stateFile); err != nil {
+        t.Fatalf("state file not created: %v", err)
+    }
+
+    // Second manager loading the same state file must not panic
+    m2 := NewManager(stateFile, Register(SessionTypeOpenCode, factory, pr))
+    _ = m2.List()
+}
+
+func TestEvents_StartSendsEvent(t *testing.T) {
+    m := newTestManager(t, &fakeFactory{nextPID: 5})
+    s, _ := m.Start(SessionTypeOpenCode, "/event/test")
+    select {
+    case ev := <-m.Events():
+        if ev.Type != EventTypeStarted {
+            t.Errorf("got event type %q, want %q", ev.Type, EventTypeStarted)
+        }
+        if ev.Session.ID != s.ID {
+            t.Error("event session ID mismatch")
+        }
+    default:
+        t.Error("no event sent after Start()")
+    }
+}
+
+func TestEvents_StopSendsEvent(t *testing.T) {
+    m := newTestManager(t, &fakeFactory{nextPID: 5})
+    s, _ := m.Start(SessionTypeOpenCode, "/event/stop")
+    <-m.Events() // drain started event
+    m.Stop(s.ID)
+    select {
+    case ev := <-m.Events():
+        if ev.Type != EventTypeStopped {
+            t.Errorf("got event type %q, want %q", ev.Type, EventTypeStopped)
+        }
+    default:
+        t.Error("no event sent after Stop()")
+    }
+}
+```
+
+Run:
+
+```bash
+go test ./internal/session/...
+```
+
 ---
 
 ## Lesson 7 — `internal/server`: Wiring It All Together
@@ -1543,6 +1776,156 @@ curl http://localhost:4000/fs/list
 ```
 
 The server works. The responses are plain text for now — that changes in Course 03.
+
+> **No unit tests for `server.go` (`Start`):** `Start` calls `http.ListenAndServe`, which binds a real port and blocks. That is integration-level behaviour. Testing it requires a free port, teardown logic, and a goroutine — complexity that adds little value over testing the handlers directly. If you want integration coverage, start the server in a goroutine in a `TestMain` setup function.
+
+### `internal/server/handlers_test.go`
+
+Handler tests use `net/http/httptest` — Go's built-in package for testing HTTP handlers without binding a real port. Each test creates a real `Manager` with a `fakeFactory` and exercises the handler through `httptest.NewRecorder`.
+
+The `fakeFactory` is simpler than the one in the manager tests — we don't need `startErr`/`stopErr` fields here because the handlers' error paths are exercised by passing an unknown session type (which the manager rejects), not by making the factory fail.
+
+Key test also caught a real bug: `sessionsStart` was missing a `return` after writing the 500 error response, causing a nil pointer dereference when `s` was nil. The test for `TestSessionsStart_UnknownType` would panic without the fix.
+
+```go
+package server
+
+import (
+    "net/http"
+    "net/http/httptest"
+    "net/url"
+    "path/filepath"
+    "strings"
+    "testing"
+
+    "workspace-portal/internal/config"
+    "workspace-portal/internal/portrange"
+    "workspace-portal/internal/session"
+)
+
+type fakeFactory struct{ nextPID int }
+
+func (f *fakeFactory) Start(dir string, port int) (int, error) { return f.nextPID, nil }
+func (f *fakeFactory) Stop(pid int) error                      { return nil }
+func (f *fakeFactory) HealthURL(port int) string               { return "" }
+
+func newTestHandler(t *testing.T) *handler {
+    t.Helper()
+    tmpDir := t.TempDir()
+    stateFile := filepath.Join(tmpDir, "sessions.json")
+    factory := &fakeFactory{nextPID: 1}
+    pr := portrange.PortRange{41000, 41099}
+    mgr := session.NewManager(stateFile, session.Register(session.SessionTypeOpenCode, factory, pr))
+    cfg := &config.Config{WorkspacesRoot: tmpDir}
+    return &handler{cfg: cfg, manager: mgr}
+}
+
+func TestIndex(t *testing.T) {
+    h := newTestHandler(t)
+    rec := httptest.NewRecorder()
+    h.index(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+    if rec.Code != http.StatusOK {
+        t.Errorf("status %d, want 200", rec.Code)
+    }
+    if !strings.Contains(rec.Body.String(), "workspace-portal") {
+        t.Errorf("body missing 'workspace-portal'")
+    }
+}
+
+func TestFsList_DefaultPath(t *testing.T) {
+    h := newTestHandler(t)
+    rec := httptest.NewRecorder()
+    h.fsList(rec, httptest.NewRequest(http.MethodGet, "/fs/list", nil))
+    if rec.Code != http.StatusOK {
+        t.Errorf("status %d, want 200; body: %s", rec.Code, rec.Body.String())
+    }
+}
+
+func TestSessions_Empty(t *testing.T) {
+    h := newTestHandler(t)
+    rec := httptest.NewRecorder()
+    h.sessions(rec, httptest.NewRequest(http.MethodGet, "/sessions", nil))
+    if rec.Code != http.StatusOK {
+        t.Errorf("status %d, want 200", rec.Code)
+    }
+    if rec.Body.Len() != 0 {
+        t.Errorf("expected empty body for empty session list, got %q", rec.Body.String())
+    }
+}
+
+func TestSessionsStart_Success(t *testing.T) {
+    h := newTestHandler(t)
+    dir := t.TempDir()
+    form := url.Values{"type": {string(session.SessionTypeOpenCode)}, "dir": {dir}}
+    rec := httptest.NewRecorder()
+    req := httptest.NewRequest(http.MethodPost, "/sessions/start", strings.NewReader(form.Encode()))
+    req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+    h.sessionsStart(rec, req)
+    if rec.Code != http.StatusOK {
+        t.Errorf("status %d, want 200; body: %s", rec.Code, rec.Body.String())
+    }
+    if !strings.Contains(rec.Body.String(), "started") {
+        t.Errorf("body missing 'started'")
+    }
+}
+
+func TestSessionsStart_UnknownType(t *testing.T) {
+    h := newTestHandler(t)
+    form := url.Values{"type": {"unknown-type"}, "dir": {t.TempDir()}}
+    rec := httptest.NewRecorder()
+    req := httptest.NewRequest(http.MethodPost, "/sessions/start", strings.NewReader(form.Encode()))
+    req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+    h.sessionsStart(rec, req)
+    if rec.Code != http.StatusInternalServerError {
+        t.Errorf("status %d, want 500", rec.Code)
+    }
+}
+
+func TestSessionsStop_Success(t *testing.T) {
+    h := newTestHandler(t)
+    dir := t.TempDir()
+
+    // start a session first
+    form := url.Values{"type": {string(session.SessionTypeOpenCode)}, "dir": {dir}}
+    startRec := httptest.NewRecorder()
+    startReq := httptest.NewRequest(http.MethodPost, "/sessions/start", strings.NewReader(form.Encode()))
+    startReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+    h.sessionsStart(startRec, startReq)
+
+    id := h.manager.List()[0].ID
+
+    stopForm := url.Values{"id": {id}}
+    stopRec := httptest.NewRecorder()
+    stopReq := httptest.NewRequest(http.MethodPost, "/sessions/stop", strings.NewReader(stopForm.Encode()))
+    stopReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+    h.sessionsStop(stopRec, stopReq)
+
+    if stopRec.Code != http.StatusOK {
+        t.Errorf("status %d, want 200; body: %s", stopRec.Code, stopRec.Body.String())
+    }
+    if !strings.Contains(stopRec.Body.String(), "stopped") {
+        t.Errorf("body missing 'stopped'")
+    }
+}
+
+func TestSessionsStop_UnknownID(t *testing.T) {
+    h := newTestHandler(t)
+    form := url.Values{"id": {"does-not-exist"}}
+    rec := httptest.NewRecorder()
+    req := httptest.NewRequest(http.MethodPost, "/sessions/stop", strings.NewReader(form.Encode()))
+    req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+    h.sessionsStop(rec, req)
+    if rec.Code != http.StatusInternalServerError {
+        t.Errorf("status %d, want 500", rec.Code)
+    }
+}
+```
+
+Run:
+
+```bash
+go test ./internal/server/...
+```
 
 ---
 
