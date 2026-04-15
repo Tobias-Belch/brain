@@ -178,7 +178,55 @@ If you get "no Go files" warnings, that's expected — empty directories are ign
 
 ---
 
-## Lesson 2 — `internal/config`: Loading Configuration
+## Lesson 2 — `internal/portrange`: Shared Type
+
+### What this module does
+
+`portrange.PortRange` is a tiny shared primitive — a `[2]int` with a name and a string unmarshaller. It lives in its own package so both `internal/config` and `internal/session` can import it without either depending on the other.
+
+### Key design decisions
+
+**Why a dedicated `internal/portrange` package instead of defining the type in `config`?**  
+If `PortRange` lived in `internal/config`, the `session` package would have to import `config` to get it. That creates an undesirable dependency: the session manager would become coupled to the full configuration layer. A tiny single-purpose package breaks the coupling — both packages import `portrange`, and neither imports the other.
+
+**Why not `internal/types`?**  
+Go favours small, focused packages over catch-all `types` or `util` packages. Naming the package after the one type it exports (`portrange`) makes the import path self-documenting: `portrange.PortRange` reads clearly at the call site. If more shared primitives accumulate later, they earn their own package names too.
+
+### `internal/portrange/portrange.go`
+
+```go
+package portrange
+
+import (
+    "fmt"
+    "strconv"
+    "strings"
+)
+
+// PortRange is a [lo, hi] port pair that unmarshals from "lo-hi" strings in both
+// YAML and environment variables (e.g. "4100-4199"). Implementing
+// encoding.TextUnmarshaler means both yaml.v3 and caarlos0/env pick it up
+// automatically — no custom parsing code needed at the call site.
+type PortRange [2]int
+
+func (p *PortRange) UnmarshalText(text []byte) error {
+    parts := strings.SplitN(string(text), "-", 2)
+    if len(parts) != 2 {
+        return fmt.Errorf("port range must be in lo-hi format, got %q", string(text))
+    }
+    lo, err1 := strconv.Atoi(parts[0])
+    hi, err2 := strconv.Atoi(parts[1])
+    if err1 != nil || err2 != nil {
+        return fmt.Errorf("invalid port range %q", string(text))
+    }
+    *p = PortRange{lo, hi}
+    return nil
+}
+```
+
+---
+
+## Lesson 3 — `internal/config`: Loading Configuration
 
 ### What this module does
 
@@ -204,7 +252,7 @@ The `env` tag approach solves this by colocating the env var name with the field
 
 `github.com/caarlos0/env/v11` was chosen specifically because it has **zero transitive dependencies** — adding it costs one line in `go.mod` with no dependency tree attached. The `env:"..."` tag convention also directly mirrors the `yaml:"..."` and `json:"..."` tags students already know.
 
-`PortRange [2]int` is the one type that `env` cannot parse out of the box, because `[2]int` has no standard string representation. Rather than adding a helper function that calls `os.Getenv` explicitly (reintroducing exactly the maintenance problem we set out to solve), the solution is to define a named type `PortRange` and implement `encoding.TextUnmarshaler` on it. Both `yaml.v3` and `caarlos0/env` discover and call `UnmarshalText` automatically — the port range fields get normal `env` tags, no special-casing exists anywhere in `Load`, and the YAML schema and env var format are unchanged.
+`PortRange [2]int` is the one type that `env` cannot parse out of the box, because `[2]int` has no standard string representation. Rather than adding a helper function that calls `os.Getenv` explicitly (reintroducing exactly the maintenance problem we set out to solve), the solution is to define a named type `portrange.PortRange` and implement `encoding.TextUnmarshaler` on it. Both `yaml.v3` and `caarlos0/env` discover and call `UnmarshalText` automatically — the port range fields get normal `env` tags, no special-casing exists anywhere in `Load`, and the YAML schema and env var format are unchanged. `PortRange` lives in `internal/portrange` (not `internal/config`) so that the `session` package can share it without importing `config`.
 
 **Why a `Secret` method?**  
 Secrets (like `vscode-password`) should never live in the main config file, which is likely shared or version-controlled. The `Secret` method resolves them from env vars first, then from files in a `.secrets/` directory, then from Docker secrets (`/run/secrets/`). The caller doesn't care where the value came from. If no source provides a value, `Secret` returns an empty string and logs a warning — the empty string is intentional (it avoids a hard failure for optional secrets), but the warning makes misconfiguration visible immediately in the process log rather than producing a silent auth bypass.
@@ -219,11 +267,12 @@ import (
     "log"
     "os"
     "path/filepath"
-    "strconv"
     "strings"
 
     "github.com/caarlos0/env/v11"
     "gopkg.in/yaml.v3"
+
+    "workspace-portal/internal/portrange"
 )
 
 // Config holds all portal configuration.
@@ -235,35 +284,15 @@ type Config struct {
     VSCode         VSCConfig `yaml:"vscode"           envPrefix:"PORTAL_VSCODE_"`
 }
 
-// PortRange is a [lo, hi] port pair that unmarshals from "lo-hi" strings in both
-// YAML and environment variables (e.g. "4100-4199"). Implementing
-// encoding.TextUnmarshaler means both yaml.v3 and caarlos0/env pick it up
-// automatically — no custom parsing code needed at the call site.
-type PortRange [2]int
-
-func (p *PortRange) UnmarshalText(text []byte) error {
-    parts := strings.SplitN(string(text), "-", 2)
-    if len(parts) != 2 {
-        return fmt.Errorf("port range must be in lo-hi format, got %q", string(text))
-    }
-    lo, err1 := strconv.Atoi(parts[0])
-    hi, err2 := strconv.Atoi(parts[1])
-    if err1 != nil || err2 != nil {
-        return fmt.Errorf("invalid port range %q", string(text))
-    }
-    *p = PortRange{lo, hi}
-    return nil
-}
-
 type OCConfig struct {
-    Binary    string    `yaml:"binary"     env:"BINARY"`
-    PortRange PortRange `yaml:"port_range" env:"PORT_RANGE"`
-    Flags     []string  `yaml:"flags"      env:"FLAGS"`
+    Binary    string              `yaml:"binary"     env:"BINARY"`
+    PortRange portrange.PortRange `yaml:"port_range" env:"PORT_RANGE"`
+    Flags     []string            `yaml:"flags"      env:"FLAGS"`
 }
 
 type VSCConfig struct {
-    Binary    string    `yaml:"binary"     env:"BINARY"`
-    PortRange PortRange `yaml:"port_range" env:"PORT_RANGE"`
+    Binary    string              `yaml:"binary"     env:"BINARY"`
+    PortRange portrange.PortRange `yaml:"port_range" env:"PORT_RANGE"`
 }
 
 // defaults returns a Config populated with sensible defaults.
@@ -273,12 +302,12 @@ func defaults() *Config {
         SecretsDir: ".secrets",
         OC: OCConfig{
             Binary:    "opencode",
-            PortRange: PortRange{4100, 4199},
+            PortRange: portrange.PortRange{4100, 4199},
             Flags:     []string{"web", "--mdns"},
         },
         VSCode: VSCConfig{
             Binary:    "code-server",
-            PortRange: PortRange{4200, 4299},
+            PortRange: portrange.PortRange{4200, 4299},
         },
     }
 }
@@ -303,8 +332,9 @@ func Load(path string) (*Config, error) {
     // env.Parse only writes a field when its env var is actually present —
     // it never touches fields whose env var is unset, so YAML-loaded and
     // defaults()-populated values are preserved unless explicitly overridden.
-    // PortRange fields are covered automatically because PortRange implements
-    // encoding.TextUnmarshaler — env parses "4100-4199" into PortRange{4100,4199}.
+    // portrange.PortRange fields are covered automatically because PortRange
+    // implements encoding.TextUnmarshaler — env parses "4100-4199" into
+    // portrange.PortRange{4100,4199}.
     if err := env.Parse(cfg); err != nil {
         return nil, fmt.Errorf("applying env overrides: %w", err)
     }
@@ -433,7 +463,7 @@ All four tests should pass before continuing.
 
 ---
 
-## Lesson 3 — `internal/fs`: Directory Tree
+## Lesson 4 — `internal/fs`: Directory Tree
 
 ### What this module does
 
@@ -812,7 +842,7 @@ func TestIsGitRepo(t *testing.T) {
 
 ---
 
-## Lesson 4 — `internal/session`: The SessionFactory Interface
+## Lesson 5 — `internal/session`: The SessionFactory Interface
 
 ### What this module does
 
@@ -991,7 +1021,7 @@ func (r *VSCodeSessionFactory) HealthURL(port int) string {
 
 ---
 
-## Lesson 5 — `internal/session/manager.go`: The Session Manager
+## Lesson 6 — `internal/session/manager.go`: The Session Manager
 
 ### What this module does
 
@@ -1009,7 +1039,7 @@ The manager is the most complex part of the portal. It owns the runtime state of
 The manager sends events synchronously (no goroutine). If the HTTP handler is slow to consume them, a blocking send would deadlock the manager. A buffer of 64 means the manager can fire 64 events before it blocks — more than enough for any realistic load. This is a pragmatic choice, not a scalable pub/sub system.
 
 **Why a `factories` map instead of named `ocFactory`/`vsFactory` fields?**  
-The original design had four fields — `ocFactory SessionFactory`, `vsFactory SessionFactory`, `ocRange [2]int`, `vsRange [2]int`. The names carry meaning that the types don't enforce: nothing prevents passing an `OCSessionFactory` as `vsFactory` at the call site. The map collapses these into a single `map[SessionType]registeredFactory`, where the key is the type discriminator and the value carries both the factory and its port range as a cohesive unit. Adding a third session type later requires no struct change — just one more `Register()` call.
+The original design had four fields — `ocFactory SessionFactory`, `vsFactory SessionFactory`, `ocRange portrange.PortRange`, `vsRange portrange.PortRange`. The names carry meaning that the types don't enforce: nothing prevents passing an `OCSessionFactory` as `vsFactory` at the call site. The map collapses these into a single `map[SessionType]registeredFactory`, where the key is the type discriminator and the value carries both the factory and its port range as a cohesive unit. Adding a third session type later requires no struct change — just one more `Register()` call.
 
 **Why is `registeredFactory` unexported but `Register()` exported?**  
 The caller (`server.go`) needs to construct registrations but has no legitimate reason to inspect or embed the struct directly. An unexported type with an exported constructor is Go's standard way to express this: you can create values of the type via the factory function, but you can't name the type itself outside the package. This prevents the call site from bypassing the constructor and constructing a half-initialised struct directly.
@@ -1049,6 +1079,8 @@ import (
     "time"
 
     "github.com/google/uuid"
+
+    "workspace-portal/internal/portrange"
 )
 
 // registeredFactory pairs a SessionType, its SessionFactory, and its port range.
@@ -1057,12 +1089,12 @@ import (
 type registeredFactory struct {
     sessionType SessionType
     factory      SessionFactory
-    portRange   [2]int
+    portRange   portrange.PortRange
 }
 
 // Register constructs a registeredFactory. This is the only way to create one
 // outside this package — the struct itself is unexported.
-func Register(sessionType SessionType, factory SessionFactory, portRange [2]int) registeredFactory {
+func Register(sessionType SessionType, factory SessionFactory, portRange portrange.PortRange) registeredFactory {
     return registeredFactory{sessionType: sessionType, factory: factory, portRange: portRange}
 }
 
@@ -1211,7 +1243,7 @@ func (m *Manager) waitHealthy(s *Session, healthURL string) {
 // nextPort finds the first available port in the given range.
 // It checks both the in-use session map (fast) and then attempts to bind
 // the port (authoritative — catches ports used by unrelated processes).
-func (m *Manager) nextPort(r [2]int) (int, error) {
+func (m *Manager) nextPort(r portrange.PortRange) (int, error) {
     m.mu.Lock()
     inUse := make(map[int]bool)
     for _, s := range m.sessions {
@@ -1278,13 +1310,13 @@ func (m *Manager) loadState() {
 
 ---
 
-## Lesson 6 — `internal/tailscale`: The Optional Plugin
+## Lesson 7 — `internal/tailscale`: The Optional Plugin
 
 The Tailscale integration is implemented in [Course 07 — Tailscale Setup](./course-07-tailscale.md). You do not need to create the `internal/tailscale/` directory now — Course 07 covers it in full, including how it hooks into the session manager.
 
 ---
 
-## Lesson 7 — `internal/server`: Wiring It All Together
+## Lesson 8 — `internal/server`: Wiring It All Together
 
 ### What this module does
 
@@ -1503,7 +1535,7 @@ The server works. The responses are plain text for now — that changes in Cours
 
 ---
 
-## Lesson 8 — Running Tests
+## Lesson 9 — Running Tests
 
 With all modules implemented, run the full test suite:
 
