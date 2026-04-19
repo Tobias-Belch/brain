@@ -33,8 +33,8 @@ mkdir -p internal/config
 mkdir -p internal/fs
 mkdir -p internal/session
 mkdir -p internal/server
-mkdir -p templates
-mkdir -p static
+mkdir -p internal/assets/static
+mkdir -p internal/assets/templates
 mkdir -p deploy/launchd
 mkdir -p deploy/docker
 ```
@@ -47,9 +47,8 @@ The directories map directly to the modules you'll build:
 | `internal/config/` | YAML loading, env var overrides, secrets resolution. |
 | `internal/fs/` | Directory tree listing with pruning and git detection. |
 | `internal/session/` | Process lifecycle — start, stop, health check, state persistence. |
+| `internal/assets/` | Embedded static assets and HTML templates. |
 | `internal/server/` | HTTP mux, route handlers, SSE streaming. |
-| `templates/` | Go HTML templates (wired up in Course 03). |
-| `static/` | CSS and JS assets (Course 03). |
 | `deploy/` | Deployment configs — launchd plist and Dockerfile. |
 
 > **No `src/` directory:** Go does not treat `src/` as special. The idiomatic layout places packages directly under named directories (`cmd/`, `internal/`, etc.) at the module root. A top-level `src/` is a Java/Maven habit — avoid it in Go.
