@@ -222,7 +222,10 @@ Define the data types that templates receive in `internal/server/templates.go`:
 ```go
 package server
 
-import "workspace-portal/internal/session"
+import (
+    "workspace-portal/internal/fs"
+    "workspace-portal/internal/session"
+)
 
 // pageData is passed to layout.html for the initial full-page render.
 type pageData struct {
@@ -232,13 +235,10 @@ type pageData struct {
 
 // treeRowData is passed to tree-row.html for each directory entry.
 type treeRowData struct {
-    Name        string
-    Path        string // full path relative to workspaces root
-    IsGit       bool
-    HasChildren bool
+    fs.DirEntry
     // Expanded is set server-side when rendering children inline.
     // For lazily-loaded rows it is always false on first render.
-    Expanded    bool
+    Expanded bool
 }
 
 // sessionRowData is passed to session-row.html for each session entry.
@@ -246,8 +246,6 @@ type sessionRowData struct {
     session.Session
 }
 ```
-
-Keep template data structs in the `server` package. They are view-model types — they exist to decouple the template from the domain types.
 
 ---
 
@@ -556,12 +554,7 @@ func (h *handler) index(w http.ResponseWriter, r *http.Request) {
 
     rows := make([]treeRowData, len(entries))
     for i, e := range entries {
-        rows[i] = treeRowData{
-            Name:        e.Name,
-            Path:        e.RelPath,
-            IsGit:       e.IsGit,
-            HasChildren: e.HasChildren,
-        }
+        rows[i] = treeRowData{DirEntry: e}
     }
 
     data := pageData{
@@ -612,12 +605,7 @@ func (h *handler) fsList(w http.ResponseWriter, r *http.Request) {
 
     rows := make([]treeRowData, len(entries))
     for i, e := range entries {
-        rows[i] = treeRowData{
-            Name:        e.Name,
-            Path:        filepath.Join(relPath, e.Name),
-            IsGit:       e.IsGit,
-            HasChildren: e.HasChildren,
-        }
+        rows[i] = treeRowData{DirEntry: e}
     }
 
     if err := h.tmpl.ExecuteTemplate(w, "tree-children.html", rows); err != nil {
