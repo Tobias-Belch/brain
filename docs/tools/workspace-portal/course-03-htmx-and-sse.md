@@ -771,27 +771,38 @@ This pattern — SSE triggers a fresh fetch rather than using SSE data directly 
 
 ## Lesson 9 — Wiring Everything Together
 
-### Update the `handler` struct
-
 ### Wire `tmpl` into the handler
 
-Update `routes()` in `server.go` to pass the parsed template to the handler:
+`Start()` in `server.go` constructs the handler and wires the routes. Update it to pass `tmpl` to the handler:
 
 ```go
-func (s *Server) routes() {
-    h := &handler{
-        cfg:     s.cfg,
-        manager: s.manager,
-        tmpl:    s.tmpl,
+func Start(cfg *config.Config) error {
+    // ... manager setup unchanged ...
+
+    tmpl, err := template.ParseFS(assets.TemplateFS, "templates/*.html")
+    if err != nil {
+        log.Fatalf("parse templates: %v", err)
     }
 
-    s.mux.HandleFunc("GET /", h.index)
-    s.mux.HandleFunc("GET /fs/list", h.fsList)
-    s.mux.HandleFunc("GET /sessions", h.sessions)
-    s.mux.HandleFunc("POST /sessions/start", h.sessionsStart)
-    s.mux.HandleFunc("POST /sessions/stop", h.sessionsStop)
-    s.mux.HandleFunc("GET /events", h.events)
-    s.mux.HandleFunc("GET /static/", h.static)
+    mux := http.NewServeMux()
+    h := &handler{
+        cfg:     cfg,
+        manager: manager,
+        tmpl:    tmpl,
+    }
+
+    mux.HandleFunc("GET /", h.index)
+    mux.HandleFunc("GET /fs/list", h.fsList)
+    mux.HandleFunc("GET /sessions", h.sessions)
+    mux.HandleFunc("POST /sessions/start", h.sessionsStart)
+    mux.HandleFunc("POST /sessions/stop", h.sessionsStop)
+    mux.HandleFunc("GET /events", h.events)
+    mux.HandleFunc("GET /static/", h.static)
+
+    addr := fmt.Sprintf(":%d", cfg.PortalPort)
+    log.Printf("listening on %s", addr)
+
+    return http.ListenAndServe(addr, mux)
 }
 ```
 
