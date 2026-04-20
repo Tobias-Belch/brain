@@ -642,6 +642,10 @@ func (h *handler) sessions(w http.ResponseWriter, r *http.Request) {
 
 ```go
 func (h *handler) sessionsStart(w http.ResponseWriter, r *http.Request) {
+    if err := r.ParseForm(); err != nil {
+        http.Error(w, "bad request", http.StatusBadRequest)
+        return
+    }
     sessionType := r.FormValue("type")
     dir := r.FormValue("dir")
 
@@ -670,6 +674,10 @@ func (h *handler) sessionsStart(w http.ResponseWriter, r *http.Request) {
 
 ```go
 func (h *handler) sessionsStop(w http.ResponseWriter, r *http.Request) {
+    if err := r.ParseForm(); err != nil {
+        http.Error(w, "bad request", http.StatusBadRequest)
+        return
+    }
     id := r.FormValue("id")
     if id == "" {
         http.Error(w, "id required", http.StatusBadRequest)
@@ -1111,6 +1119,10 @@ The "Open OC" button should not start a second session if one is already running
 
 ```go
 func (h *handler) sessionsStart(w http.ResponseWriter, r *http.Request) {
+    if err := r.ParseForm(); err != nil {
+        http.Error(w, "bad request", http.StatusBadRequest)
+        return
+    }
     sessionType := r.FormValue("type")
     dir := r.FormValue("dir")
 
