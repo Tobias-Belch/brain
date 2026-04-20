@@ -646,7 +646,7 @@ func (h *handler) sessionsStart(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "bad request", http.StatusBadRequest)
         return
     }
-    sessionType := r.FormValue("type")
+    sessionType := session.SessionType(r.FormValue("type"))
     dir := r.FormValue("dir")
 
     if sessionType == "" || dir == "" {
@@ -657,7 +657,7 @@ func (h *handler) sessionsStart(w http.ResponseWriter, r *http.Request) {
     // Resolve relative to workspaces root
     absDir := filepath.Join(h.cfg.WorkspacesRoot, dir)
 
-    _, err := h.manager.Start(session.SessionType(sessionType), absDir)
+    _, err := h.manager.Start(sessionType, absDir)
     if err != nil {
         http.Error(w, "start session: "+err.Error(), http.StatusInternalServerError)
         return
@@ -1123,21 +1123,21 @@ func (h *handler) sessionsStart(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "bad request", http.StatusBadRequest)
         return
     }
-    sessionType := r.FormValue("type")
+    sessionType := session.SessionType(r.FormValue("type"))
     dir := r.FormValue("dir")
 
     absDir := filepath.Join(h.cfg.WorkspacesRoot, dir)
 
     // Check for an existing session with the same type and directory
     for _, s := range h.manager.List() {
-        if s.Type == session.SessionType(sessionType) && s.Dir == absDir {
+        if s.Type == sessionType && s.Dir == absDir {
             // Already running — just re-render the sessions list
             h.tmpl.ExecuteTemplate(w, "sessions.html", h.manager.List())
             return
         }
     }
 
-    _, err := h.manager.Start(session.SessionType(sessionType), absDir)
+    _, err := h.manager.Start(sessionType, absDir)
     if err != nil {
         http.Error(w, "start session: "+err.Error(), http.StatusInternalServerError)
         return
