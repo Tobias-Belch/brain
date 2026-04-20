@@ -556,7 +556,7 @@ import (
 
 // DirEntry describes one directory in the tree.
 type DirEntry struct {
-    Path        string // absolute path to this entry (includes Name as the final element)
+    Path        string // relative path from workspaces root to this entry
     Name        string // basename (final path element only)
     IsGit       bool   // contains a git repo
     HasChildren bool   // has non-pruned subdirectories
@@ -598,8 +598,12 @@ func List(path, root string) ([]DirEntry, error) {
         if gitignored(absPath, root, matchers) {
             continue
         }
+        relPath, err := filepath.Rel(root, absPath)
+        if err != nil {
+            relPath = absPath
+        }
         entry := DirEntry{
-            Path:  absPath,
+            Path:  relPath,
             Name:  e.Name(),
             IsGit: isGitRepo(absPath),
         }
@@ -708,7 +712,7 @@ The file uses `package fs` (white-box testing), which gives access to unexported
 - `node_modules` is absent (hardcoded prune)
 - `ignored-dir` is absent (root `.gitignore`)
 - `.secrets` appears (dotdirs are never filtered)
-- `Path` is the full absolute path to the entry, not its parent
+- `Path` is the relative path from the workspaces root to the entry
 - `IsGit` is true for all three git layouts (standard, worktree, bare) via `List`
 - `IsGit` is false for a plain directory
 - `HasChildren` is true when a visible subdirectory exists (pruned siblings don't count)
@@ -802,9 +806,9 @@ func TestList(t *testing.T) {
         t.Error(".secrets should appear")
     }
 
-    // Path must be the full absolute path, not just the parent
+    // Path must be relative to root
     if e, ok := byName["project-a"]; ok {
-        want := filepath.Join(root, "project-a")
+        want := "project-a"
         if e.Path != want {
             t.Errorf("project-a Path: got %q, want %q", e.Path, want)
         }
