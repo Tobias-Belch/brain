@@ -859,7 +859,7 @@ Define a `ManagerInterface` in `internal/session/manager.go` to allow mocking in
 // ManagerInterface defines the methods the HTTP handlers need.
 // The concrete Manager implements this interface.
 type ManagerInterface interface {
-    Start(t Type, dir string) (Session, error)
+    Start(t SessionType, dir string) (Session, error)
     Stop(id string) error
     List() []Session
     Get(id string) (Session, bool)
