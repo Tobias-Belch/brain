@@ -551,6 +551,16 @@ type handler struct {
 
 ### The `index` handler
 
+Update `pageData` in `internal/server/templates.go` to include `RootEntries`:
+
+```go
+type pageData struct {
+    Root        string
+    RootEntries []treeRowData
+    Sessions    []session.Session
+}
+```
+
 ```go
 func (h *handler) index(w http.ResponseWriter, r *http.Request) {
     if r.URL.Path != "/" {
@@ -578,16 +588,6 @@ func (h *handler) index(w http.ResponseWriter, r *http.Request) {
     if err := h.tmpl.ExecuteTemplate(w, "layout.html", data); err != nil {
         log.Printf("render index: %v", err)
     }
-}
-```
-
-Update `pageData` to include `RootEntries`:
-
-```go
-type pageData struct {
-    Root        string
-    RootEntries []treeRowData
-    Sessions    []session.Session
 }
 ```
 
