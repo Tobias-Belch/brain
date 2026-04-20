@@ -859,10 +859,10 @@ Define a `ManagerInterface` in `internal/session/manager.go` to allow mocking in
 // ManagerInterface defines the methods the HTTP handlers need.
 // The concrete Manager implements this interface.
 type ManagerInterface interface {
-    Start(t SessionType, dir string) (Session, error)
+    Start(t SessionType, dir string) (*Session, error)
     Stop(id string) error
-    List() []Session
-    Get(id string) (Session, bool)
+    List() []*Session
+    Get(id string) (*Session, bool)
     Events() <-chan Event
 }
 ```
@@ -889,13 +889,13 @@ import (
 
 // fakeManager satisfies session.ManagerInterface for testing.
 type fakeManager struct {
-    sessions []session.Session
-    started  []session.Session
+    sessions []*session.Session
+    started  []*session.Session
     stopped  []string
 }
 
-func (f *fakeManager) Start(t session.SessionType, dir string) (session.Session, error) {
-    s := session.Session{ID: "test-id", Type: t, Dir: dir, Port: 4100, Status: "starting"}
+func (f *fakeManager) Start(t session.SessionType, dir string) (*session.Session, error) {
+    s := &session.Session{ID: "test-id", Type: t, Dir: dir, Port: 4100, Status: "starting"}
     f.sessions = append(f.sessions, s)
     f.started = append(f.started, s)
     return s, nil
@@ -912,12 +912,12 @@ func (f *fakeManager) Stop(id string) error {
     return nil
 }
 
-func (f *fakeManager) List() []session.Session        { return f.sessions }
-func (f *fakeManager) Get(id string) (session.Session, bool) {
+func (f *fakeManager) List() []*session.Session { return f.sessions }
+func (f *fakeManager) Get(id string) (*session.Session, bool) {
     for _, s := range f.sessions {
         if s.ID == id { return s, true }
     }
-    return session.Session{}, false
+    return nil, false
 }
 func (f *fakeManager) Events() <-chan session.Event {
     ch := make(chan session.Event)
@@ -991,7 +991,7 @@ func TestSessionsStart(t *testing.T) {
 
 func TestSessionsStop(t *testing.T) {
     mgr := &fakeManager{
-        sessions: []session.Session{{ID: "abc", Type: session.SessionTypeOpenCode, Dir: "/foo", Port: 4100, Status: "healthy"}},
+        sessions: []*session.Session{{ID: "abc", Type: session.SessionTypeOpenCode, Dir: "/foo", Port: 4100, Status: "healthy"}},
     }
     ts := newTestServer(t, mgr)
     defer ts.Close()
