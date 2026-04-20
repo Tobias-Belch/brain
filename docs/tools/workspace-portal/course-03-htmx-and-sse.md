@@ -537,6 +537,18 @@ Key HTMX attribute here: `hx-confirm` shows a browser `confirm()` dialog before 
 
 Now we replace the `// TODO Course 03` stubs in `internal/server/handlers.go` with real template-rendering handlers.
 
+### Update the `handler` struct
+
+First, add `tmpl` to the `handler` struct in `internal/server/handlers.go`:
+
+```go
+type handler struct {
+    cfg     *config.Config
+    manager *session.Manager
+    tmpl    *template.Template
+}
+```
+
 ### The `index` handler
 
 ```go
@@ -753,15 +765,7 @@ This pattern — SSE triggers a fresh fetch rather than using SSE data directly 
 
 ### Update the `handler` struct
 
-In `internal/server/handlers.go`, add the template and assets references:
-
-```go
-type handler struct {
-    cfg     *config.Config
-    manager *session.Manager
-    tmpl    *template.Template
-}
-```
+### Wire `tmpl` into the handler
 
 Update `routes()` in `server.go` to pass the parsed template to the handler:
 
