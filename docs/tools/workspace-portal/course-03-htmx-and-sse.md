@@ -867,7 +867,23 @@ type ManagerInterface interface {
 }
 ```
 
-Update `server.go` and `handlers.go` to use `ManagerInterface` instead of `*Manager`.
+Update `server.go` and `handlers.go` to use `ManagerInterface` instead of `*Manager`. Use the interface as a plain value — **not** `*ManagerInterface`:
+
+```go
+// handlers.go — before
+type handler struct {
+    manager *session.Manager
+    // ...
+}
+
+// handlers.go — after
+type handler struct {
+    manager session.ManagerInterface
+    // ...
+}
+```
+
+> **Why not `*session.ManagerInterface`?** An interface value in Go already holds an internal pointer to the underlying data. Writing `*session.ManagerInterface` creates a pointer to an interface — an extra indirection that serves no purpose and breaks assignment. The pointer guarantee comes from the concrete type: `NewManager` returns `*Manager`, so every method has a pointer receiver, and only `*Manager` (not `Manager`) satisfies the interface. `go vet` will flag a copied mutex if you accidentally pass a value instead of a pointer, and the compiler will refuse to assign a `Manager` value to `ManagerInterface` if any method is defined on `*Manager`.
 
 ### Test file `internal/server/handlers_test.go`
 
