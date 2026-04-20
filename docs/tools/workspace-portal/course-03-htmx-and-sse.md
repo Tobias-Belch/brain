@@ -154,12 +154,12 @@ import (
 
 type Server struct {
     cfg     *config.Config
-    manager *session.Manager
+    manager session.ManagerInterface
     tmpl    *template.Template
     mux     *http.ServeMux
 }
 
-func New(cfg *config.Config, mgr *session.Manager) *Server {
+func New(cfg *config.Config, mgr session.ManagerInterface) *Server {
     tmpl, err := template.ParseFS(assets.TemplateFS, "templates/*.html")
     if err != nil {
         log.Fatalf("parse templates: %v", err)
@@ -171,12 +171,11 @@ func New(cfg *config.Config, mgr *session.Manager) *Server {
         tmpl:    tmpl,
         mux:     http.NewServeMux(),
     }
-    s.routes()
     return s
 }
 ```
 
-`template.ParseFS` reads all matching files from an `fs.FS` and parses them as a template set. All templates in the set can reference each other with `{{template "name" .}}`.
+> **Note:** Routes and `ServeHTTP` are wired in Lesson 9, after all handlers exist.
 
 ---
 
@@ -511,7 +510,7 @@ This template receives `[]session.Session` and renders the sessions list. It is 
   <span class="session-dir">{{.Dir}}</span>
   <span class="session-port">:{{.Port}}</span>
 
-  {{if eq .Status "healthy"}}
+  {{if .URL}}
     <a href="{{.URL}}" target="_blank" class="btn btn-open">Open ↗</a>
   {{else}}
     <span class="session-status-starting">starting…</span>
@@ -773,36 +772,54 @@ This pattern — SSE triggers a fresh fetch rather than using SSE data directly 
 
 ### Wire `tmpl` into the handler
 
-`Start()` in `server.go` constructs the handler and wires the routes. Update it to pass `tmpl` to the handler:
+`Start()` in `server.go` constructs the handler and wires the routes. Update it to pass `tmpl` to the handler, and update `New()` to wire routes and implement `http.Handler`:
 
 ```go
-func Start(cfg *config.Config) error {
-    // ... manager setup unchanged ...
-
+func New(cfg *config.Config, mgr session.ManagerInterface) *Server {
     tmpl, err := template.ParseFS(assets.TemplateFS, "templates/*.html")
     if err != nil {
         log.Fatalf("parse templates: %v", err)
     }
 
-    mux := http.NewServeMux()
-    h := &handler{
+    h := &handler{cfg: cfg, manager: mgr, tmpl: tmpl}
+
+    s := &Server{
         cfg:     cfg,
-        manager: manager,
+        manager: mgr,
         tmpl:    tmpl,
+        mux:     http.NewServeMux(),
     }
 
-    mux.HandleFunc("GET /", h.index)
-    mux.HandleFunc("GET /fs/list", h.fsList)
-    mux.HandleFunc("GET /sessions", h.sessions)
-    mux.HandleFunc("POST /sessions/start", h.sessionsStart)
-    mux.HandleFunc("POST /sessions/stop", h.sessionsStop)
-    mux.HandleFunc("GET /events", h.events)
-    mux.HandleFunc("GET /static/", h.static)
+    s.mux.HandleFunc("GET /", h.index)
+    s.mux.HandleFunc("GET /fs/list", h.fsList)
+    s.mux.HandleFunc("GET /sessions", h.sessions)
+    s.mux.HandleFunc("POST /sessions/start", h.sessionsStart)
+    s.mux.HandleFunc("POST /sessions/stop", h.sessionsStop)
+    s.mux.HandleFunc("GET /events", h.events)
+    s.mux.HandleFunc("GET /static/", h.static)
+
+    return s
+}
+
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    s.mux.ServeHTTP(w, r)
+}
+```
+
+> **Why `ServeHTTP`?** Adding it makes `*Server` satisfy `http.Handler`. This lets tests pass `server.New(...)` directly to `httptest.NewServer`, and lets `Start` pass it to `http.ListenAndServe` — a single, consistent entry point.
+
+`Start()` becomes a thin wrapper that builds dependencies and delegates to `New`:
+
+```go
+func Start(cfg *config.Config) error {
+    // ... manager setup unchanged ...
+
+    srv := New(cfg, manager)
 
     addr := fmt.Sprintf(":%d", cfg.PortalPort)
     log.Printf("listening on %s", addr)
 
-    return http.ListenAndServe(addr, mux)
+    return http.ListenAndServe(addr, srv)
 }
 ```
 
@@ -911,7 +928,7 @@ type fakeManager struct {
 }
 
 func (f *fakeManager) Start(t session.SessionType, dir string) (*session.Session, error) {
-    s := &session.Session{ID: "test-id", Type: t, Dir: dir, Port: 4100, Status: "starting"}
+    s := &session.Session{ID: "test-id", Type: t, Dir: dir, Port: 4100}
     f.sessions = append(f.sessions, s)
     f.started = append(f.started, s)
     return s, nil
@@ -1007,7 +1024,7 @@ func TestSessionsStart(t *testing.T) {
 
 func TestSessionsStop(t *testing.T) {
     mgr := &fakeManager{
-        sessions: []*session.Session{{ID: "abc", Type: session.SessionTypeOpenCode, Dir: "/foo", Port: 4100, Status: "healthy"}},
+        sessions: []*session.Session{{ID: "abc", Type: session.SessionTypeOpenCode, Dir: "/foo", Port: 4100}},
     }
     ts := newTestServer(t, mgr)
     defer ts.Close()
@@ -1033,6 +1050,7 @@ func TestEventsContentType(t *testing.T) {
     if err != nil {
         t.Fatal(err)
     }
+    resp.Body.Close() // close immediately so the SSE handler exits via context cancellation
     ct := resp.Header.Get("Content-Type")
     if !strings.HasPrefix(ct, "text/event-stream") {
         t.Errorf("want text/event-stream, got %s", ct)
