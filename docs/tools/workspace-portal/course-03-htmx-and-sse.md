@@ -657,7 +657,7 @@ func (h *handler) sessionsStart(w http.ResponseWriter, r *http.Request) {
     // Resolve relative to workspaces root
     absDir := filepath.Join(h.cfg.WorkspacesRoot, dir)
 
-    _, err := h.manager.Start(session.Type(sessionType), absDir)
+    _, err := h.manager.Start(session.SessionType(sessionType), absDir)
     if err != nil {
         http.Error(w, "start session: "+err.Error(), http.StatusInternalServerError)
         return
@@ -883,7 +883,7 @@ type fakeManager struct {
     stopped  []string
 }
 
-func (f *fakeManager) Start(t session.Type, dir string) (session.Session, error) {
+func (f *fakeManager) Start(t session.SessionType, dir string) (session.Session, error) {
     s := session.Session{ID: "test-id", Type: t, Dir: dir, Port: 4100, Status: "starting"}
     f.sessions = append(f.sessions, s)
     f.started = append(f.started, s)
@@ -973,14 +973,14 @@ func TestSessionsStart(t *testing.T) {
     if len(mgr.started) != 1 {
         t.Fatalf("want 1 session started, got %d", len(mgr.started))
     }
-    if mgr.started[0].Type != session.TypeOpenCode {
+    if mgr.started[0].Type != session.SessionTypeOpenCode {
         t.Errorf("want type opencode, got %s", mgr.started[0].Type)
     }
 }
 
 func TestSessionsStop(t *testing.T) {
     mgr := &fakeManager{
-        sessions: []session.Session{{ID: "abc", Type: session.TypeOpenCode, Dir: "/foo", Port: 4100, Status: "healthy"}},
+        sessions: []session.Session{{ID: "abc", Type: session.SessionTypeOpenCode, Dir: "/foo", Port: 4100, Status: "healthy"}},
     }
     ts := newTestServer(t, mgr)
     defer ts.Close()
@@ -1130,14 +1130,14 @@ func (h *handler) sessionsStart(w http.ResponseWriter, r *http.Request) {
 
     // Check for an existing session with the same type and directory
     for _, s := range h.manager.List() {
-        if s.Type == session.Type(sessionType) && s.Dir == absDir {
+        if s.Type == session.SessionType(sessionType) && s.Dir == absDir {
             // Already running — just re-render the sessions list
             h.tmpl.ExecuteTemplate(w, "sessions.html", h.manager.List())
             return
         }
     }
 
-    _, err := h.manager.Start(session.Type(sessionType), absDir)
+    _, err := h.manager.Start(session.SessionType(sessionType), absDir)
     if err != nil {
         http.Error(w, "start session: "+err.Error(), http.StatusInternalServerError)
         return
