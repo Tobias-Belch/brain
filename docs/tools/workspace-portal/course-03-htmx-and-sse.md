@@ -546,7 +546,7 @@ func (h *handler) index(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    entries, err := fs.List(h.cfg.WorkspacesRoot, h.cfg.FS.PruneDirs)
+    entries, err := fsmod.List(h.cfg.WorkspacesRoot, h.cfg.WorkspacesRoot)
     if err != nil {
         http.Error(w, "list root: "+err.Error(), http.StatusInternalServerError)
         return
@@ -597,7 +597,7 @@ func (h *handler) fsList(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    entries, err := fs.List(absPath, h.cfg.FS.PruneDirs)
+    entries, err := fsmod.List(absPath, h.cfg.WorkspacesRoot)
     if err != nil {
         http.Error(w, "list: "+err.Error(), http.StatusInternalServerError)
         return
@@ -798,7 +798,7 @@ import (
     "strings"
 
     "workspace-portal/internal/config"
-    "workspace-portal/internal/fs"
+    fsmod "workspace-portal/internal/fs"
     "workspace-portal/internal/session"
 )
 ```
