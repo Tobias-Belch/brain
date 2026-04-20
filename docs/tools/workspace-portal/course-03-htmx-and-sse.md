@@ -222,14 +222,19 @@ Define the data types that templates receive in `internal/server/templates.go`:
 package server
 
 import (
+    "encoding/base64"
+    "fmt"
+    "strings"
+
     "workspace-portal/internal/fs"
     "workspace-portal/internal/session"
 )
 
 // pageData is passed to layout.html for the initial full-page render.
 type pageData struct {
-    Root     string           // workspaces root path (display only)
-    Sessions []session.Session
+    Root        string // workspaces root path (display only)
+    RootEntries []treeRowData
+    Sessions    []sessionRowData
 }
 
 // treeRowData is passed to tree-row.html for each directory entry.
@@ -240,11 +245,41 @@ type treeRowData struct {
     Expanded bool
 }
 
+func (t treeRowData) SafeID() string {
+    r := strings.NewReplacer("/", "_", ".", "_", " ", "_")
+    return r.Replace(t.Path)
+}
+
 // sessionRowData is passed to session-row.html for each session entry.
 type sessionRowData struct {
     session.Session
 }
+
+// toSessionRows wraps a slice of sessions into sessionRowData for template rendering.
+func toSessionRows(sessions []*session.Session) []sessionRowData {
+    rows := make([]sessionRowData, len(sessions))
+    for i, s := range sessions {
+        rows[i] = sessionRowData{Session: *s}
+    }
+    return rows
+}
+
+// OpenURL returns the URL to open the session in the browser, navigating
+// directly to the project directory using OpenCode's URL-safe base64 slug.
+// OpenCode SPA route: /{base64url(dir)}/session
+func (s sessionRowData) OpenURL() string {
+    if s.URL == "" {
+        return ""
+    }
+    if s.Type != session.SessionTypeOpenCode {
+        return s.URL
+    }
+    slug := base64.RawURLEncoding.EncodeToString([]byte(s.Dir))
+    return fmt.Sprintf("%s/%s/session", s.URL, slug)
+}
 ```
+
+> **Why `toSessionRows` and `OpenURL`?** The template receives `[]sessionRowData` — not `[]*session.Session` — so that template methods like `OpenURL` are available inside the template. `OpenURL` builds the direct-to-project URL for OpenCode sessions using the same URL-safe base64 slug that OpenCode's SPA uses to navigate directly to a project, bypassing the project picker.
 
 ---
 
@@ -348,6 +383,7 @@ Create `internal/assets/templates/layout.html`:
     </ul>
 
     <h2>Running Sessions</h2>
+    <span id="sessions-indicator" class="htmx-indicator" style="font-size:0.75rem; color:#718096; margin-bottom:0.25rem; display:none">Loading…</span>
     <div id="sessions"
          hx-ext="sse"
          sse-swap="session.started,session.stopped,session.healthy"
@@ -440,6 +476,8 @@ This template receives a single `treeRowData` as dot and renders one row with:
 {{end}}
 ```
 
+> **`hx-indicator` must target a persistent element.** `#sessions-indicator` is declared in `layout.html` as a `<span>` *above* `#sessions`, not inside it. This matters because HTMX swaps `innerHTML` of `#sessions` on every session event — any indicator element placed *inside* `#sessions` would be destroyed and re-created, causing HTMX to log "selector returned no matches". Keeping the indicator outside the swap target ensures it always exists in the DOM.
+
 ### The `SafeID` helper
 
 CSS `id` attributes cannot contain `/` or `.` characters. We need a safe version of the path to use as an HTML id. Add a method to `treeRowData`:
@@ -487,7 +525,7 @@ This is the only custom JavaScript in the entire portal. Everything else is HTMX
 
 ### `internal/assets/templates/sessions.html`
 
-This template receives `[]session.Session` and renders the sessions list. It is also the fragment returned by `/sessions` and `/sessions/start` and `/sessions/stop`.
+This template receives `[]sessionRowData` and renders the sessions list. It is also the fragment returned by `/sessions` and `/sessions/start` and `/sessions/stop`.
 
 ```html
 {{define "sessions.html"}}
@@ -511,7 +549,7 @@ This template receives `[]session.Session` and renders the sessions list. It is 
   <span class="session-port">:{{.Port}}</span>
 
   {{if .URL}}
-    <a href="{{.URL}}" target="_blank" class="btn btn-open">Open ↗</a>
+    <a href="{{.OpenURL}}" target="_blank" class="btn btn-open">Open ↗</a>
   {{else}}
     <span class="session-status-starting">starting…</span>
   {{end}}
@@ -543,22 +581,14 @@ First, add `tmpl` to the `handler` struct in `internal/server/handlers.go`:
 ```go
 type handler struct {
     cfg     *config.Config
-    manager *session.Manager
+    manager session.ManagerInterface
     tmpl    *template.Template
 }
 ```
 
 ### The `index` handler
 
-Update `pageData` in `internal/server/templates.go` to include `RootEntries`:
-
-```go
-type pageData struct {
-    Root        string
-    RootEntries []treeRowData
-    Sessions    []session.Session
-}
-```
+`pageData` in `internal/server/templates.go` (defined in Lesson 3) includes `RootEntries` and `Sessions []sessionRowData`. Pass session data through `toSessionRows` so template methods like `OpenURL` are available:
 
 ```go
 func (h *handler) index(w http.ResponseWriter, r *http.Request) {
@@ -581,7 +611,7 @@ func (h *handler) index(w http.ResponseWriter, r *http.Request) {
     data := pageData{
         Root:         h.cfg.WorkspacesRoot,
         RootEntries:  rows,
-        Sessions:     h.manager.List(),
+        Sessions:     toSessionRows(h.manager.List()),
     }
 
     if err := h.tmpl.ExecuteTemplate(w, "layout.html", data); err != nil {
@@ -631,7 +661,7 @@ func (h *handler) fsList(w http.ResponseWriter, r *http.Request) {
 
 ```go
 func (h *handler) sessions(w http.ResponseWriter, r *http.Request) {
-    if err := h.tmpl.ExecuteTemplate(w, "sessions.html", h.manager.List()); err != nil {
+    if err := h.tmpl.ExecuteTemplate(w, "sessions.html", toSessionRows(h.manager.List())); err != nil {
         log.Printf("render sessions: %v", err)
     }
 }
@@ -663,7 +693,7 @@ func (h *handler) sessionsStart(w http.ResponseWriter, r *http.Request) {
     }
 
     // Return the updated sessions list (HTMX swaps this into #sessions)
-    if err := h.tmpl.ExecuteTemplate(w, "sessions.html", h.manager.List()); err != nil {
+    if err := h.tmpl.ExecuteTemplate(w, "sessions.html", toSessionRows(h.manager.List())); err != nil {
         log.Printf("render sessionsStart: %v", err)
     }
 }
@@ -688,7 +718,7 @@ func (h *handler) sessionsStop(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    if err := h.tmpl.ExecuteTemplate(w, "sessions.html", h.manager.List()); err != nil {
+    if err := h.tmpl.ExecuteTemplate(w, "sessions.html", toSessionRows(h.manager.List())); err != nil {
         log.Printf("render sessionsStop: %v", err)
     }
 }
@@ -1089,12 +1119,19 @@ if err := tmpl.ExecuteTemplate(w, "sessions.html", data); err != nil {
 ```
 
 **Parse at startup, not per-request:**
-Calling `template.ParseFS` once at startup means a typo in a template crashes the server at startup (fast fail) rather than returning a 500 to users later. This is the correct behaviour.
+Call `template.ParseFS` once at the top of `Server.New()` and store the result on the `*Server` and `*handler` structs. Every handler then calls `ExecuteTemplate` on that already-parsed template — no parsing happens inside a request. This means a typo in a template crashes the server at startup (fast fail) rather than returning a 500 to users later.
+
+```go
+// internal/server/server.go — top of New(), before building the handler or mux
+func New(cfg *config.Config, mgr session.ManagerInterface) *Server {
+    tmpl := template.Must(template.ParseFS(assets.TemplateFS, "templates/*.html"))
+
+    h := &handler{cfg: cfg, manager: mgr, tmpl: tmpl}
+    // ...
+}
+```
 
 **Use `template.Must` for top-level parse calls:**
-```go
-tmpl := template.Must(template.ParseFS(assets.TemplateFS, "templates/*.html"))
-```
 `template.Must` wraps any function returning `(*Template, error)` and panics if the error is non-nil. Panics at startup are acceptable (the process immediately exits with a clear message); panics inside HTTP handlers are not.
 
 ### HTML auto-escaping
@@ -1140,14 +1177,12 @@ No JavaScript — pure CSS responding to the class HTMX manages.
 
 ### Mobile tap target sizing
 
-The minimum recommended tap target size is 44×44 CSS pixels (Apple HIG) / 48×48dp (Android). Update button padding:
+The minimum recommended tap target size is 44×44 CSS pixels (Apple HIG) / 48×48dp (Android). This only matters on touch devices; on desktop the smaller default size is fine. Use a `@media (pointer: coarse)` query to apply the larger sizing only when a coarse pointer (i.e. a finger) is the primary input device:
 
 ```css
 .btn {
     font-size: 0.75rem;
-    padding: 0.5rem 0.75rem;   /* increased from 0.25rem 0.5rem */
-    min-width: 44px;
-    min-height: 44px;
+    padding: 0.25rem 0.5rem;
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -1156,16 +1191,64 @@ The minimum recommended tap target size is 44×44 CSS pixels (Apple HIG) / 48×4
     align-items: center;
     justify-content: center;
 }
+/* Larger tap targets on touch devices */
+@media (pointer: coarse) {
+    .btn {
+        padding: 0.5rem 0.75rem;
+        min-width: 44px;
+        min-height: 44px;
+    }
+}
 ```
 
-### Preventing duplicate sessions
+`pointer: coarse` matches devices where the primary pointing device has limited accuracy — touchscreens. `pointer: fine` matches mice and trackpads. Using a media query rather than always applying the larger size avoids wasting visual space on desktop.
 
-The "Open OC" button should not start a second session if one is already running for that directory. Implement this in `sessionsStart`:
+### Error UI for session actions
+
+When `sessionsStart` or `sessionsStop` encounter an error (for example, `code-server` is not installed), the default behaviour is `http.Error` — a plain-text response with a non-2xx status code. HTMX interprets non-2xx responses as failures and, by default, does **not** swap the response into the target. The user sees nothing happen: no feedback, no error message.
+
+The fix is to always return a 200 with an HTML fragment, even on error, so HTMX swaps it into `#sessions`. Define a small error template:
+
+**`internal/assets/templates/sessions-error.html`**
+
+```html
+{{define "sessions-error.html"}}
+<div class="sessions-error">
+  <span>⚠</span>
+  <span class="sessions-error-msg">{{.}}</span>
+</div>
+{{end}}
+```
+
+Add the error styles to `layout.html`:
+
+```css
+/* Error banner inside the sessions area */
+.sessions-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    background: #3b1515;
+    border: 1px solid #742a2a;
+    font-size: 0.8rem;
+    color: #fc8181;
+    margin-top: 0.25rem;
+}
+.sessions-error-msg {
+    flex: 1;
+    font-family: monospace;
+    word-break: break-all;
+}
+```
+
+Update `sessionsStart` and `sessionsStop` to render the error template instead of calling `http.Error`:
 
 ```go
 func (h *handler) sessionsStart(w http.ResponseWriter, r *http.Request) {
     if err := r.ParseForm(); err != nil {
-        http.Error(w, "bad request", http.StatusBadRequest)
+        h.tmpl.ExecuteTemplate(w, "sessions-error.html", "bad request: "+err.Error())
         return
     }
     sessionType := session.SessionType(r.FormValue("type"))
@@ -1176,21 +1259,47 @@ func (h *handler) sessionsStart(w http.ResponseWriter, r *http.Request) {
     // Check for an existing session with the same type and directory
     for _, s := range h.manager.List() {
         if s.Type == sessionType && s.Dir == absDir {
-            // Already running — just re-render the sessions list
-            h.tmpl.ExecuteTemplate(w, "sessions.html", h.manager.List())
+            h.tmpl.ExecuteTemplate(w, "sessions.html", toSessionRows(h.manager.List()))
             return
         }
     }
 
     _, err := h.manager.Start(sessionType, absDir)
     if err != nil {
-        http.Error(w, "start session: "+err.Error(), http.StatusInternalServerError)
+        h.tmpl.ExecuteTemplate(w, "sessions-error.html", "start session: "+err.Error())
         return
     }
 
-    h.tmpl.ExecuteTemplate(w, "sessions.html", h.manager.List())
+    h.tmpl.ExecuteTemplate(w, "sessions.html", toSessionRows(h.manager.List()))
+}
+
+func (h *handler) sessionsStop(w http.ResponseWriter, r *http.Request) {
+    if err := r.ParseForm(); err != nil {
+        h.tmpl.ExecuteTemplate(w, "sessions-error.html", "bad request: "+err.Error())
+        return
+    }
+    id := r.FormValue("id")
+    if id == "" {
+        h.tmpl.ExecuteTemplate(w, "sessions-error.html", "id required")
+        return
+    }
+
+    if err := h.manager.Stop(id); err != nil {
+        h.tmpl.ExecuteTemplate(w, "sessions-error.html", "stop session: "+err.Error())
+        return
+    }
+
+    if err := h.tmpl.ExecuteTemplate(w, "sessions.html", toSessionRows(h.manager.List())); err != nil {
+        log.Printf("render sessionsStop: %v", err)
+    }
 }
 ```
+
+> **Why not use HTMX `hx-on:htmx:responseError`?** You could intercept non-2xx responses with a JavaScript event handler. But that adds client-side logic. The server-renders-everything approach is simpler: every response is always an HTML fragment, success or failure. The server message is already human-readable; no JSON parsing or client-side string formatting required.
+
+### Preventing duplicate sessions
+
+The "Open OC" button should not start a second session if one is already running for that directory. This is already handled in `sessionsStart` by the duplicate check above — it re-renders the sessions list without calling `Start`.
 
 ---
 

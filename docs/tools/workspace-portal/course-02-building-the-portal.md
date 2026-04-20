@@ -177,6 +177,52 @@ If you get "no Go files" warnings, that's expected — empty directories are ign
 
 > **No tests for `cmd/portal/main.go`:** Go does not let you test `main()` directly. Keep `main.go` thin enough that there is nothing to test — if you can write `go run ./cmd/portal` and see the expected output, the entry point is correct.
 
+### Installing runtime dependencies
+
+The portal shells out to two external binaries: `opencode` and `code-server`. Both must be on `$PATH` before you start any sessions.
+
+**OpenCode**
+
+```bash
+# macOS — Homebrew
+brew install opencode
+
+# Or install via npm (requires Node 18+)
+npm install -g opencode
+
+# Verify
+opencode --version
+```
+
+**code-server (VS Code in the browser)**
+
+`code-server` is Coder's open-source package that runs VS Code Server locally and serves it over HTTP.
+
+```bash
+# macOS — Homebrew
+brew install code-server
+
+# Or the official install script (Linux / macOS)
+curl -fsSL https://code-server.dev/install.sh | sh
+
+# Or npm
+npm install -g code-server
+
+# Verify
+code-server --version
+```
+
+After installation, confirm both are discoverable:
+
+```bash
+which opencode    # e.g. /usr/local/bin/opencode
+which code-server # e.g. /usr/local/bin/code-server
+```
+
+If `which` returns nothing, the binary is not on `$PATH`. Check that your shell profile (`~/.zshrc`, `~/.bash_profile`, etc.) sources the correct `PATH` entries and that you have started a new terminal session after installation.
+
+> **The portal does not fail at startup if the binaries are missing.** It only fails when you click a button to start a session. The error is visible in the sessions area of the UI (see Course 03 — Lesson 12 for the error UI). This is intentional: you can run and develop the portal on a machine without code-server installed, and only install it when you need it.
+
 ---
 
 ## Lesson 2 — `internal/portrange`: Shared Type
@@ -357,7 +403,7 @@ func defaults() *Config {
         OC: OCConfig{
             Binary:    "opencode",
             PortRange: portrange.PortRange{4100, 4199},
-            Flags:     []string{"web", "--mdns"},
+            Flags:     []string{"--mdns"},
         },
         VSCode: VSCConfig{
             Binary:    "code-server",
@@ -985,7 +1031,14 @@ type SessionFactory interface {
 
 ### `internal/session/opencode.go`
 
-`OCSessionFactory` launches the `opencode` binary with a port flag and optional CORS origin. `cmd.Start()` (not `cmd.Run()`) is used because we want the process to keep running after `Start` returns — `Run` would block until the process exits.
+`OCSessionFactory` launches the `opencode` binary in **headless server mode** using the `serve` subcommand. Without `serve`, `opencode` starts its interactive TUI — which never opens an HTTP port, so the health check never succeeds and the session stays stuck at "starting…" forever.
+
+`opencode serve` does **not** accept a positional directory argument — passing one causes it to print help and exit. The project directory is set via `cmd.Dir` (the process working directory) instead.
+
+`cmd.Start()` (not `cmd.Run()`) is used because we want the process to keep running after `Start` returns — `Run` would block until the process exits.
+
+> **Why `serve` and not just `opencode <dir> --port`?**
+> `opencode [project]` is the TUI entrypoint. `opencode serve --port` starts a headless HTTP server that the portal can health-check and that the browser connects to directly.
 
 ```go
 package session
@@ -1005,7 +1058,12 @@ type OCSessionFactory struct {
 }
 
 func (r *OCSessionFactory) Start(dir string, port int) (int, error) {
-    args := append([]string{}, r.Flags...)
+    // Use "serve" subcommand for headless HTTP mode.
+    // opencode serve does NOT accept a positional directory argument;
+    // the project is selected via the working directory (cmd.Dir).
+    // opencode serve --port <port> [--cors <origin>] [extra flags...]
+    args := []string{"serve"}
+    args = append(args, r.Flags...)
     args = append(args, "--port", strconv.Itoa(port))
     if r.CORSOrigin != "" {
         args = append(args, "--cors", r.CORSOrigin)
@@ -1036,6 +1094,8 @@ func (r *OCSessionFactory) HealthURL(port int) string {
 
 `VSCodeSessionFactory` launches `code-server`. The password is passed as an environment variable (`PASSWORD=...`) rather than a flag, because that is how code-server's auth is designed. `os.Environ()` copies the current process environment so the child inherits `PATH` and everything else it needs.
 
+`--ignore-last-opened` is required to prevent code-server from restoring the previously opened folder. Without it, each new instance inherits VS Code's workspace state and opens the last-used directory instead of the one passed as an argument — so a second session would show the wrong project.
+
 ```go
 package session
 
@@ -1055,6 +1115,7 @@ func (r *VSCodeSessionFactory) Start(dir string, port int) (int, error) {
     cmd := exec.Command(r.Binary,
         "--bind-addr", fmt.Sprintf("127.0.0.1:%d", port),
         "--auth", "password",
+        "--ignore-last-opened",
         dir,
     )
     cmd.Env = append(os.Environ(), "PASSWORD="+r.Password)
