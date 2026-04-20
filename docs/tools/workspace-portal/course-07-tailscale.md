@@ -384,7 +384,7 @@ In `Start()`, after loading the config, build the registrar:
 ```go
 import (
     // ...
-    "github.com/yourusername/workspace-portal/internal/tailscale"
+    "workspace-portal/internal/tailscale"
 )
 
 func Start(cfg *config.Config) error {

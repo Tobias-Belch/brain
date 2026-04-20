@@ -898,9 +898,9 @@ import (
     "strings"
     "testing"
 
-    "github.com/yourusername/workspace-portal/internal/config"
-    "github.com/yourusername/workspace-portal/internal/session"
-    "github.com/yourusername/workspace-portal/internal/server"
+    "workspace-portal/internal/config"
+    "workspace-portal/internal/session"
+    "workspace-portal/internal/server"
 )
 
 // fakeManager satisfies session.ManagerInterface for testing.

@@ -889,7 +889,7 @@ Open `cmd/portal/main.go` and add the docs startup block:
 ```go
 import (
     // ... existing imports ...
-    "github.com/yourusername/workspace-portal/internal/docs"
+    "workspace-portal/internal/docs"
 )
 
 func main() {
