@@ -1,12 +1,12 @@
 ---
-title: "Course 07 — Tailscale Setup"
+title: "Course 06 — Tailscale Setup"
 ---
 
-# Course 07 — Tailscale Setup
+# Course 06 — Tailscale Setup
 
 **Goal:** Install Tailscale on macOS, enable MagicDNS and HTTPS certificates in the admin console, expose the portal and its sessions securely over your tailnet, and implement the `internal/tailscale` Go module that wires this into the portal.  
 **Prerequisite:** [Course 05 — Deployment](./course-05-deployment.md). Tailscale is optional — the portal works without it — but this course unlocks HTTPS URLs for all sessions.  
-**Output:** The portal and all OpenCode/VS Code sessions accessible at `https://<your-machine>.ts.net` from any device on your tailnet. No port forwarding, no self-signed certificates.
+**Output:** The portal and all OpenCode/VS Code/script sessions accessible at `https://<your-machine>.ts.net` from any device on your tailnet. No port forwarding, no self-signed certificates.
 
 ---
 
@@ -548,7 +548,7 @@ Before relying on Tailscale for daily remote access:
 
 ### Session exposure
 - [ ] `tailscale.enabled: true` is set in `config.yaml`
-- [ ] Starting an OC session from the portal produces an HTTPS URL
+- [ ] Starting an OC or script session from the portal produces an HTTPS URL
 - [ ] `tailscale serve status` shows the session port after starting
 - [ ] Stopping the session removes its port from `tailscale serve status`
 
@@ -567,7 +567,7 @@ The portal is now fully integrated with Tailscale:
 3. **MagicDNS enabled** — `<machine>.ts.net` resolves across all tailnet devices
 4. **HTTPS enabled** — valid Let's Encrypt certs provisioned via Tailscale
 5. **Portal exposed** — `https://<machine>.ts.net` accessible from phone, tablet, and any tailnet device
-6. **Sessions exposed** — each OpenCode/VS Code session gets its own HTTPS port, registered on start and deregistered on stop
+6. **Sessions exposed** — each OpenCode/VS Code/script session gets its own HTTPS port, registered on start and deregistered on stop
 7. **Go module implemented** — `internal/tailscale.Serve` shells out to the CLI; `NoopRegistrar` handles the disabled path transparently
 
 The complete round-trip from "tap Open OpenCode in mobile browser" to "OpenCode running in a browser tab, accessible via HTTPS" is now in place.

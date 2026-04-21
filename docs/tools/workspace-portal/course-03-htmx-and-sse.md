@@ -243,6 +243,9 @@ type treeRowData struct {
     // Expanded is set server-side when rendering children inline.
     // For lazily-loaded rows it is always false on first render.
     Expanded bool
+    // Scripts is populated from package.json when HasPackageJSON is true.
+    // Keys are script names, values are the command strings.
+    Scripts map[string]string
 }
 
 func (t treeRowData) SafeID() string {
@@ -429,6 +432,7 @@ This template receives a single `treeRowData` as dot and renders one row with:
 - An expand/collapse toggle (if the directory has children)
 - A git badge (if it's a git repo)
 - "Open OC" and "Open VS Code" buttons
+- A "Scripts" button (only if `HasPackageJSON` is true)
 
 ```html
 {{define "tree-row.html"}}
@@ -464,8 +468,39 @@ This template receives a single `treeRowData` as dot and renders one row with:
               hx-indicator="#sessions-indicator">
         VS
       </button>
+      {{if .HasPackageJSON}}
+      <button class="btn btn-scripts"
+              onclick="document.getElementById('scripts-dialog-{{.SafeID}}').showModal()">
+        Scripts
+      </button>
+      {{end}}
     </div>
   </div>
+
+  {{if .HasPackageJSON}}
+  <dialog id="scripts-dialog-{{.SafeID}}" class="scripts-dialog">
+    <form method="dialog">
+      <h3>Run a script in <code>{{.Name}}</code></h3>
+      <ul class="scripts-list">
+        {{range $name, $cmd := .Scripts}}
+        <li>
+          <button class="btn btn-script-run"
+                  hx-post="/sessions/start"
+                  hx-vals='{"type":"script","dir":"{{$.Path}}","script":"{{$name}}"}'
+                  hx-target="#sessions"
+                  hx-swap="innerHTML"
+                  hx-indicator="#sessions-indicator"
+                  onclick="this.closest('dialog').close()">
+            <span class="script-name">{{$name}}</span>
+            <span class="script-cmd">{{$cmd}}</span>
+          </button>
+        </li>
+        {{end}}
+      </ul>
+      <button class="btn btn-close" value="cancel">Cancel</button>
+    </form>
+  </dialog>
+  {{end}}
 
   {{if .HasChildren}}
   <ul class="tree children tree-indent" id="children-{{.SafeID}}">
@@ -605,7 +640,12 @@ func (h *handler) index(w http.ResponseWriter, r *http.Request) {
 
     rows := make([]treeRowData, len(entries))
     for i, e := range entries {
-        rows[i] = treeRowData{DirEntry: e}
+        row := treeRowData{DirEntry: e}
+        if e.HasPackageJSON {
+            scripts, _ := session.ReadScripts(filepath.Join(h.cfg.WorkspacesRoot, e.Path))
+            row.Scripts = scripts
+        }
+        rows[i] = row
     }
 
     data := pageData{
@@ -646,7 +686,12 @@ func (h *handler) fsList(w http.ResponseWriter, r *http.Request) {
 
     rows := make([]treeRowData, len(entries))
     for i, e := range entries {
-        rows[i] = treeRowData{DirEntry: e}
+        row := treeRowData{DirEntry: e}
+        if e.HasPackageJSON {
+            scripts, _ := session.ReadScripts(absPath)
+            row.Scripts = scripts
+        }
+        rows[i] = row
     }
 
     if err := h.tmpl.ExecuteTemplate(w, "tree-children.html", rows); err != nil {
@@ -1309,12 +1354,15 @@ You now have a complete, working portal UI with:
 
 - **HTMX-driven directory tree** — lazy expansion, one level at a time, no full-page reloads
 - **Session management** — start and stop OpenCode/VS Code sessions with a single tap
+- **Script runner UI** — a "Scripts" button on `package.json` directories opens a native `<dialog>` picker listing all scripts; selecting one starts the script as a session
 - **Live SSE updates** — the sessions section updates automatically across all open browser tabs when sessions start, become healthy, or stop
 - **Embedded assets** — HTMX and the SSE extension are baked into the binary; no CDN, no external dependencies at runtime
 - **Go HTML templates** — server-rendered fragments with auto-escaping; no JavaScript framework
 - **Handler tests** — all HTTP endpoints tested with a fake session manager via `httptest`
 - **One small JavaScript function** — `toggleChildren` for DOM-only expand/collapse; everything else is HTMX
 
-The binary is fully functional. In the next course we package it into a Docker image.
+The binary is fully functional. In the next course we implement the script runner feature end-to-end, including the server-side handler for `POST /sessions/start` with `type=script`.
+
+**Next:** [Course 04 — Script Runner](./course-04-script-runner.md)
 
 **Next:** [Course 04 — Docker](./course-04-docker.md) — build a minimal Docker image using multi-stage builds, configure secrets and volumes, and run the portal as a container.

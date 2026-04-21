@@ -962,7 +962,6 @@ For reference, common patterns for distributing Go binaries publicly:
 | **Build from source** (`go build`) | Developer tools with a technical audience — users clone and build themselves |
 | **GitHub Releases** | Pre-built binaries attached to a tagged release, cross-compiled per OS/arch. `goreleaser` automates this |
 | **`go install`** | Public modules — users run `go install module@latest` and Go fetches, compiles, and installs automatically |
-| **Docker** | Server-side tools — the Dockerfile compiles the binary during image build, users never touch Go |
 | **Homebrew / package managers** | Only worth the effort for widely distributed tools with a large audience |
 
 ---

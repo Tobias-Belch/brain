@@ -5,7 +5,7 @@ title: "Course 05 — Deployment"
 # Course 05 — Deployment
 
 **Goal:** Deploy workspace-portal as a persistent macOS service using `launchd`, and write the `README` and `config.example.yaml` for open-source distribution.  
-**Prerequisite:** [Course 04 — Docker](./course-04-docker.md)  
+**Prerequisite:** [Course 04 — Script Runner](./course-04-script-runner.md)  
 **Output:** The portal running permanently on your Mac as a launchd service, accessible at `http://localhost:4000`.
 
 ---
@@ -346,8 +346,8 @@ Built with Go + HTMX. Single binary. No Node.js required.
 
 ## Requirements
 
-- macOS (native) or Linux (Docker)
-- Go 1.22+ (for native builds)
+- macOS
+- Go 1.22+ (to build from source) or download a pre-built binary from [GitHub Releases](https://github.com/yourusername/workspace-portal/releases)
 - [opencode](https://opencode.ai) installed and on `PATH`
 - [code-server](https://github.com/coder/code-server) installed and on `PATH`
 
@@ -387,27 +387,6 @@ portal --config ~/.config/workspace-portal/config.yaml
 ./deploy/launchd/install.sh
 # Portal starts now and on every login
 # Logs: ~/Library/Logs/workspace-portal.log
-```
-
----
-
-## Quick Start (Docker)
-
-```bash
-git clone https://github.com/yourusername/workspace-portal
-cd workspace-portal
-
-# Set your workspaces path
-echo "WORKSPACES_ROOT=$HOME/workspaces" > deploy/docker/.env
-
-# Set a vscode password
-mkdir -p .secrets
-echo "mysecretpassword" > .secrets/vscode-password
-
-# Build and run
-cd deploy/docker
-docker compose up --build
-# Open http://localhost:4000
 ```
 
 ---
@@ -542,7 +521,7 @@ The portal is now:
 4. **Accessible locally** — `http://localhost:4000`
 5. **Open-source ready** — example config and secrets, documented README, zero machine-specific values in the repo
 
-To expose the portal and its sessions securely over HTTPS from any device, continue to **[Course 07 — Tailscale Setup](./course-07-tailscale.md)**.
+To expose the portal and its sessions securely over HTTPS from any device, continue to **[Course 06 — Tailscale Setup](./course-06-tailscale.md)**.
 
 ---
 
@@ -554,4 +533,4 @@ Some natural extensions to the portal (none required, all good learning projects
 - **Auto-idle shutdown** — stop sessions that have had no HTTP traffic for N minutes (requires a small reverse-proxy wrapper)
 - **Terminal emulator** — embed [ttyd](https://github.com/tsl0922/ttyd) as a session type for browser-based shell access
 - **Systemd support** — a `deploy/systemd/` equivalent of the launchd scripts for Linux bare-metal deployment
-- **GitHub Actions CI** — build and push the Docker image to `ghcr.io` on every tag
+- **GitHub Actions CI** — build and push pre-built binaries to GitHub Releases on every tag using `goreleaser`

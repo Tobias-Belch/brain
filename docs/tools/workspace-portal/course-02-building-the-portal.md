@@ -36,7 +36,6 @@ mkdir -p internal/server
 mkdir -p internal/assets/static
 mkdir -p internal/assets/templates
 mkdir -p deploy/launchd
-mkdir -p deploy/docker
 ```
 
 The directories map directly to the modules you'll build:
@@ -45,11 +44,11 @@ The directories map directly to the modules you'll build:
 |---|---|
 | `cmd/portal/` | The binary entry point (`main.go`). One sub-directory per binary is the convention. |
 | `internal/config/` | YAML loading, env var overrides, secrets resolution. |
-| `internal/fs/` | Directory tree listing with pruning and git detection. |
+| `internal/fs/` | Directory tree listing with pruning, git detection, and `package.json` detection. |
 | `internal/session/` | Process lifecycle — start, stop, health check, state persistence. |
 | `internal/assets/` | Embedded static assets and HTML templates. |
 | `internal/server/` | HTTP mux, route handlers, SSE streaming. |
-| `deploy/` | Deployment configs — launchd plist and Dockerfile. |
+| `deploy/` | Deployment configs — launchd plist. |
 
 > **No `src/` directory:** Go does not treat `src/` as special. The idiomatic layout places packages directly under named directories (`cmd/`, `internal/`, etc.) at the module root. A top-level `src/` is a Java/Maven habit — avoid it in Go.
 
@@ -377,11 +376,12 @@ import (
 
 // Config holds all portal configuration.
 type Config struct {
-    WorkspacesRoot string    `yaml:"workspaces_root" env:"PORTAL_WORKSPACES_ROOT"`
-    PortalPort     int       `yaml:"portal_port"      env:"PORTAL_PORT"`
-    SecretsDir     string    `yaml:"secrets_dir"`
-    OC             OCConfig  `yaml:"oc"               envPrefix:"PORTAL_OC_"`
-    VSCode         VSCConfig `yaml:"vscode"           envPrefix:"PORTAL_VSCODE_"`
+    WorkspacesRoot string        `yaml:"workspaces_root" env:"PORTAL_WORKSPACES_ROOT"`
+    PortalPort     int           `yaml:"portal_port"      env:"PORTAL_PORT"`
+    SecretsDir     string        `yaml:"secrets_dir"`
+    OC             OCConfig      `yaml:"oc"               envPrefix:"PORTAL_OC_"`
+    VSCode         VSCConfig     `yaml:"vscode"           envPrefix:"PORTAL_VSCODE_"`
+    Scripts        ScriptsConfig `yaml:"scripts"          envPrefix:"PORTAL_SCRIPTS_"`
 }
 
 type OCConfig struct {
@@ -392,6 +392,10 @@ type OCConfig struct {
 
 type VSCConfig struct {
     Binary    string              `yaml:"binary"     env:"BINARY"`
+    PortRange portrange.PortRange `yaml:"port_range" env:"PORT_RANGE"`
+}
+
+type ScriptsConfig struct {
     PortRange portrange.PortRange `yaml:"port_range" env:"PORT_RANGE"`
 }
 
@@ -408,6 +412,9 @@ func defaults() *Config {
         VSCode: VSCConfig{
             Binary:    "code-server",
             PortRange: portrange.PortRange{4200, 4299},
+        },
+        Scripts: ScriptsConfig{
+            PortRange: portrange.PortRange{4300, 4399},
         },
     }
 }
@@ -602,10 +609,11 @@ import (
 
 // DirEntry describes one directory in the tree.
 type DirEntry struct {
-    Path        string // relative path from workspaces root to this entry
-    Name        string // basename (final path element only)
-    IsGit       bool   // contains a git repo
-    HasChildren bool   // has non-pruned subdirectories
+    Path           string // relative path from workspaces root to this entry
+    Name           string // basename (final path element only)
+    IsGit          bool   // contains a git repo
+    HasChildren    bool   // has non-pruned subdirectories
+    HasPackageJSON bool   // contains a package.json file
 }
 
 // defaultPrune is the set of directory names that are never shown.
@@ -980,6 +988,7 @@ type SessionType string
 const (
     SessionTypeOpenCode SessionType = "opencode"
     SessionTypeVSCode   SessionType = "vscode"
+    SessionTypeScript   SessionType = "script"
 )
 ```
 
@@ -1004,6 +1013,7 @@ type SessionType string
 const (
     SessionTypeOpenCode SessionType = "opencode"
     SessionTypeVSCode   SessionType = "vscode"
+    SessionTypeScript   SessionType = "script"
 )
 
 // Session holds the state of a running session.
@@ -1013,6 +1023,7 @@ type Session struct {
     Dir       string      `json:"dir"`
     Port      int         `json:"port"`
     PID       int         `json:"pid"`
+    Label     string      `json:"label,omitempty"` // script name for SessionTypeScript
     StartedAt time.Time   `json:"started_at"`
     URL       string      `json:"url"` // set after health check passes
 }
@@ -1139,6 +1150,93 @@ func (r *VSCodeSessionFactory) HealthURL(port int) string {
 ```
 
 > **No tests for `opencode.go` or `vscode.go`:** Both files shell out to real binaries (`opencode`, `code-server`). Testing them would require a fake binary on `PATH` or abstracting `exec.Command` behind an interface — added complexity with little payoff. The interface they implement (`SessionFactory`) is tested through the manager tests via `fakeFactory`. If you later need to test the exec behaviour, the correct approach is to make the command constructor injectable (e.g. a `cmdFn func(name string, args ...string) *exec.Cmd` field on the struct).
+
+### `internal/session/script.go`
+
+`ScriptSessionFactory` is the session factory for npm/pnpm/yarn/bun scripts. Unlike `OCSessionFactory` and `VSCodeSessionFactory`, it is not constructed from config directly — instead, the manager receives a generic `ScriptSessionFactory` and the **script name** is passed at `Start` time via the `ScriptName` field.
+
+This creates a slight design tension: `SessionFactory.Start(dir, port)` does not accept a script name. The solution is to store the script name on the factory before calling `Start` — or better, to make `ScriptSessionFactory` a named struct that implements the interface with a `scriptName` field set by the manager. The manager builds a new `ScriptSessionFactory{ScriptName: name, ...}` per `Start` call.
+
+Package manager detection checks for lockfiles in this priority order: `bun.lockb` → bun, `pnpm-lock.yaml` → pnpm, `yarn.lock` → yarn, `package-lock.json` → npm, fallback → npm.
+
+```go
+package session
+
+import (
+    "encoding/json"
+    "fmt"
+    "os"
+    "os/exec"
+    "path/filepath"
+)
+
+// ScriptSessionFactory launches an npm/pnpm/yarn/bun script as a web server.
+type ScriptSessionFactory struct {
+    ScriptName string // e.g. "docs:dev", "start"
+}
+
+func (r *ScriptSessionFactory) Start(dir string, port int) (int, error) {
+    pm := detectPackageManager(dir)
+    cmd := exec.Command(pm, "run", r.ScriptName, "--", "--port", fmt.Sprintf("%d", port))
+    cmd.Dir = dir
+    cmd.Env = os.Environ()
+    if err := cmd.Start(); err != nil {
+        return 0, fmt.Errorf("starting script %q: %w", r.ScriptName, err)
+    }
+    return cmd.Process.Pid, nil
+}
+
+func (r *ScriptSessionFactory) Stop(pid int) error {
+    proc, err := os.FindProcess(pid)
+    if err != nil {
+        return nil
+    }
+    return proc.Kill()
+}
+
+func (r *ScriptSessionFactory) HealthURL(port int) string {
+    return fmt.Sprintf("http://localhost:%d", port)
+}
+
+// detectPackageManager returns the package manager binary name by checking
+// lockfiles in dir. Falls back to "npm" if none are found.
+func detectPackageManager(dir string) string {
+    checks := []struct {
+        file string
+        pm   string
+    }{
+        {"bun.lockb", "bun"},
+        {"pnpm-lock.yaml", "pnpm"},
+        {"yarn.lock", "yarn"},
+        {"package-lock.json", "npm"},
+    }
+    for _, c := range checks {
+        if _, err := os.Stat(filepath.Join(dir, c.file)); err == nil {
+            return c.pm
+        }
+    }
+    return "npm"
+}
+
+// ReadScripts reads the "scripts" object from a package.json in dir.
+// Returns an empty map if no package.json is found or it has no scripts.
+func ReadScripts(dir string) (map[string]string, error) {
+    data, err := os.ReadFile(filepath.Join(dir, "package.json"))
+    if err != nil {
+        return nil, err
+    }
+    var pkg struct {
+        Scripts map[string]string `json:"scripts"`
+    }
+    if err := json.Unmarshal(data, &pkg); err != nil {
+        return nil, fmt.Errorf("parsing package.json: %w", err)
+    }
+    return pkg.Scripts, nil
+}
+```
+
+> **Why is `ReadScripts` in `session/script.go` and not `fs/`?**  
+> `ReadScripts` is consumed directly by the HTTP handler that serves the script picker — it is a session-concern (what can be run) rather than a filesystem-concern (what files exist). Keeping it in the `session` package avoids an import dependency from `fs` into `session` or vice versa.
 
 ---
 
@@ -1874,8 +1972,8 @@ The `-race` flag compiles the binary with race detection instrumentation. It cat
 
 You now have a working Go binary with:
 - Config loading from YAML + env vars + `.secrets/`
-- Directory tree listing with smart pruning and git detection
-- Session lifecycle management (start, stop, health check, state persistence)
+- Directory tree listing with smart pruning, git detection, and `package.json` detection
+- Session lifecycle management (start, stop, health check, state persistence) — for OpenCode, VS Code, and npm scripts
 - HTTP server with all routes stubbed and responding
 
 **Next:** [Course 03 — HTMX and SSE](./course-03-htmx-and-sse.md) — replace the plain-text responses with a real HTMX-driven UI.

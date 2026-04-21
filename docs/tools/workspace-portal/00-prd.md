@@ -12,7 +12,7 @@ A developer works across many projects simultaneously from a single macOS machin
 
 3. **No remote VS Code access.** There is no way to open a browser-based VS Code session for a specific project directory from a mobile phone or another machine on the network. GitHub Codespaces and Gitpod solve this problem for cloud-hosted repos, but the developer works on local checkouts.
 
-The developer needs a self-hosted, mobile-friendly portal that acts as a launcher and manager for per-directory OpenCode and VS Code sessions, accessible from any device.
+The developer needs a self-hosted, mobile-friendly portal that acts as a launcher and manager for per-directory OpenCode, VS Code, and npm script sessions, accessible from any device.
 
 ---
 
@@ -21,12 +21,12 @@ The developer needs a self-hosted, mobile-friendly portal that acts as a launche
 A self-hosted web portal called **workspace-portal** — a small Go HTTP server with an HTMX-driven UI — that:
 
 - Presents an **interactive directory tree** rooted at a configurable workspaces directory, navigable from a mobile browser
-- Allows launching **OpenCode** and **code-server (VS Code)** sessions for any directory, on demand
+- Allows launching **OpenCode**, **code-server (VS Code)**, and **npm scripts** for any directory, on demand
 - Tracks running sessions and shows their status live (via SSE)
 - Runs as a **launchd service** on macOS (always-on, survives terminal close, restarts on crash)
 - Is **network-agnostic** — the portal binds to localhost and delegates exposure to whatever the user has configured (Tailscale serve, nginx, Cloudflare Tunnel, etc.)
-- Ships as a **single static Go binary** and as a **Docker image** with zero runtime dependencies
-- Is fully **configurable via `config.yaml`** for non-secret settings and a `.secrets/` directory (or `/run/secrets/` for Docker) for sensitive values
+- Ships as a **single static Go binary** with pre-built releases on GitHub, with zero runtime dependencies
+- Is fully **configurable via `config.yaml`** for non-secret settings and a `.secrets/` directory for sensitive values
 - Is **open source**, designed for others to self-host with their own paths and credentials supplied via config
 
 ---
@@ -57,10 +57,19 @@ A self-hosted web portal called **workspace-portal** — a small Go HTTP server 
 16. As a remote developer, I want the same de-duplication behaviour for "Open VS Code" — tapping when already running opens rather than spawning, so that I never accidentally run two sessions for the same directory.
 17. As a remote developer, I want to open a session URL in a new browser tab, so that the portal remains open for managing other sessions.
 
+### Script Runner
+
+18a. As a remote developer, I want directories that contain a `package.json` to show a "Scripts" button, so that I can run npm scripts from the portal without knowing the exact script names in advance.
+18b. As a remote developer, I want tapping "Scripts" to open a picker listing all scripts from `package.json`, so that I can choose which script to run with one tap.
+18c. As a remote developer, I want the portal to automatically detect which package manager to use (npm, pnpm, yarn, or bun) from lockfiles in the directory, so that the correct runner is used without any configuration.
+18d. As a remote developer, I want the script to be launched as a web server process with `--port {assigned_port}` appended, so that the portal can assign and track the port automatically.
+18e. As a remote developer, I want each running script session to appear in the "Running Sessions" list with its script name as the label, so that I can see and stop it like any other session.
+18f. As a remote developer, I want multiple scripts from the same directory to run simultaneously as independent sessions, so that I can run `dev` and `storybook` in parallel from the same project.
+
 ### Session Management
 
 18. As a remote developer, I want a "Running Sessions" section at the bottom of the portal showing all active sessions, so that I can see at a glance what is currently open.
-19. As a remote developer, I want each running session entry to show its directory path, type (OpenCode or VS Code), port, and a direct link, so that I can reconnect to a session I already started.
+19. As a remote developer, I want each running session entry to show its directory path, type (OpenCode, VS Code, or script name), port, and a direct link, so that I can reconnect to a session I already started.
 20. As a remote developer, I want to stop any running session from the portal with one tap, so that I can free up resources or force a fresh restart.
 21. As a remote developer, I want the running sessions list to update live via SSE without me refreshing the page, so that changes are reflected immediately across any device I have the portal open on.
 22. As a remote developer, I want the portal to detect orphaned session entries (process died unexpectedly) on startup and remove them from state, so that the sessions list is always accurate.
@@ -78,31 +87,24 @@ A self-hosted web portal called **workspace-portal** — a small Go HTTP server 
 
 29. As a self-hoster, I want all non-secret configuration to live in a `config.yaml` file, so that I can version-control a documented example and keep my actual config alongside it.
 30. As a self-hoster, I want secrets (passwords, tokens) to live in a `.secrets/` directory as plain text files (one per secret), so that they are never accidentally committed and match the pattern I already use.
-31. As a self-hoster running in Docker, I want secrets to be resolved from `/run/secrets/` automatically (Docker Swarm / K8s convention), so that the app works natively with Docker secrets without custom configuration.
-32. As a self-hoster, I want environment variables to override any config file value, so that I can run the portal in Docker with `-e` flags and no mounted config file.
-33. As a self-hoster, I want the config file path to be specifiable via a `--config` CLI flag or a `PORTAL_CONFIG` env var, so that I can run multiple portal instances with different configs on the same machine.
-34. As a self-hoster, I want a fully-documented `config.example.yaml` committed to the repo, so that I know exactly what every option does and what its default value is.
-35. As a self-hoster, I want the portal to validate config at startup and exit with a clear error message if required values are missing or invalid, so that misconfiguration is caught immediately.
-36. As a self-hoster, I want the workspaces root, OpenCode binary path, code-server binary path, port ranges, and secrets directory to all be configurable, so that the portal is not tied to any specific machine layout.
+31. As a self-hoster, I want environment variables to override any config file value, so that I can override settings at runtime without editing the config file.
+32. As a self-hoster, I want the config file path to be specifiable via a `--config` CLI flag or a `PORTAL_CONFIG` env var, so that I can run multiple portal instances with different configs on the same machine.
+33. As a self-hoster, I want a fully-documented `config.example.yaml` committed to the repo, so that I know exactly what every option does and what its default value is.
+34. As a self-hoster, I want the portal to validate config at startup and exit with a clear error message if required values are missing or invalid, so that misconfiguration is caught immediately.
+35. As a self-hoster, I want the workspaces root, OpenCode binary path, code-server binary path, port ranges, and secrets directory to all be configurable, so that the portal is not tied to any specific machine layout.
 
 ### Deployment — macOS / launchd
 
-37. As a macOS user, I want a launchd plist template and an install script included in the repo, so that I can set up the portal as an always-on background service with one command.
-38. As a macOS user, I want the portal to start automatically on login via launchd, so that it is always available when the machine is on.
-39. As a macOS user, I want launchd to restart the portal automatically if it crashes, so that a process failure does not leave me without access.
-40. As a macOS user, I want stdout and stderr from the portal to be written to a log file, so that I can diagnose issues without attaching a terminal.
-
-### Deployment — Docker
-
-41. As a self-hoster using Docker, I want a published Docker image, so that I can run the portal without installing Go or compiling the binary.
-42. As a self-hoster using Docker, I want to mount my workspaces directory into the container and configure it via env vars, so that the containerised portal has access to my local files.
-43. As a self-hoster using Docker, I want the Docker image to be as small as possible (multi-stage build, scratch or Alpine base), so that it is fast to pull and uses minimal disk space.
+36. As a macOS user, I want a launchd plist template and an install script included in the repo, so that I can set up the portal as an always-on background service with one command.
+37. As a macOS user, I want the portal to start automatically on login via launchd, so that it is always available when the machine is on.
+38. As a macOS user, I want launchd to restart the portal automatically if it crashes, so that a process failure does not leave me without access.
+39. As a macOS user, I want stdout and stderr from the portal to be written to a log file, so that I can diagnose issues without attaching a terminal.
 
 ### Open Source / Portability
 
-44. As a new self-hoster cloning the repo, I want a clear README with step-by-step setup instructions for both native macOS and Docker deployments, so that I can be up and running in under 30 minutes.
-45. As a new self-hoster, I want all machine-specific values (paths, hostnames, passwords) documented in `config.example.yaml` and `.secrets.example/`, so that I know exactly what to fill in for my own setup.
-46. As a contributor, I want the Go codebase to use only three external dependencies (`gopkg.in/yaml.v3` for config parsing, `github.com/caarlos0/env/v11` for struct-tag-driven env overrides, and `github.com/sabhiram/go-gitignore` for `.gitignore` parsing, all with zero transitive dependencies) and rely on the standard library for everything else, so that the dependency surface is minimal and auditable.
+40. As a new self-hoster cloning the repo, I want a clear README with step-by-step setup instructions for the native macOS deployment, so that I can be up and running in under 30 minutes.
+41. As a new self-hoster, I want all machine-specific values (paths, hostnames, passwords) documented in `config.example.yaml` and `.secrets.example/`, so that I know exactly what to fill in for my own setup.
+42. As a contributor, I want the Go codebase to use only three external dependencies (`gopkg.in/yaml.v3` for config parsing, `github.com/caarlos0/env/v11` for struct-tag-driven env overrides, and `github.com/sabhiram/go-gitignore` for `.gitignore` parsing, all with zero transitive dependencies) and rely on the standard library for everything else, so that the dependency surface is minimal and auditable.
 
 ---
 
@@ -121,19 +123,29 @@ A self-hosted web portal called **workspace-portal** — a small Go HTTP server 
 Loads configuration from (in priority order): CLI flag `--config`, env var `PORTAL_CONFIG`, `./config.yaml`, `~/.config/workspace-portal/config.yaml`. Merges with env var overrides via `env` struct tags and `github.com/caarlos0/env/v11` — all tagged fields are covered automatically; adding a new config field requires only a matching `env:"..."` tag, not a code change in a separate override function. Port ranges are a named `PortRange` type that implements `encoding.TextUnmarshaler`, so both `yaml.v3` and `caarlos0/env` parse the `"lo-hi"` string format automatically with no special-casing in `Load`. Returns an empty string when a secret is not found in any source, and logs a warning so misconfiguration is visible in the process log. Exposes a single `Config` struct. Validates required fields at startup.
 
 **`internal/fs`**
-Provides `List(path string) ([]DirEntry, error)` — reads immediate children of a directory, prunes known build/git-internal dirs, and respects `.gitignore` rules found in ancestor directories (using the same algorithm as git). Annotates each entry with `IsGit` (has `.git` dir, `.git` file, or `.bare/HEAD`) and `HasChildren` (has non-pruned subdirs). Pruned dir names are a hardcoded default set; there is no user-configurable extra prune list — `.gitignore` files provide user-level exclusion. Does not recurse — the tree is navigated lazily by the browser.
+Provides `List(path string) ([]DirEntry, error)` — reads immediate children of a directory, prunes known build/git-internal dirs, and respects `.gitignore` rules found in ancestor directories (using the same algorithm as git). Annotates each entry with `IsGit` (has `.git` dir, `.git` file, or `.bare/HEAD`), `HasChildren` (has non-pruned subdirs), and `HasPackageJSON` (has a `package.json` file directly in the directory). Pruned dir names are a hardcoded default set; there is no user-configurable extra prune list — `.gitignore` files provide user-level exclusion. Does not recurse — the tree is navigated lazily by the browser.
 
 **`internal/session/manager`**
-Maintains in-memory session state, persisted to a JSON state file on every mutation. Assigns ports from configured ranges (OpenCode range, VS Code range) by scanning for the first port not in use (checked via `net.Listen`). On startup, reads the state file and validates each entry by checking the process PID; removes orphans. Exposes: `Start(type, dir) (Session, error)`, `Stop(id) error`, `List() []Session`, `Get(id) (Session, bool)`.
+Maintains in-memory session state, persisted to a JSON state file on every mutation. Assigns ports from configured ranges (OpenCode range, VS Code range, Scripts range) by scanning for the first port not in use (checked via `net.Listen`). On startup, reads the state file and validates each entry by checking the process PID; removes orphans. Exposes: `Start(type, dir) (Session, error)`, `Stop(id) error`, `List() []Session`, `Get(id) (Session, bool)`.
 
 **`internal/session/oc`**
-Implements the OpenCode process lifecycle: spawn `opencode web --port {port} {extra_flags}` in the target directory, health-check by polling `http://localhost:{port}` until 200 or timeout, kill on stop. Returns a `SessionFactory` interface consumed by the session manager.
+Implements the OpenCode process lifecycle: spawn `opencode serve --port {port}` in the target directory, health-check by polling `http://localhost:{port}` until 200 or timeout, kill on stop. Returns a `SessionFactory` interface consumed by the session manager.
 
 **`internal/session/vscode`**
 Implements the code-server process lifecycle: spawn `code-server --bind-addr 127.0.0.1:{port} {dir}` with `PASSWORD` env var, health-check, kill on stop. Returns a `SessionFactory` interface.
 
+**`internal/session/script`**
+Implements the script runner process lifecycle. On `Start(dir, port)`:
+1. Reads `package.json` from `dir` to get the list of scripts.
+2. Detects the package manager by checking for lockfiles in `dir`: `package-lock.json` → npm, `pnpm-lock.yaml` → pnpm, `yarn.lock` → yarn, `bun.lockb` → bun, fallback → npm.
+3. Spawns `{pm} run {scriptName} -- --port {port}` with `cmd.Dir = dir`.
+4. Health-checks by polling `http://localhost:{port}/` until 200 or 30-second timeout.
+5. Kills the process on stop.
+
+The `Session.Label` field stores the script name (e.g. `"docs:dev"`, `"start"`). Multiple script sessions per directory are allowed — they are distinguished by script name (not just directory). Returns a `SessionFactory` interface.
+
 **`internal/tailscale`**
- Optional integration, implemented in Course 07. Gated by `config.tailscale.enabled`. Exposes `Register(port int) (url string, error)` and `Deregister(port int) error`. Shells out to the `tailscale` binary. If disabled, `Register` is a no-op returning an empty URL. The session manager calls these hooks around `SessionFactory.Start/Stop` — it does not know whether Tailscale is enabled.
+ Optional integration, implemented in Course 06. Gated by `config.tailscale.enabled`. Exposes `Register(port int) (url string, error)` and `Deregister(port int) error`. Shells out to the `tailscale` binary. If disabled, `Register` is a no-op returning an empty URL. The session manager calls these hooks around `SessionFactory.Start/Stop` — it does not know whether Tailscale is enabled.
 
 **`internal/server`**
 Sets up the HTTP mux, registers all routes, serves embedded static assets and templates. Handlers return HTML fragments (HTMX targets) or full pages. Routes:
@@ -143,21 +155,18 @@ Sets up the HTTP mux, registers all routes, serves embedded static assets and te
 | GET | `/` | Full page — layout + initial tree root + sessions list |
 | GET | `/fs/list` | HTML fragment — dir children (`?path=`) |
 | GET | `/sessions` | HTML fragment — running sessions list |
-| POST | `/sessions/start` | Start session (`type`, `dir` form values); returns updated sessions fragment |
+| POST | `/sessions/start` | Start session (`type`, `dir`, `script` form values); returns updated sessions fragment |
 | POST | `/sessions/stop` | Stop session (`id` form value); returns updated sessions fragment |
 | GET | `/events` | SSE stream — `session.started`, `session.stopped`, `session.healthy` events |
 
 **`templates/`**
-Go HTML templates: `layout.html` (full page shell), `tree-row.html` (single dir entry with expand/collapse and action buttons), `sessions.html` (running sessions list), `session-row.html` (single session entry). All embedded via `go:embed`.
+Go HTML templates: `layout.html` (full page shell), `tree-row.html` (single dir entry with expand/collapse and action buttons — includes a Scripts button when `HasPackageJSON` is true), `sessions.html` (running sessions list), `session-row.html` (single session entry). All embedded via `go:embed`.
 
 **`static/`**
 Contains `htmx.min.js` only. Embedded via `go:embed`. No other static assets; all styling is inline or via a minimal `<style>` block in `layout.html`.
 
 **`deploy/launchd/`**
 `com.workspace-portal.plist.tmpl` — launchd plist template with placeholders for binary path, config path, log path. `install.sh` — substitutes values, writes to `~/Library/LaunchAgents/`, runs `launchctl bootstrap`.
-
-**`deploy/docker/Dockerfile`**
-Multi-stage: `golang:alpine` build stage → `alpine:latest` runtime stage. Copies binary only. Exposes port 4000. Entrypoint: `workspace-portal`.
 
 ### Config schema (`config.yaml`)
 
@@ -167,12 +176,13 @@ portal_port         int       (default: 4000)
 secrets_dir         string    (default: .secrets, relative to config file)
 oc.binary           string    (default: opencode)
 oc.port_range       [int,int] (default: [4100, 4199])
-oc.flags            []string  (default: ["web", "--mdns"])
+oc.flags            []string  (default: ["serve", "--mdns"])
 vscode.binary       string    (default: code-server)
 vscode.port_range   [int,int] (default: [4200, 4299])
+scripts.port_range  [int,int] (default: [4300, 4399])
 ```
 
-Tailscale config (`tailscale.enabled`, `tailscale.binary`) is added in Course 07.
+Tailscale config (`tailscale.enabled`, `tailscale.binary`) is added in Course 06.
 
 Env var override format: declared via `env:"..."` struct tags (e.g. `env:"PORTAL_PORT"`). Nested structs use `envPrefix` (e.g. `envPrefix:"PORTAL_OC_"` on `OCConfig`). Port ranges use a `"lo-hi"` string format (e.g. `PORTAL_OC_PORT_RANGE=4100-4199`) parsed automatically via `encoding.TextUnmarshaler` on the `PortRange` type — no special handling in `Load`.
 
@@ -180,11 +190,25 @@ Env var override format: declared via `env:"..."` struct tags (e.g. `env:"PORTAL
 
 - `vscode-password` → used as `PASSWORD` env var for code-server
 - Additional secrets (e.g. OpenCode server password) added to `.secrets/` and wired via config as needed
-- If a secret is not found in any source (env var, `.secrets/`, `/run/secrets/`), `Secret` returns an empty string and logs a warning. Callers must handle the empty case; for `vscode-password` an empty value means code-server starts with no password set.
+- If a secret is not found in any source (env var, `.secrets/`), `Secret` returns an empty string and logs a warning. Callers must handle the empty case; for `vscode-password` an empty value means code-server starts with no password set.
 
 ### Session state file
 
 Written to `~/.local/share/workspace-portal/sessions.json` (XDG-compliant). Contains an array of `Session` objects. Read on startup for orphan detection.
+
+### Session types
+
+```go
+type SessionType string
+
+const (
+    SessionTypeOpenCode SessionType = "opencode"
+    SessionTypeVSCode   SessionType = "vscode"
+    SessionTypeScript   SessionType = "script"
+)
+```
+
+For `SessionTypeScript`, `Session.Label` holds the script name (e.g. `"docs:dev"`). For OpenCode and VS Code, `Label` is empty (the type itself is the label). The sessions list renders `Label` when non-empty, falling back to `Type`.
 
 ### Port assignment
 
@@ -193,6 +217,22 @@ Scan the configured range sequentially. For each candidate port: check it is not
 ### Process health check
 
 Poll `http://localhost:{port}/` with a 1-second interval and a 30-second total timeout. A 200 response (or any non-connection-refused response) is considered healthy. If the timeout is reached, the session is marked failed and the process is killed.
+
+### Script runner — `--port` injection
+
+Port is appended using the `--` separator: `{pm} run {scriptName} -- --port {port}`. This format is universally accepted: npm requires `--` to pass arguments to the underlying script; pnpm, yarn, and bun all accept it. There is no health-check enforcement — the user is responsible for selecting a script that starts an HTTP server on the given port. If the script does not bind to the port, the health check will time out after 30 seconds and the session will be marked failed.
+
+### Package manager detection
+
+Checked in this order against files present in the target directory:
+
+| File | Package manager |
+|---|---|
+| `bun.lockb` | bun |
+| `pnpm-lock.yaml` | pnpm |
+| `yarn.lock` | yarn |
+| `package-lock.json` | npm |
+| _(none)_ | npm (fallback) |
 
 ### SSE event format
 
@@ -216,10 +256,10 @@ A good test verifies **external behaviour through the module's public interface*
 ### Modules to test
 
 **`internal/config`**
-Test that the config struct is correctly populated from: a YAML file only; env vars only; env vars overriding YAML; missing required fields producing an error; secrets resolved from `.secrets/` dir; secrets resolved from `/run/secrets/` fallback; secrets resolved from env var override.
+Test that the config struct is correctly populated from: a YAML file only; env vars only; env vars overriding YAML; missing required fields producing an error; secrets resolved from `.secrets/` dir; secrets resolved from env var override.
 
 **`internal/fs`**
-Test `List()` with a temporary directory tree: default prune list hides `node_modules`, `dist`, `.git` internals; `.gitignore` rules in ancestor directories are respected (entries matched by `.gitignore` are excluded); `IsGit` is true for a dir with a `.git` directory, a `.git` file, and a `.bare/HEAD`; `HasChildren` is false for a leaf dir and true for a dir with non-pruned children.
+Test `List()` with a temporary directory tree: default prune list hides `node_modules`, `dist`, `.git` internals; `.gitignore` rules in ancestor directories are respected (entries matched by `.gitignore` are excluded); `IsGit` is true for a dir with a `.git` directory, a `.git` file, and a `.bare/HEAD`; `HasChildren` is false for a leaf dir and true for a dir with non-pruned children; `HasPackageJSON` is true when the directory contains a `package.json` file.
 
 **`internal/session/manager`**
 Test port assignment: returns first free port in range; skips ports already in session list; skips ports in use by `net.Listen`; errors when range is exhausted. Test orphan detection: a session with a dead PID is removed on startup load. Test state persistence: `Start` and `Stop` write to the state file; a new manager instance reads the same state.
@@ -227,135 +267,7 @@ Test port assignment: returns first free port in range; skips ports already in s
 **`internal/server` (integration)**
 Test HTTP handlers with an `httptest.Server`: `GET /` returns 200 and contains expected HTML landmarks; `GET /fs/list?path=` returns an HTML fragment with dir entries; `POST /sessions/start` with a mocked session manager returns the updated sessions fragment; `POST /sessions/stop` calls `manager.Stop`; `GET /events` returns `Content-Type: text/event-stream`.
 
-The session manager is injected as an interface in all server tests so OpenCode and code-server processes are never actually spawned.
-
----
-
-## Centralised Documentation Viewer
-
-### Problem
-
-Documentation for projects in the workspaces root is scattered across individual `README.md`, `docs/` subdirectories, ADRs, and `.mdx` files. There is no way to browse all documentation in one place from a mobile browser without navigating the file tree manually and opening individual files as raw Markdown.
-
-### Solution
-
-A documentation viewer integrated into the portal at `GET /docs/**`. The viewer is powered by **Astro Starlight** — a full-featured documentation site framework with sidebar navigation, search, syntax highlighting, and full MDX component rendering. The Astro dev server runs as a child process managed by the portal (using the same `SessionFactory` pattern as OpenCode and code-server). It watches the `docs_root` directory for changes to `.md` and `.mdx` files and hot-reloads without a manual rebuild. The portal proxies all `/docs/**` traffic to it.
-
----
-
-### User Stories — Documentation Viewer
-
-47. As a remote developer, I want to open `/docs` in my browser and see a sidebar listing all `.md` and `.mdx` files found under my workspaces root, so that I can browse all project documentation in one place.
-48. As a remote developer, I want gitignored files and directories to be excluded from the documentation tree, so that generated files, `node_modules`, and other non-documentation content do not appear.
-49. As a remote developer, I want to click any file in the sidebar and see it rendered as a styled HTML page — including MDX components — so that documentation is readable and well-formatted rather than shown as raw Markdown.
-50. As a remote developer, I want the documentation to update automatically when I edit a `.md` or `.mdx` file, without manually triggering a rebuild, so that my changes are visible immediately.
-51. As a remote developer, I want to use the Starlight search bar to find content across all documentation files, so that I can locate information without knowing which file contains it.
-52. As a remote developer, I want the documentation viewer to be accessible at `/docs` within the portal, so that I can reach it from any device without knowing which port the Astro server is running on.
-53. As a self-hoster, I want to disable the documentation viewer entirely via config, so that the portal starts faster and does not require Node.js if I do not need the feature.
-54. As a self-hoster, I want to configure the root directory that is scanned for documentation files, so that I can point the viewer at a different directory than the workspaces root if needed.
-
----
-
-### Implementation Decisions — Documentation Viewer
-
-#### Architecture
-
-The documentation viewer is not embedded in the Go binary. It is an **Astro Starlight project** living in the `docs/` subdirectory of the portal repo. At runtime, the portal spawns `astro dev` (or `astro preview` for production) as a child process. The Go server reverse-proxies `GET /docs/**` to the Astro process.
-
-This architecture was chosen over alternatives for the following reasons:
-
-- **Full MDX support**: Astro renders JSX components in `.mdx` files natively. A Go-based Markdown renderer (e.g. goldmark) would silently strip or mis-render MDX component blocks.
-- **Live reload without rebuild**: `astro dev` watches the content directory and hot-reloads on file changes. Static embedding would require a rebuild step triggered manually.
-- **Sidebar, search, syntax highlighting**: Starlight provides all of these out of the box. Implementing them from scratch in Go+HTMX would be a significant effort.
-- **No static embed**: Embedding a pre-built `dist/` would make the docs stale on every file change. Runtime child process management is more appropriate.
-
-#### `.gitignore` filtering
-
-The Astro content collection is populated by a Node.js build-time helper script (`docs/scripts/collect-docs.js`) that:
-1. Walks the `DOCS_ROOT` directory (set via env var, defaults to `workspaces_root`)
-2. Loads every `.gitignore` file encountered (using the [`ignore`](https://www.npmjs.com/package/ignore) npm package, which implements the same algorithm as git)
-3. Copies (or symlinks) non-ignored `.md` and `.mdx` files into `docs/src/content/docs/`, preserving the relative directory structure
-4. Is re-run automatically by Astro's dev server file watcher via a custom integration
-
-#### New module: `internal/docs`
-
-**`internal/docs/session.go`**
-
-Implements the `SessionFactory` interface (same as `internal/session/opencode.go` and `internal/session/vscode.go`):
-
-- Spawns `{node_binary} {astro_binary} dev --port {port} --host 127.0.0.1` in the `docs/` directory, with `DOCS_ROOT={docs_root}` env var set.
-- Health-checks by polling `http://127.0.0.1:{port}/` until 200 or 30-second timeout.
-- Kills the process on `Stop()`.
-- Is started unconditionally on portal startup if `docs.enabled = true`.
-
-The docs runner is not tracked in the session manager (it is not a user-initiated session). It is started by `main.go` directly and its lifecycle is tied to the portal process.
-
-#### Reverse proxy
-
-`internal/server/handlers.go` gains a `DocsHandler` that uses `httputil.NewSingleHostReverseProxy` to forward all traffic from `GET /docs/**` to `http://127.0.0.1:{docs.port}`. The proxy strips the `/docs` prefix before forwarding so Astro receives paths rooted at `/`.
-
-A `<a href="/docs">Docs</a>` link is added to the portal's `layout.html` nav.
-
-#### Config additions
-
-```
-docs.enabled        bool    (default: true)
-docs.root           string  (default: same as workspaces_root)
-docs.port           int     (default: 4300)
-docs.node_binary    string  (default: node)
-docs.astro_dir      string  (default: ./docs, relative to portal binary)
-```
-
-Env var overrides: `PORTAL_DOCS_ENABLED`, `PORTAL_DOCS_ROOT`, `PORTAL_DOCS_PORT`, `PORTAL_DOCS_NODE_BINARY`, `PORTAL_DOCS_ASTRO_DIR`.
-
-#### Updated route table
-
-| Method | Path | Description |
-|---|---|---|
-| GET | `/` | Full page — layout + initial tree root + sessions list |
-| GET | `/fs/list` | HTML fragment — dir children (`?path=`) |
-| GET | `/sessions` | HTML fragment — running sessions list |
-| POST | `/sessions/start` | Start session (`type`, `dir` form values); returns updated sessions fragment |
-| POST | `/sessions/stop` | Stop session (`id` form value); returns updated sessions fragment |
-| GET | `/events` | SSE stream — `session.started`, `session.stopped`, `session.healthy` events |
-| GET | `/docs/**` | Reverse proxy to Astro dev server |
-
-#### `docs/` project structure
-
-```
-docs/
-  package.json
-  astro.config.mjs        ← Starlight config; content collection rooted at src/content/docs/
-  tsconfig.json
-  scripts/
-    collect-docs.js       ← walks DOCS_ROOT, copies .md/.mdx respecting .gitignore
-  src/
-    content/
-      docs/               ← populated by collect-docs.js at dev/build time
-    assets/               ← Starlight logo, custom CSS
-  public/
-```
-
-#### Docker changes
-
-The `Dockerfile` gains a **Node.js runtime** in the final image (Alpine + Node), since `astro dev` must run at container startup. The multi-stage build becomes:
-
-```
-Stage 1 (node:alpine)   — npm ci in docs/
-Stage 2 (golang:alpine) — go build
-Stage 3 (node:alpine)   — copy Go binary + docs/ directory; entrypoint runs both
-```
-
-The `docker-compose.yml` sets `DOCS_ROOT` to the mounted workspaces directory.
-
-#### `Makefile` targets
-
-```makefile
-docs-install:   cd docs && npm ci
-docs-dev:       cd docs && npm run dev
-build:          go build ./cmd/portal
-dev:            make -j2 docs-dev go-dev   # parallel
-```
+The session manager is injected as an interface in all server tests so OpenCode, code-server, and script processes are never actually spawned.
 
 ---
 
@@ -369,19 +281,21 @@ dev:            make -j2 docs-dev go-dev   # parallel
 - **Browser-native terminal.** The portal does not embed a terminal emulator (ttyd, xterm.js, etc.).
 - **Project creation or git operations.** The portal is read/launch only — it does not create directories, initialise repos, or run git commands.
 - **Custom domain / TLS termination.** The portal binds to localhost; TLS is handled by whatever sits in front of it.
-- **Windows support.** The portal targets macOS (launchd) and Linux (Docker / systemd). Windows/WSL is not a supported deployment target in v1.
+- **Windows and Linux support.** The portal targets macOS (launchd). Windows/WSL and Linux bare-metal are not supported deployment targets in v1.
 - **openvscode-server support.** Only code-server (Coder) is supported in v1.
-- **Plugin system** for other session types (e.g. Jupyter, custom dev servers). Can be added in a future iteration.
-- **Documentation editing via the UI.** The docs viewer is read-only; editing happens in the filesystem.
-- **Full-text search across live filesystem.** Search is provided by Starlight's built-in index, which is built from the collected docs at startup.
+- **Plugin system** for other session types (e.g. Jupyter). Can be added in a future iteration.
+- **Centralised documentation viewer.** A POC confirmed that Astro Starlight cannot reliably serve MDX files from arbitrary workspace projects due to path alias collisions and duplicate React instance errors — these are fundamental limitations, not configuration issues.
+- **Docker / container support.** Docker is fundamentally incompatible with the portal's host-process model: spawning OpenCode, code-server, and npm scripts all require access to host binaries, the host filesystem, and the host Node.js installation. Docker isolation works against all of this.
+- **Health check enforcement for script runner.** If a script does not bind an HTTP server to the assigned port, the health check times out and the session is marked failed. This is by design — the portal does not validate that a script is a web server before running it.
 
 ---
 
 ## Further Notes
 
-- The portal was designed with the constraint that it must be operable from a mobile phone browser with no native app. All interactions must be one or two taps maximum for common actions (open session, stop session).
-- The HTMX approach was chosen specifically to avoid any JavaScript build tooling, keeping the project simple to fork, modify, and self-host without requiring Node.js or a bundler on the host machine. The docs viewer is the one deliberate exception: Astro is used because full MDX rendering and live reload justify the Node.js dependency.
+- The portal was designed with the constraint that it must be operable from a mobile phone browser with no native app. All interactions must be one or two taps maximum for common actions (open session, stop session, run script).
+- The HTMX approach was chosen specifically to avoid any JavaScript build tooling, keeping the project simple to fork, modify, and self-host without requiring Node.js or a bundler on the host machine. This constraint is now absolute — the docs viewer (which required Node.js for Astro) has been dropped.
 - `gopkg.in/yaml.v3`, `github.com/caarlos0/env/v11`, and `github.com/sabhiram/go-gitignore` are the only external Go dependencies. This is a deliberate constraint to keep the dependency surface auditable and the binary lean.
 - The directory tree intentionally shows all directories including dotdirs. The portal is a directory navigator, not a project manager. Filtering is done only for directories that are never useful to open (build artifacts, git object stores), plus whatever the user has already expressed should be ignored via `.gitignore` files — no separate portal-specific prune configuration is required.
 - Session state is persisted to an XDG-compliant path (`~/.local/share/workspace-portal/`) so it survives portal restarts and does not pollute the workspaces directory.
 - The open-source design intent means all machine-specific values must flow through config/env vars. The repo must be cloneable by anyone and functional with only a filled-in `config.yaml` and `.secrets/` directory.
+- Pre-built binaries are published via GitHub Releases (cross-compiled per OS/arch using `goreleaser`). Users do not need Go installed to run the portal.
