@@ -42,7 +42,19 @@ No library, no custom overlay div, no z-index battles.
 
 ## Lesson 2 — `internal/fs`: Detecting `package.json`
 
-In Course 02 we added `HasPackageJSON bool` to `DirEntry`. Now we wire the detection logic inside `fs.List`.
+Add `HasPackageJSON bool` to `DirEntry` in `internal/fs/fs.go`, then wire the detection logic inside `List`.
+
+### Adding the field to `DirEntry`
+
+```go
+type DirEntry struct {
+    Path           string
+    Name           string
+    IsGit          bool
+    HasChildren    bool
+    HasPackageJSON bool
+}
+```
 
 ### Adding the detection to `List`
 
@@ -103,7 +115,7 @@ func TestHasPackageJSON(t *testing.T) {
 
 ## Lesson 3 — Package Manager Detection
 
-The package manager is detected at start time by checking for lockfiles in the project directory. The logic lives in `internal/session/script.go` (written in Course 02).
+The package manager is detected at start time by checking for lockfiles in the project directory. This logic lives in a new file `internal/session/script.go`.
 
 ### Why check at start time, not config time?
 
@@ -156,7 +168,7 @@ func TestDetectPackageManager(t *testing.T) {
 
 ## Lesson 4 — `ReadScripts`: Reading `package.json`
 
-`session.ReadScripts(dir)` is already written in `internal/session/script.go` (Course 02). It reads `package.json` and returns the `scripts` map.
+Add `ReadScripts(dir string) (map[string]string, error)` to `internal/session/script.go`. It reads `package.json` in the given directory and returns the `scripts` map.
 
 ### Test coverage
 
@@ -189,7 +201,145 @@ func TestReadScripts_NoFile(t *testing.T) {
 
 ---
 
-## Lesson 5 — Wiring the `sessionsStart` Handler
+## Lesson 5 — UI Wiring: Scripts in the Tree
+
+With `HasPackageJSON` detected and `ReadScripts` available, we can wire them into the server-side rendering pipeline so the tree shows a "Scripts" button for directories that have a `package.json`.
+
+### Add `Scripts` to `treeRowData`
+
+In `internal/server/templates.go`, extend `treeRowData` with a `Scripts` field:
+
+```go
+// treeRowData is passed to tree-row.html for each directory entry.
+type treeRowData struct {
+    fs.DirEntry
+    // Expanded is set server-side when rendering children inline.
+    // For lazily-loaded rows it is always false on first render.
+    Expanded bool
+    // Scripts is populated from package.json when HasPackageJSON is true.
+    // Keys are script names, values are the command strings.
+    Scripts map[string]string
+}
+```
+
+### Populate `Scripts` in the `index` handler
+
+In `internal/server/handlers.go`, update the row-building loop in both `index` and `fsList`:
+
+```go
+// index handler
+rows := make([]treeRowData, len(entries))
+for i, e := range entries {
+    row := treeRowData{DirEntry: e}
+    if e.HasPackageJSON {
+        scripts, _ := session.ReadScripts(filepath.Join(h.cfg.WorkspacesRoot, e.Path))
+        row.Scripts = scripts
+    }
+    rows[i] = row
+}
+```
+
+```go
+// fsList handler
+rows := make([]treeRowData, len(entries))
+for i, e := range entries {
+    row := treeRowData{DirEntry: e}
+    if e.HasPackageJSON {
+        scripts, _ := session.ReadScripts(absPath)
+        row.Scripts = scripts
+    }
+    rows[i] = row
+}
+```
+
+> We ignore the `ReadScripts` error here with `_`. If reading fails (corrupted JSON, permission error), `row.Scripts` stays `nil` — the template's `{{range .Scripts}}` produces no output, so the dialog is empty but no crash occurs. A production hardening step could log the error.
+
+### Add the Scripts button and `<dialog>` to `tree-row.html`
+
+Update `internal/assets/templates/tree-row.html`:
+
+```html
+{{define "tree-row.html"}}
+<li class="tree-item" id="item-{{.SafeID}}">
+  <div class="tree-row">
+    {{if .HasChildren}}
+    <span class="tree-icon"
+          hx-get="/fs/list?path={{.Path}}"
+          hx-target="#children-{{.SafeID}}"
+          hx-swap="innerHTML"
+          hx-on:click="toggleChildren(this, '{{.SafeID}}')"
+          title="Expand">▶</span>
+    {{else}}
+    <span class="tree-icon" style="color:#2d3748">—</span>
+    {{end}}
+
+    <span class="tree-name{{if .IsGit}} git{{end}}">{{.Name}}</span>
+
+    <div class="tree-actions">
+      <button class="btn btn-oc"
+              hx-post="/sessions/start"
+              hx-vals='{"type":"opencode","dir":"{{.Path}}"}'
+              hx-target="#sessions"
+              hx-swap="innerHTML"
+              hx-indicator="#sessions-indicator">
+        OpenCode
+      </button>
+      <button class="btn btn-vs"
+              hx-post="/sessions/start"
+              hx-vals='{"type":"vscode","dir":"{{.Path}}"}'
+              hx-target="#sessions"
+              hx-swap="innerHTML"
+              hx-indicator="#sessions-indicator">
+        VS
+      </button>
+      {{if .HasPackageJSON}}
+      <button class="btn btn-scripts"
+              onclick="document.getElementById('scripts-dialog-{{.SafeID}}').showModal()">
+        Scripts
+      </button>
+      {{end}}
+    </div>
+  </div>
+
+  {{if .HasPackageJSON}}
+  <dialog id="scripts-dialog-{{.SafeID}}" class="scripts-dialog">
+    <form method="dialog">
+      <h3>Run a script in <code>{{.Name}}</code></h3>
+      <ul class="scripts-list">
+        {{range $name, $cmd := .Scripts}}
+        <li>
+          <button class="btn btn-script-run"
+                  hx-post="/sessions/start"
+                  hx-vals='{"type":"script","dir":"{{$.Path}}","script":"{{$name}}"}'
+                  hx-target="#sessions"
+                  hx-swap="innerHTML"
+                  hx-indicator="#sessions-indicator"
+                  onclick="this.closest('dialog').close()">
+            <span class="script-name">{{$name}}</span>
+            <span class="script-cmd">{{$cmd}}</span>
+          </button>
+        </li>
+        {{end}}
+      </ul>
+      <button class="btn btn-close" value="cancel">Cancel</button>
+    </form>
+  </dialog>
+  {{end}}
+
+  {{if .HasChildren}}
+  <ul class="tree children tree-indent" id="children-{{.SafeID}}">
+    <!-- children loaded lazily via hx-get above -->
+  </ul>
+  {{end}}
+</li>
+{{end}}
+```
+
+> **`$.Path` inside `{{range}}`:** Inside a `{{range}}` block, dot (`.`) becomes the iteration value (`$name`, `$cmd`). To access the outer `treeRowData`, use `$` — the initial dot captured before the range. `{{$.Path}}` gives the directory path of the row, not the script name.
+
+---
+
+## Lesson 6 — Wiring the `sessionsStart` Handler
 
 The `POST /sessions/start` handler already handles `type=opencode` and `type=vscode`. We need to extend it to handle `type=script`.
 
@@ -269,7 +419,7 @@ func (h *handler) sessionsStart(w http.ResponseWriter, r *http.Request) {
 
 ---
 
-## Lesson 6 — Extending the Session Manager
+## Lesson 7 — Extending the Session Manager
 
 The manager needs two additions:
 
@@ -346,7 +496,7 @@ Update `fakeManager` in `handlers_test.go` to implement the new methods (return 
 
 ---
 
-## Lesson 7 — The Session Label in the Sessions List
+## Lesson 8 — The Session Label in the Sessions List
 
 The `session-row.html` template renders the session type as the label. For script sessions, `Type` is `"script"` but `Label` is `"docs:dev"` — the label is more useful than the type.
 
@@ -378,7 +528,7 @@ Update `session-row.html` to show `Label` when set:
 
 ---
 
-## Lesson 8 — CSS for the Dialog
+## Lesson 9 — CSS for the Dialog
 
 Add these styles to the `<style>` block in `layout.html`:
 
@@ -446,7 +596,7 @@ Add these styles to the `<style>` block in `layout.html`:
 
 ---
 
-## Lesson 9 — The `config.example.yaml` Update
+## Lesson 10 — The `config.example.yaml` Update
 
 Add the `scripts` section to `config.example.yaml`:
 
@@ -462,7 +612,7 @@ scripts:
 
 ---
 
-## Lesson 10 — End-to-End Checklist
+## Lesson 11 — End-to-End Checklist
 
 ### `internal/fs`
 - [ ] `HasPackageJSON` is `true` for a directory containing `package.json`
@@ -496,8 +646,8 @@ The portal now supports npm/pnpm/yarn/bun scripts as first-class sessions alongs
 
 1. **`internal/fs`** — detects `package.json` and sets `HasPackageJSON` on `DirEntry`
 2. **`internal/session/script.go`** — `ScriptSessionFactory` spawns `{pm} run {script} -- --port {port}`, detects package manager from lockfiles, provides `ReadScripts` for the picker
-3. **`internal/session/manager.go`** — `StartScript` and `FindByDirAndLabel` extend the manager for script sessions
-4. **`tree-row.html`** — "Scripts" button + native `<dialog>` picker rendered server-side
+3. **`treeRowData.Scripts`** — populated in `index` and `fsList` handlers; `tree-row.html` renders the Scripts button and native `<dialog>` picker
+4. **`internal/session/manager.go`** — `StartScript` and `FindByDirAndLabel` extend the manager for script sessions
 5. **`session-row.html`** — shows `Label` (script name) instead of `Type` for script sessions
 6. **`config.yaml`** — `scripts.port_range` configures the port range (default `[4300, 4399]`)
 
