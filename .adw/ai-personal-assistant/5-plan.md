@@ -8,6 +8,7 @@
 - A live query from within OpenCode returns today's MS Calendar events.
 - A live query returns the configured working hours from MS Office Calendar.
 - MCP server name and configuration are documented in `.adw/ai-personal-assistant/findings-t01.md`.
+- If auth or MCP configuration fails, the error message is human-readable and identifies the misconfigured field.
 **Blocks:** T-04, T-06, T-08, T-10
 **Blocked by:** none
 
@@ -18,6 +19,7 @@
 **Acceptance criteria:**
 - A live query from within OpenCode returns today's Google Calendar events.
 - MCP server name and configuration are documented in `.adw/ai-personal-assistant/findings-t02.md`.
+- If auth or MCP configuration fails, the error message is human-readable and identifies the misconfigured field.
 **Blocks:** T-04, T-06, T-08
 **Blocked by:** none
 
@@ -40,6 +42,7 @@
 - `TaskItem` includes: `id`, `title`, `impact` (High/Medium/Low), `effort` (hours), `due` (date | undefined), `due_type` (hard | soft | none), `status`, `source` (jira | gcal | mscal | gitlab | taskstore), `created`, `updated`, `rank_override` (optional number).
 - `CalendarEvent` includes: `id`, `title`, `start`, `end`, `source` (mscal | gcal), `is_all_day`.
 - `RankedTaskItem` extends `TaskItem` with `score: number`.
+- `WorkingHours` type is defined: `{ [day in 'monday'|'tuesday'|'wednesday'|'thursday'|'friday']: { start: string; end: string } }`.
 - Types are exported from a single entry point.
 **Blocks:** T-05, T-06, T-07, T-08
 **Blocked by:** T-01, T-02 (schemas should reflect what these MCPs can actually return)
@@ -54,7 +57,7 @@
 - `updateTask()` patches only the specified fields, preserving all other frontmatter; commits and pushes.
 - `writePlan()` writes `plans/YYYY-MM-DD.md` with the provided content; commits and pushes.
 - All git operations are internal — callers do not interact with git directly.
-- Unit/integration tests pass against a local git repo fixture (no network required).
+- Tests live under `src/task-store/__tests__/` and run against a local git repo fixture initialised in a temp directory; no network access is required.
 **Blocks:** T-09, T-11, T-12, T-13
 **Blocked by:** T-03, T-04
 
@@ -65,7 +68,7 @@
 **Acceptance criteria:**
 - `MSCalendarFetcher.fetchEvents(date)` returns today's MS Calendar events as `CalendarEvent[]`.
 - `GoogleCalendarFetcher.fetchEvents(date)` returns today's Google Calendar events as `CalendarEvent[]`.
-- `WorkingHoursFetcher.fetch()` returns `{ monday: {start, end}, ..., friday: {start, end} }` sourced from MS Office Calendar.
+- `WorkingHoursFetcher.fetch()` returns a `WorkingHours` object (as defined in T-04) sourced from MS Office Calendar.
 - Both fetchers normalise to the `CalendarEvent` schema — no raw MCP response leaks out.
 - Unit tests pass with mocked MCP responses.
 **Blocks:** T-08, T-10
@@ -104,7 +107,7 @@
 ### T-09: Implement Day Plan Builder
 **Description:** Implement the `DayPlanBuilder` module. Input: `RankedTaskItem[]`, `CalendarEvent[]` (today), `WorkingHours`. Output: a structured markdown day plan string with time blocks. The builder computes available time slots (working hours minus calendar events), allocates tasks in ranked order (using `effort` as duration), and formats the result as a markdown schedule. Surfaced conflicts (overcommitment, boundary violations) are included as a section in the output.
 **Acceptance criteria:**
-- Available time is computed as working hours minus calendar event durations.
+- Available time is computed as working hours minus the union of calendar event time ranges (overlapping events are merged before subtraction, not summed).
 - Tasks are allocated in descending score order, filling available slots.
 - If total task effort exceeds available time, remaining tasks appear in a "Deferred" section with a conflict note.
 - Tasks scheduled outside working hours (due to overcommitment) are flagged, not silently placed.
@@ -121,6 +124,7 @@
 - `/morning` produces a briefing covering: today's calendar events (both sources), Jira tasks, GitLab MRs, task store tasks — all ranked.
 - The proposed day plan respects working hours sourced from MS Office Calendar.
 - Conflicts (overcommitment, boundary violations) are surfaced in the briefing.
+- The collaborative loop continues until the user provides explicit confirmation ("yes", "confirm", "go ahead", or equivalent); the loop terminates only on explicit confirmation or explicit deferral ("skip plan", "no plan today").
 - The finalised plan is written to `plans/YYYY-MM-DD.md` in the task store after user confirmation.
 - The assistant notes the write inline: "Day plan saved: plans/YYYY-MM-DD.md".
 **Blocks:** none
@@ -135,7 +139,7 @@
 - A conversational update patches only the described fields, leaving all others unchanged.
 - A priority override ("this is more urgent") sets `rank_override` in the task file.
 - The assistant acknowledges every write: "Created task: X" or "Updated task: X".
-- If required fields (title, impact, effort) cannot be inferred, the assistant asks before writing.
+- If `title`, `impact`, or `effort` cannot be inferred from the description, the assistant asks one clarifying question per missing field before writing.
 **Blocks:** none
 **Blocked by:** T-05
 
@@ -183,3 +187,14 @@ T-13 → T-10, T-11, T-12
 
 T-01, T-02, T-03 are independent and can run in parallel as the first wave of work.
 ```
+
+## Refinement notes
+
+- T-01: Added AC for human-readable error on auth/MCP misconfiguration.
+- T-02: Added AC for human-readable error on auth/MCP misconfiguration.
+- T-04: Added `WorkingHours` type definition — was referenced in T-06 but not defined in the schema ticket.
+- T-05: Clarified test location and fixture strategy (`src/task-store/__tests__/`, temp dir, no network).
+- T-06: Updated `WorkingHoursFetcher` AC to reference the `WorkingHours` type from T-04 (was an inline struct).
+- T-09: Clarified overlapping event handling — available time uses union of event ranges, not sum of durations.
+- T-10: Added AC specifying termination condition for the collaborative loop (explicit user confirmation or deferral).
+- T-11: Sharpened the "ask before writing" AC — one clarifying question per missing required field.
