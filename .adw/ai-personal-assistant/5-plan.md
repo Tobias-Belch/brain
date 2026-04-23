@@ -37,6 +37,7 @@
 ---
 
 ### T-04: Define unified TaskItem and CalendarEvent schemas
+**Status: complete**
 **Description:** Define the TypeScript interfaces for `TaskItem` (normalised task from any source) and `CalendarEvent` (normalised calendar event from any source). Also define `RankedTaskItem` (extends `TaskItem` with `score` and optional `rank_override`). These schemas are the contract between all modules — they must be stable before any fetcher or scorer is built. Place in a shared types package or file.
 **Acceptance criteria:**
 - `TaskItem` includes: `id`, `title`, `impact` (High/Medium/Low), `effort` (hours), `due` (date | undefined), `due_type` (hard | soft | none), `status`, `source` (jira | gcal | mscal | gitlab | taskstore), `created`, `updated`, `rank_override` (optional number).
@@ -50,6 +51,7 @@
 ---
 
 ### T-05: Implement Task Store module
+**Status: complete**
 **Description:** Implement the `TaskStore` module that encapsulates all read/write operations against the private GitHub task store repo. Interface: `getTasks(): TaskItem[]`, `createTask(task): void`, `updateTask(id, patch): void`, `writePlan(date, content): void`. The module handles git pull before reads and git commit+push after writes, transparently. Task files are read/written as markdown with YAML frontmatter matching the `TaskItem` schema.
 **Acceptance criteria:**
 - `getTasks()` pulls the repo and returns all tasks from `tasks/` as `TaskItem[]`.
@@ -64,6 +66,7 @@
 ---
 
 ### T-06: Implement Source Aggregator — calendar fetchers
+**Status: complete**
 **Description:** Implement `MSCalendarFetcher` and `GoogleCalendarFetcher`. Each fetcher calls the relevant MCP and normalises the response into `CalendarEvent[]`. Also implement `WorkingHoursFetcher` that reads working hours from MS Office Calendar and returns a structured `WorkingHours` object (days + start/end times). Wire both fetchers into the `SourceAggregator`.
 **Acceptance criteria:**
 - `MSCalendarFetcher.fetchEvents(date)` returns today's MS Calendar events as `CalendarEvent[]`.
@@ -77,6 +80,7 @@
 ---
 
 ### T-07: Implement Source Aggregator — task fetchers (Jira, GitLab, TaskStore)
+**Status: complete**
 **Description:** Implement `JiraFetcher`, `GitLabMRFetcher`, and `TaskStoreFetcher`. Each normalises its source's data into `TaskItem[]`. `JiraFetcher` returns assigned/in-progress tickets. `GitLabMRFetcher` returns open MRs awaiting review. `TaskStoreFetcher` delegates to the `TaskStore` module. Wire all three into the `SourceAggregator`.
 **Acceptance criteria:**
 - `JiraFetcher.fetchTasks()` returns assigned/in-progress Jira tickets as `TaskItem[]` with `source: 'jira'`.
@@ -91,6 +95,7 @@
 ---
 
 ### T-08: Implement ICE-lite Scorer
+**Status: complete**
 **Description:** Implement the `IceLiteScorer` as a pure function: `score(tasks: TaskItem[], today: Date): RankedTaskItem[]`. Scoring dimensions: Impact (H=3, M=2, L=1), Effort (inverse — lower effort → higher score for equal impact), Earliness (days until due; hard deadlines weighted 1.5× soft; no due date treated as soft/low urgency). Output is sorted descending by score. `rank_override` on a task bypasses computed score and pins it to the specified position.
 **Acceptance criteria:**
 - A high-impact, low-effort, hard-due-today task scores above a medium-impact, high-effort, soft-due-next-week task.
@@ -105,6 +110,7 @@
 ---
 
 ### T-09: Implement Day Plan Builder
+**Status: complete**
 **Description:** Implement the `DayPlanBuilder` module. Input: `RankedTaskItem[]`, `CalendarEvent[]` (today), `WorkingHours`. Output: a structured markdown day plan string with time blocks. The builder computes available time slots (working hours minus calendar events), allocates tasks in ranked order (using `effort` as duration), and formats the result as a markdown schedule. Surfaced conflicts (overcommitment, boundary violations) are included as a section in the output.
 **Acceptance criteria:**
 - Available time is computed as working hours minus the union of calendar event time ranges (overlapping events are merged before subtraction, not summed).
@@ -119,6 +125,7 @@
 ---
 
 ### T-10: Implement morning ritual flow and `/morning` entry point
+**Status: complete**
 **Description:** Wire all modules into the `/morning` ritual. When triggered, the assistant: (1) calls `WorkingHoursFetcher`, (2) calls all source fetchers via `SourceAggregator`, (3) runs `IceLiteScorer`, (4) runs `DayPlanBuilder`, (5) presents the structured briefing to the user (time constraints → ranked task list → proposed time blocks → conflicts), (6) enters a collaborative loop accepting user amendments, (7) on user confirmation writes the final plan via `TaskStore.writePlan()` and notes it inline.
 **Acceptance criteria:**
 - `/morning` produces a briefing covering: today's calendar events (both sources), Jira tasks, GitLab MRs, task store tasks — all ranked.
@@ -133,6 +140,7 @@
 ---
 
 ### T-11: Implement conversational task capture and update
+**Status: complete** (implemented via AGENTS.md rules + TaskStore module)
 **Description:** Implement the reactive task capture and update flows. Task capture: user describes a task conversationally → assistant infers `title`, `impact`, `effort`, `due`, `due_type` from the description (asking clarifying questions if needed) → calls `TaskStore.createTask()` → notes the result. Task update: user describes a change → assistant maps it to the correct `updateTask()` patch → calls `TaskStore.updateTask()` → notes the result including the `rank_override` field if priority was overridden.
 **Acceptance criteria:**
 - A conversational task description results in a new markdown file in `tasks/` with correct frontmatter.
@@ -146,6 +154,7 @@
 ---
 
 ### T-12: Implement "what are my open tasks?" reactive query
+**Status: complete** (implemented via AGENTS.md rules + AssistantOrchestrator.getRankedTasks/readDayPlan)
 **Description:** Implement the reactive ranked task list query. When the user asks for their open tasks (any natural phrasing), the assistant fetches all sources via `SourceAggregator`, runs `IceLiteScorer`, and presents the ranked list. Also implement the "what did I plan to do today?" query, which reads today's plan file from the task store and presents it, or prompts the user to run `/morning` if no plan exists for today.
 **Acceptance criteria:**
 - "What are my open tasks?" returns a ranked list from all sources (Jira, GitLab, task store).
@@ -157,6 +166,7 @@
 ---
 
 ### T-13: Author OpenCode rules and initialise context.md
+**Status: complete**
 **Description:** Write the OpenCode rules file (agent persona, source list, action confirmation protocol, ICE-lite framework definition, working hours) that is always active in the assistant's context. Also write the initial `context.md` in the task store with placeholders for: Jira projects, recurring preferences, ongoing project notes, working style. This is the persistent memory layer described in the PRD.
 **Acceptance criteria:**
 - OpenCode rules file defines: assistant persona, all data sources and their write policies, action confirmation protocol, ICE-lite scoring dimensions, working hours and their source.
