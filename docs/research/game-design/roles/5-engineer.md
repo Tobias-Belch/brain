@@ -1,4 +1,6 @@
-# Responsibilities of Programming and Engineering in Game Design and Development
+---
+title: Engineering in Game Design and Development
+---
 
 ## Executive Summary
 

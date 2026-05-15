@@ -1,4 +1,6 @@
-# Game Design: Responsibilities, Importance, Success Factors, and the Perfect LLM Game Designer Agent
+---
+title: Game Designer
+---
 
 > **Executive Summary**
 >

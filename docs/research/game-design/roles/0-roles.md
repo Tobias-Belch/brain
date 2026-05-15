@@ -1,4 +1,6 @@
-# The Most Important Roles in a Team Designing and Developing a Video Game
+---
+title: Roles in Designing and Developing a Video Game
+---
 
 > **Executive Summary**
 >

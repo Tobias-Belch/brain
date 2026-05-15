@@ -1,4 +1,6 @@
-# Creative and Product Leadership in Game Development
+---
+title: Creative Leadership in Game Design and Development
+---
 
 > **Executive Summary**
 >

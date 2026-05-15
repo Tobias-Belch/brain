@@ -1,4 +1,6 @@
-# Art and Animation in Game Design and Development
+---
+title: Art and Animation in Game Design and Development
+---
 
 ## Executive Summary
 
