@@ -1,4 +1,6 @@
-# Healthy Meals, Quick & Easy in Berlin: The Definitive Guide
+---
+title: Healthy Meals, Quick & Easy
+---
 
 > **Direct answer:** Yes — eating healthy in Berlin without spending much time cooking is realistic and well-supported by the city's food infrastructure. The best overall strategy is to combine a simple nutrition filter, a short list of 10–30-minute home meals, and selective use of Berlin's layered food ecosystem. Details follow.
 
