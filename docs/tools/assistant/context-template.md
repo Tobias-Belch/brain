@@ -1,3 +1,7 @@
+---
+title: Assistant Context Template
+---
+
 # Personal Context
 
 This file is read by the AI assistant at the start of each session.
