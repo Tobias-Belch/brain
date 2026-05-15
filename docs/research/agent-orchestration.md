@@ -1,7 +1,5 @@
-# Multi-Agent Orchestration: Best Practices
-
-*Synthesised research report*
-
+---
+title: Multi-Agent Orchestration
 ---
 
 ## Executive Summary
