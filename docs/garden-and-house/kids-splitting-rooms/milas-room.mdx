@@ -3,7 +3,7 @@ title: "Mila's Room"
 ---
 
 import { cm, m, l, toM } from "@fea-lib/values";
-import { MilasRoomViewer } from "./components/MilasRoomViewer";
+import { MilasRoomViewer } from "@components/garden/MilasRoomViewer";
 import * as ikea from "./models/ikea";
 import * as general from "./models/general";
 import { MilasRoom, measurements } from "./models/milas-room.model";
@@ -72,4 +72,3 @@ import { materials } from "./models/materials";
 | Cabinet: IKEA Pax | {ikea.measurements.cabinets.Pax.width} x {ikea.measurements.cabinets.Pax.height} x {ikea.measurements.cabinets.Pax.closed.depth} / {ikea.measurements.cabinets.Pax.opened.depth} | {ikea.measurements.cabinets.Pax.storage} | {ikea.measurements.cabinets.Pax.price} |
 | Desk: IKEA Norden | {ikea.measurements.desks.Norden.closed.width} / {ikea.measurements.desks.Norden.opened.partially.width} / {ikea.measurements.desks.Norden.opened.fully.width} x {ikea.measurements.desks.Norden.height} x {ikea.measurements.desks.Norden.depth} | {ikea.measurements.desks.Norden.storage} | {ikea.measurements.desks.Norden.price} |
 | Total | | {ikea.measurements.cabinets.Pax.storage.mul(2).add(ikea.measurements.desks.Norden.storage)} | {ikea.measurements.cabinets.Pax.price.mul(2).add(ikea.measurements.desks.Norden.price)} |
-

@@ -1,5 +1,18 @@
 {
+  "scripts": {
+    "docs:start": "npx fea-docs@latest start --config docs/fea-docs.config.mjs",
+    "docs:build": "npx fea-docs@latest build --config docs/fea-docs.config.mjs --out-dir /tmp/fea-docs-public --strict"
+  },
+  "dependencies": {
+    "@codesandbox/sandpack-react": "^2.20.0",
+    "@jscad/modeling": "^2.12.6",
+    "@jscad/stl-serializer": "^2.1.21",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "three": "^0.182.0"
+  },
   "devDependencies": {
+    "astro": "^5.18.0",
     "vitest": "^4.1.0"
   }
 }

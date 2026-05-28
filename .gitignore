@@ -140,5 +140,8 @@ vite.config.ts.timestamp-*
 
 .DS_Store
 
+# fea-docs generated runtime
+.fea-docs/
+
 # Agentic AI
 *.skill

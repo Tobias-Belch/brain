@@ -1,0 +1,16 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "include": [".astro/types.d.ts", "docs/**/*", "components/**/*", "libs/**/*"],
+  "exclude": ["dist", "node_modules", ".fea-docs"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@components/*": ["components/*"],
+      "@docs/*": ["docs/*"],
+      "@fea-lib/values": ["libs/fea-lib/values/src/index.ts"],
+      "@fea-lib/jscad": ["libs/fea-lib/jscad/src/index.ts"]
+    },
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
+  }
+}
