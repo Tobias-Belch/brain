@@ -85,6 +85,69 @@ Price deltas within this family (25m):
 
 *Prices are Amazon snapshots from 2026-05 and can change by seller, day, and delivery option.
 
+### Throughput Gain vs Hose Diameter (Modeled)
+
+To quantify diameter impact, throughput was modeled with Darcy-Weisbach for water at ~20 C, straight hose only, smooth inner wall, and a fixed pressure-drop budget of 1 bar across the hose (no fittings/nozzle losses).
+
+| Length | 3/4" vs 1/2" | 1" vs 1/2" | 1" vs 3/4" |
+|---:|---:|---:|---:|
+| 10 m | +207.5% | +539.7% | +108.1% |
+| 20 m | +208.8% | +544.1% | +108.6% |
+| 30 m | +209.6% | +546.8% | +108.9% |
+| 40 m | +210.3% | +548.9% | +109.1% |
+| 50 m | +210.8% | +550.5% | +109.3% |
+
+Modeled reference flows under the same assumptions:
+
+| Length | 1/2" (13mm) | 3/4" (19mm) | 1" (25mm) |
+|---:|---:|---:|---:|
+| 10 m | 24.8 L/min | 76.3 L/min | 158.8 L/min |
+| 20 m | 16.8 L/min | 51.9 L/min | 108.2 L/min |
+| 30 m | 13.4 L/min | 41.4 L/min | 86.4 L/min |
+| 40 m | 11.3 L/min | 35.2 L/min | 73.6 L/min |
+| 50 m | 10.0 L/min | 31.0 L/min | 65.0 L/min |
+
+Interpretation:
+- For equal pressure budget, 3/4" carries about 3.1x the flow of 1/2" (about +210%).
+- 1" carries about 6.5x the flow of 1/2" (about +545%).
+- 1" carries about 2.1x the flow of 3/4" (about +109%).
+- Percent gains stay almost constant from 10 m to 50 m because all sizes scale similarly with length in this regime.
+
+### Throughput Gain in a Pump-Limited Scenario (TIP GP 5000 INOX)
+
+To approximate real-world behavior with your pump, a second model uses the pump operating envelope from retail specs visible in Amazon listings for GP 5000 INOX:
+- Qmax approx. 5,000 L/h
+- Hmax approx. 45 m (approx. 4.5 bar shut-off)
+
+Model assumptions:
+- Linearized pump curve between (Q=0, H=45 m) and (Q=5,000 L/h, H=0)
+- Same hose assumptions as above (water ~20 C, straight hose, no fittings/nozzle losses)
+
+Relative throughput gains under this pump-limited model:
+
+| Length | 3/4" vs 1/2" | 1" vs 1/2" | 1" vs 3/4" |
+|---:|---:|---:|---:|
+| 10 m | +71.7% | +97.2% | +14.9% |
+| 20 m | +97.3% | +145.6% | +24.5% |
+| 30 m | +112.3% | +179.2% | +31.5% |
+| 40 m | +122.6% | +204.9% | +37.0% |
+| 50 m | +130.2% | +225.6% | +41.4% |
+
+Modeled operating-point flows with this pump approximation:
+
+| Length | 1/2" (13mm) | 3/4" (19mm) | 1" (25mm) |
+|---:|---:|---:|---:|
+| 10 m | 39.6 L/min | 68.0 L/min | 78.1 L/min |
+| 20 m | 30.1 L/min | 59.3 L/min | 73.8 L/min |
+| 30 m | 25.2 L/min | 53.4 L/min | 70.3 L/min |
+| 40 m | 22.1 L/min | 49.1 L/min | 67.2 L/min |
+| 50 m | 19.8 L/min | 45.7 L/min | 64.6 L/min |
+
+Interpretation for your build:
+- On shorter runs, the pump is already near its flow ceiling, so 1" gives smaller gains over 3/4".
+- On longer runs, line losses dominate more, and larger diameters gain more strongly.
+- 3/4" is a major upgrade over 1/2" at every tested length; 1" is best for minimizing loss in longer/high-demand runs.
+
 ---
 
 ## Common Component: 4-Way Distributor
