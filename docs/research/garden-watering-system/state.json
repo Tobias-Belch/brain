@@ -1,0 +1,20 @@
+{
+  "run_id": "2026-05-29-garden-watering-system",
+  "question": "Optimal parts, suppliers, and setup for garden watering system with TIP GP INOX 5000 pump, 1-inch max diameter, wall feed-through, 4 GEKA faucets — Berlin/Germany",
+  "depth": "deep",
+  "checkpoint_mode": "default",
+  "status": "complete",
+  "created_at": "2026-05-29T00:00:00Z",
+  "updated_at": "2026-05-29T13:10:00Z",
+  "nodes": [
+    {"id": "n-001", "type": "discovery", "title": "Fetch pump spec sheet TIP GP INOX 5000", "status": "complete", "depends_on": [], "artifacts": ["notes/n-001-pump-spec.md"], "blocked_reason": "tip-pumpen.de returned 404; specs inferred from series knowledge"},
+    {"id": "n-002", "type": "discovery", "title": "Research GEKA coupling standard and 1-inch availability", "status": "complete", "depends_on": [], "artifacts": ["notes/n-002-geka-couplings.md"], "blocked_reason": null},
+    {"id": "n-003", "type": "discovery", "title": "Research wall feed-through sleeves 1-inch", "status": "complete", "depends_on": [], "artifacts": ["notes/n-003-wall-feedthrough.md"], "blocked_reason": null},
+    {"id": "n-004", "type": "discovery", "title": "Research 1-inch pipe fittings and manifolds (DE market)", "status": "complete", "depends_on": [], "artifacts": ["notes/n-004-fittings-manifolds.md"], "blocked_reason": null},
+    {"id": "n-005", "type": "discovery", "title": "Research faucets/taps with GEKA connector 1-inch or 3/4-inch", "status": "complete", "depends_on": [], "artifacts": ["notes/n-005-faucets.md"], "blocked_reason": null},
+    {"id": "n-006", "type": "discovery", "title": "Research Berlin retailers and German online shops for all parts", "status": "complete", "depends_on": [], "artifacts": ["notes/n-006-retailers.md"], "blocked_reason": "OBI and Bauhaus online not accessible"},
+    {"id": "n-007", "type": "synthesis", "title": "Synthesize optimal setup proposal and parts list", "status": "complete", "depends_on": ["n-001","n-002","n-003","n-004","n-005","n-006"], "artifacts": ["final-report.md"], "blocked_reason": null},
+    {"id": "n-008", "type": "evaluator", "title": "Quality gate pass", "status": "complete", "depends_on": ["n-007"], "artifacts": ["evaluation.md"], "blocked_reason": null},
+    {"id": "n-009", "type": "report", "title": "Generate final-report.md", "status": "complete", "depends_on": ["n-008"], "artifacts": ["final-report.md", "source-inventory.md"], "blocked_reason": null}
+  ]
+}
