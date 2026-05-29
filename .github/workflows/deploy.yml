@@ -30,13 +30,14 @@ jobs:
           cache-dependency-path: "./package-lock.json"
 
       - name: Setup Pages
+        id: pages
         uses: actions/configure-pages@v4
 
       - name: Install dependencies
         run: npm install --include=dev
 
       - name: Build
-        run: npx fea-docs@latest build --config docs/fea-docs.config.mjs --out-dir /tmp/fea-docs-public --strict
+        run: npx fea-docs@latest build --config docs/fea-docs.config.mjs --out-dir /tmp/fea-docs-public --strict --base "${{ steps.pages.outputs.base_path }}"
         env:
           NODE_ENV: production
 
