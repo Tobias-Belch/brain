@@ -1,11 +1,11 @@
 ---
-title: 'Garden Watering System Summary'
+title: 'Hoses'
 ---
 
-# Garden Watering System Summary
+# Hoses
 
 Date: 2026-05-29  
-Source: [Front/Back Multi-Zone Hose Scenario Calculation](../research/garden-watering-system/4-front-back-scenario-calculation.md)
+Source: [Front/Back Multi-Zone Hose Scenario Calculation](../../research/garden-watering-system/4-front-back-scenario-calculation.md)
 
 ## Marked Decision
 
