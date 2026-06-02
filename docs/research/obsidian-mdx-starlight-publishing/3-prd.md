@@ -1,40 +1,52 @@
 ---
-title: Obsidian Starlight PRD
+title: Obsidian fea-docs PRD
 ---
 
-# PRD: Obsidian-Like Publishing on Astro Starlight
+# PRD: Obsidian-Like Publishing with fea-docs
 
 ## Problem Statement
 
-Authors want to use an Obsidian-style local writing workflow while publishing a free, static, interactive documentation site through Astro Starlight. The current research shows that Obsidian should not become the publishing engine and that Astro Starlight / `fea-docs` should remain the source of deployment truth. The gap is an Obsidian-flavored content intelligence layer that makes common vault behaviors work in Starlight without pretending to support every Obsidian plugin or preview behavior.
+Authors want to use an Obsidian-style local writing workflow while publishing a free, static, interactive documentation site through `fea-docs`. `fea-docs` is currently built on Astro, but it is the rendering and publishing integration surface for this product. The current research shows that Obsidian should not become the publishing engine and that the `fea-docs` publishing pipeline should remain the deployment path. The gap is an Obsidian-flavored content intelligence layer that prepares vault content for `fea-docs` without pretending to support every Obsidian plugin or preview behavior.
 
-The product must support a constrained, reliable subset of Obsidian behavior: wikilinks, aliases, heading links, basic embeds, callouts, backlinks, graph data, search, explicit public/private filtering, safe asset handling, and strict validation. It must preserve MDX and component support because Starlight is the publishing target.
+The product must support a constrained, reliable subset of Obsidian behavior through a target-aware normalization layer: wikilinks, aliases, heading links, basic embeds, callouts, backlinks, graph data, search, explicit target-based public/private filtering, safe asset handling, and strict validation. It must preserve MDX and component support because normalized documents are handed to `fea-docs` for rendering and publishing integration.
 
 ## Goals
 
-1. Let a documentation folder be opened and edited as an Obsidian vault while still building as a Starlight site.
+1. Let a documentation folder be opened and edited as an Obsidian vault while still building as a `fea-docs` site.
 2. Support `.md` and `.mdx` as first-class source formats.
-3. Convert common Obsidian syntax into valid Starlight-rendered pages at build time.
+3. Convert common Obsidian syntax into normalized Markdown or MDX before `fea-docs` renders static output.
 4. Generate relationship data for backlinks and graph views without requiring a server.
-5. Prevent accidental publication of private notes and private assets.
-6. Preserve `fea-docs` simplicity: minimal config, fast local start, static build output, and strict CI validation.
-7. Clearly define unsupported Obsidian behavior so authors do not rely on fragile or misleading compatibility.
+5. Prevent accidental publication of private notes and private assets by publishing nothing unless it is explicitly opted into a configured publishing target.
+6. Allow one vault to publish different subsets of content to different configured targets, such as engineering, recipes, crafting, or house-and-garden.
+7. Publish both the normalized docs artifact and the static output artifact to destinations configured per publishing target.
+8. Preserve `fea-docs` simplicity by keeping vault discovery, target filtering, Obsidian syntax handling, and privacy validation outside the renderer.
+9. Clearly define unsupported Obsidian behavior so authors do not rely on fragile or misleading compatibility.
 
 ## Non-Goals
 
 1. Replacing Obsidian Publish.
-2. Building a full Obsidian plugin runtime inside Starlight.
+2. Building a full Obsidian plugin runtime inside `fea-docs` or the normalization layer.
 3. Supporting arbitrary Dataview queries, embedded search queries, or plugin-rendered code blocks.
 4. Making Obsidian preview match deployed MDX exactly.
-5. Creating a separate non-Starlight docs platform.
+5. Creating a separate non-`fea-docs` docs platform.
 6. Providing hard privacy for files committed to a public source repository.
+7. Orchestrating deployment to multiple publishing targets in one command; the first version defines target filtering and target-specific build/publish runs.
 
 ## Actors
 
 1. **Author**: writes and edits notes locally, optionally in Obsidian.
-2. **Publisher**: runs local preview and static builds for deployment.
-3. **Maintainer**: configures `fea-docs`, CI validation, and publishing rules.
-4. **Reader**: uses the generated Starlight site.
+2. **Publisher**: runs normalization, local preview, static builds, and target publication.
+3. **Maintainer**: configures target definitions, normalization rules, `fea-docs`, CI validation, and publishing destinations.
+4. **Reader**: uses the generated `fea-docs` site.
+
+## Pipeline Architecture
+
+1. **Authoring layer**: Authors use Obsidian, VS Code, or any text editor against a source vault containing Markdown, MDX, assets, private notes, drafts, and notes for one or more publishing targets.
+2. **Normalization layer**: A target-aware publishing preparation solution scans the source vault, selects one configured publishing target, applies ignore/draft/publish filtering, resolves supported Obsidian syntax, validates privacy and links, selects assets, and emits a normalized docs tree for that target.
+3. **Rendering layer**: `fea-docs` consumes the normalized docs tree and builds static output. `fea-docs` should not need to understand Obsidian vault semantics, private notes, target membership, wikilink resolution, or source-vault filtering.
+4. **Publishing layer**: The publisher writes both the normalized docs artifact and the generated static output artifact to destinations configured for the selected publishing target.
+5. The normalized docs artifact is treated as public generated output. It must satisfy the same target/privacy constraints as the static output.
+6. The normalization layer should preserve plain `.md` files when no MDX features are needed and emit `.mdx` when the source is MDX or the normalized output requires MDX/component syntax.
 
 ## User Stories
 
@@ -44,66 +56,91 @@ The product must support a constrained, reliable subset of Obsidian behavior: wi
 4. As an author, I want `[[Note|Alias]]` links to render with alias text, so that natural prose can link to canonical pages.
 5. As an author, I want `[[Note#Heading]]` links to resolve to page headings, so that I can link to precise sections.
 6. As an author, I want unresolved wikilinks to be visible during development and fail strict builds, so that broken references are caught before publishing.
-7. As an author, I want simple note embeds such as `![[Note]]` to render in public pages, so that reusable note fragments can be included.
+7. As an author, I want simple note embeds such as `![[Note]]` to render in pages public for the selected target, so that reusable note fragments can be included.
 8. As an author, I want heading embeds such as `![[Note#Heading]]` to render the selected section where feasible, so that content can be reused at section granularity.
 9. As an author, I want image and asset embeds such as `![[image.png]]` to render as normal assets, so that Obsidian-style media embeds work.
 10. As an author, I want unsupported embeds to fail clearly in strict mode, so that readers do not see broken output.
-11. As an author, I want Obsidian callouts such as `> [!info]` to render as Starlight-compatible asides, so that note annotations preserve their meaning.
+11. As an author, I want Obsidian callouts such as `> [!info]` to render as `fea-docs`-compatible asides, so that note annotations preserve their meaning.
 12. As an author, I want common callout types to map predictably, so that `note`, `info`, `tip`, `warning`, `danger`, `question`, and similar types look consistent.
 13. As an author, I want foldable callouts to degrade safely or render as collapsible UI, so that source notes remain usable even when exact parity is not available.
 14. As an author, I want nested callouts to render without corrupting page structure, so that complex notes remain readable.
-15. As an author, I want backlinks on published pages, so that readers can discover related pages.
+15. As an author, I want to opt a page into backlinks, so that readers can discover related pages where backlinks add value.
 16. As a reader, I want backlink labels to use page titles or aliases, so that relationship lists are understandable.
-17. As a reader, I want a graph view generated from public pages, so that I can explore note relationships visually.
+17. As a reader, I want a built-in graph view generated from pages public for the selected target, so that I can explore note relationships visually without adding a separate integration.
 18. As a maintainer, I want graph data emitted as static JSON, so that the site stays static and deployable to GitHub Pages.
-19. As a reader, I want full-text search over public content, so that I can find pages quickly.
-20. As a maintainer, I want pages to opt out of search, so that generated helper pages or sensitive public pages can be excluded from Pagefind.
-21. As a publisher, I want explicit public allowlisting, so that only intended notes are emitted.
-22. As a publisher, I want private notes excluded from site output, navigation, search, backlinks, and graph data, so that generated output does not reveal private content.
-23. As a publisher, I want private assets excluded unless reachable from public pages or explicitly public folders, so that attachments are not leaked.
-24. As a maintainer, I want strict mode to fail on private-to-public leaks, so that CI blocks unsafe deployments.
-25. As a maintainer, I want ignored paths to honor `.gitignore`, default ignores, and user config, so that existing repository hygiene rules apply.
-26. As an author, I want frontmatter titles, aliases, slugs, drafts, and publish flags to be understood, so that metadata controls routing and publishing.
-27. As an author, I want README or index behavior to remain compatible with Starlight navigation, so that directory hierarchy still drives the sidebar.
-28. As an MDX author, I want ESM imports, JSX, and configured component aliases to continue working, so that interactive docs remain possible.
-29. As an MDX author, I want Obsidian preprocessing not to break MDX syntax, so that valid MDX remains valid after transformation.
-30. As a publisher, I want strict mode to fail on MDX import errors, duplicate slugs, invalid frontmatter, missing titles, missing assets, and broken internal links, so that builds are reliable.
-31. As an author, I want development mode to warn instead of fail for recoverable issues, so that I can iterate quickly.
-32. As a maintainer, I want a config surface for Obsidian compatibility, so that teams can choose allowed syntax and strictness.
-33. As a maintainer, I want clear documentation of supported and unsupported Obsidian syntax, so that authors know what to rely on.
-34. As a publisher, I want GitHub Pages-compatible static output, so that publishing remains free and simple.
-35. As a maintainer, I want automated tests for parsing, routing, privacy filtering, and build integration, so that compatibility does not regress.
+19. As a reader, I want full-text search over content public for the selected target, so that I can find pages quickly.
+20. As a maintainer, I want pages to opt out of search, so that generated helper pages or sensitive target-public pages can be excluded from Pagefind.
+21. As a publisher, I want explicit target-based public allowlisting as the default behavior, so that only notes intended for the selected publishing target are emitted.
+22. As a publisher, I want to publish different subsets of the same vault to different configured targets, so that work content, recipes, crafting notes, and household notes can have separate sites.
+23. As a maintainer, I want allowed publishing target IDs to be defined in central config, so that frontmatter cannot silently create accidental destinations.
+24. As a maintainer, I want strict mode to fail on unknown or malformed publish targets, so that CI catches configuration drift.
+25. As a publisher, I want notes not assigned to the current publishing target excluded from site output, navigation, search, backlinks, and graph data, so that generated output does not reveal non-target content.
+26. As a publisher, I want private assets excluded unless reachable from pages public for the current target or explicitly public for that target, so that attachments are not leaked.
+27. As a maintainer, I want strict mode to fail on private-to-public and cross-target leaks, so that CI blocks unsafe deployments.
+28. As a maintainer, I want ignored paths to honor `.gitignore`, default ignores, and user config, so that existing repository hygiene rules apply.
+29. As an author, I want frontmatter titles, global aliases, slugs, drafts, backlink flags, and publish targets to be understood, so that metadata controls routing and publishing.
+30. As an author, I want README or index behavior to remain compatible with `fea-docs` navigation, so that directory hierarchy still drives the sidebar.
+31. As an MDX author, I want ESM imports, JSX, and configured component aliases to continue working, so that interactive docs remain possible.
+32. As an MDX author, I want Obsidian normalization not to break MDX syntax, so that valid MDX remains valid after normalization.
+33. As a publisher, I want strict mode to fail on MDX import errors, duplicate slugs, invalid frontmatter, missing titles, missing assets, and broken internal links, so that builds are reliable.
+34. As an author, I want development mode to warn instead of fail for recoverable issues, so that I can iterate quickly.
+35. As a maintainer, I want a config surface for Obsidian compatibility, so that teams can choose allowed syntax, publishing targets, and strictness.
+36. As a maintainer, I want clear documentation of supported and unsupported Obsidian syntax, so that authors know what to rely on.
+37. As a publisher, I want GitHub Pages-compatible static output, so that publishing remains free and simple.
+38. As a publisher, I want normalized docs and static output to publish to separately configured repo, branch, and path destinations, so that source snapshots and deployed sites can use different branch layouts.
+39. As a maintainer, I want automated tests for parsing, routing, target filtering, privacy filtering, normalization, publishing, and build integration, so that compatibility does not regress.
 
 ## Functional Requirements
 
 ### Source Discovery
 
-1. The system must scan `.md` and `.mdx` files recursively from the configured docs root.
-2. The system must honor `.gitignore`, a default ignore set, and user-configured ignore patterns.
+1. The normalization layer must scan `.md` and `.mdx` files recursively from the configured source vault or docs root.
+2. The normalization layer must honor `.gitignore`, a default ignore set, and user-configured ignore patterns.
 3. The system must treat `.md` and `.mdx` as publishable content source files.
-4. The system must preserve existing Starlight routing and navigation behavior where no Obsidian-specific syntax is present.
-5. The system must support directory-based navigation and README/index section pages.
+4. The normalized docs tree must preserve existing `fea-docs` routing and navigation behavior where no Obsidian-specific syntax is present.
+5. The normalized docs tree must support directory-based navigation and README/index section pages.
 
 ### Metadata Model
 
-1. The system must parse frontmatter for at least `title`, `aliases`, `slug`, `draft`, `publish`, and `pagefind`.
+1. The system must parse frontmatter for at least `title`, `aliases`, `slug`, `draft`, `publish`, `backlinks`, and `pagefind`.
 2. The system must derive a title from frontmatter, first H1, or filename according to the existing `fea-docs` fallback order.
-3. The system must support aliases as alternate link targets for wikilink resolution.
+3. The system must support frontmatter `aliases` as global vault-wide alternate link targets for wikilink resolution.
 4. The system must track headings and generated heading anchors for heading-level links.
 5. The system should track tags when present in frontmatter or Markdown text for future graph/search facets.
-6. The system should track Obsidian block IDs when present, even if full block transclusion is not part of the first implementation.
+6. The system must track Obsidian block IDs when present and support links or embeds that target explicit block IDs.
 
-### Public and Private Filtering
+### Publishing Targets and Public/Private Filtering
 
-1. The system must support explicit public allowlisting with `publish: true`.
-2. The system must support excluding pages with `draft: true` from production builds.
-3. The system must define the precedence between `publish`, `draft`, ignore patterns, and build mode.
-4. The system must exclude non-public pages from rendered output.
-5. The system must exclude non-public pages from navigation, backlinks, graph data, and search indexes.
-6. The system must detect links from public pages to private pages.
-7. In strict mode, public-to-private page links must fail the build.
-8. In development mode, public-to-private page links must produce clear warnings.
-9. The system must document that source privacy is separate from generated-site privacy.
+1. The system must publish nothing by default.
+2. The system must support centrally configured publishing targets with stable target IDs such as `engineering`, `recipes`, `crafting`, or `house-and-garden`.
+3. The system must build or serve content for one selected publishing target at a time unless a later feature explicitly supports multi-target build orchestration.
+4. The system must support explicit target allowlisting with frontmatter `publish` values that name one or more configured targets.
+5. The system must support a single target string, such as `publish: engineering`, and a YAML target list, such as `publish: [engineering, recipes]`.
+6. The system should support frontmatter `publish: false` as an explicit non-public marker for Obsidian Publish compatibility and clearer author intent.
+7. The system may support `publish: true` only as a documented shorthand for a configured default target; if no default target is configured, `publish: true` must produce a diagnostic.
+8. The system must reject or warn on unknown publish target IDs instead of treating them as public destinations.
+9. A page is public only for publishing targets listed in its `publish` frontmatter and configured centrally; for all other targets, the page is non-public.
+10. The system must support excluding pages with `draft: true` from production builds.
+11. The system must define the precedence between `publish`, configured targets, `draft`, ignore patterns, and build mode.
+12. Ignore patterns must win first, then `draft: true` in production, then explicit membership in the selected configured publishing target; absent target membership means non-public for that build.
+13. The system must exclude pages outside the selected target from normalized docs and rendered static output.
+14. The system must exclude pages outside the selected target from navigation, backlinks, graph data, and search indexes.
+15. The system must detect links from pages public for the selected target to private pages or pages assigned only to other targets.
+16. In strict mode, public-to-private and cross-target page links must fail the build.
+17. In development mode, public-to-private and cross-target page links must produce clear warnings.
+18. The system must document that source privacy is separate from generated-site privacy.
+
+### Normalized Docs Artifact
+
+1. The normalization layer must emit a target-specific normalized docs tree before `fea-docs` rendering begins.
+2. The normalized docs tree must contain only pages and assets allowed for the selected publishing target.
+3. The normalized docs tree must preserve plain `.md` files when no MDX syntax is needed.
+4. The normalized docs tree must emit `.mdx` when the source file is MDX or when transformed output requires MDX/component syntax.
+5. The normalized docs tree must include any generated data files needed by `fea-docs`, backlinks, graph views, or search behavior.
+6. The normalized docs tree must include a manifest that maps source files to normalized output files and records target ID, routes, included assets, generated data files, and diagnostics summary.
+7. The normalized docs tree is public generated output and must not include private or cross-target content.
+8. `fea-docs` must consume the normalized docs tree as its input for preview and static builds.
+9. `fea-docs` must not be responsible for resolving Obsidian syntax, source-vault filtering, publishing target membership, or private-content exclusion.
 
 ### Wikilinks
 
@@ -111,27 +148,30 @@ The product must support a constrained, reliable subset of Obsidian behavior: wi
 2. The system must recognize `[[Note|Alias]]` wikilinks and render alias text.
 3. The system must recognize `[[Note#Heading]]` wikilinks and resolve them to heading anchors.
 4. The system must recognize `[[Note#Heading|Alias]]` links.
-5. The system must resolve wikilinks by canonical path, page title, and aliases.
-6. The system must handle URL generation using Starlight route rules.
-7. The system must avoid transforming wikilink-like text inside fenced code blocks, inline code, MDX JSX expressions, or import/export statements.
-8. The system must produce diagnostics for ambiguous wikilink targets.
-9. In strict mode, unresolved or ambiguous public wikilinks must fail the build.
+5. The system must recognize `[[Note#^block-id]]` wikilinks and resolve them to explicit block anchors.
+6. The system must resolve wikilinks by canonical path, page title, and global frontmatter aliases.
+7. The system must treat pipe aliases such as `[[Note|Alias]]` as per-link display text, not as global alias definitions.
+8. The normalization layer must handle URL generation using `fea-docs` route rules.
+9. The normalization layer must avoid transforming wikilink-like text inside fenced code blocks, inline code, MDX JSX expressions, or import/export statements.
+10. The system must produce diagnostics for ambiguous wikilink targets.
+11. In strict mode, unresolved or ambiguous wikilinks on pages public for the selected target must fail the build.
 
 ### Embeds and Transclusion
 
 1. The system must recognize note embeds using `![[Note]]`.
-2. The system should recognize heading embeds using `![[Note#Heading]]`.
+2. The system must recognize heading embeds using `![[Note#Heading]]`.
 3. The system must recognize asset embeds using `![[asset.ext]]` for supported image and media assets.
 4. The system must render simple note embeds as safe, clearly bounded embedded content.
 5. The system must prevent recursive embed loops and report them.
-6. The system must respect public/private filtering for embedded notes and assets.
-7. In strict mode, unresolved embeds and private embed leaks must fail the build.
-8. The system may defer full `![[Note#^block-id]]` block transclusion, but must either preserve diagnostics or fail clearly when unsupported.
+6. The system must respect target-based public/private filtering for embedded notes and assets.
+7. In strict mode, unresolved embeds, private embed leaks, and cross-target embed leaks must fail the build.
+8. The system must recognize block embeds using `![[Note#^block-id]]` and render the targeted block when the block exists in a note public for the selected target.
+9. The system must preserve stable block anchors for explicit `^block-id` markers in target-public content.
 
 ### Callouts
 
 1. The system must recognize Obsidian callout syntax beginning with `> [!type]`.
-2. The system must map common Obsidian callout types to Starlight asides or equivalent accessible components.
+2. The system must map common Obsidian callout types to `fea-docs` asides or equivalent accessible components.
 3. The system must preserve custom callout titles where provided.
 4. The system must preserve callout body Markdown.
 5. The system should support nested callouts without breaking blockquote parsing.
@@ -140,49 +180,52 @@ The product must support a constrained, reliable subset of Obsidian behavior: wi
 
 ### Backlinks
 
-1. The system must build a link graph from Markdown links, wikilinks, and supported embeds.
-2. The system must generate backlinks for each public page from public inbound references.
-3. Backlink output must exclude private source pages and private-only references.
+1. The normalization layer must build a link graph from Markdown links, wikilinks, and supported embeds.
+2. The normalization layer must generate backlink data for each page public for the selected publishing target from inbound references that are also public for that target.
+3. Backlink output must exclude private source pages, pages assigned only to other targets, and private-only references.
 4. Backlink entries must include source page title, route, and optional excerpt or context when feasible.
-5. Backlinks must be renderable as a Starlight page component or injected page section.
-6. Backlinks must be disabled or configurable per site or per page.
+5. Backlinks must render only when opted in globally or per page.
+6. Per-page backlink opt-in must use frontmatter `backlinks: true` rather than custom Markdown syntax.
+7. The system may also provide an explicit `fea-docs`/MDX component for advanced placement, but frontmatter is the primary author-facing control.
+8. Documentation must explain that Obsidian itself exposes backlinks through app/plugin UI and an optional in-document display setting, not through portable Markdown syntax.
 
 ### Graph Data
 
-1. The system must emit static graph data for public pages.
+1. The normalization layer must emit static graph data for pages public for the selected publishing target.
 2. Graph nodes must include at least page ID, title, route, and optional tags.
 3. Graph edges must include source, target, and edge type where known.
-4. Graph data must exclude private pages, private assets, and unresolved targets.
-5. The system should provide a client-side graph component or documented integration point.
-6. The graph must remain optional to avoid increasing baseline page weight.
+4. Graph data must exclude pages outside the selected publishing target, private assets, and unresolved targets.
+5. The system must include a built-in client-side graph view as part of the base product.
+6. The built-in graph view must require no separate integration package.
+7. The graph UI must avoid increasing baseline page weight for pages where the graph is not shown.
 
 ### Search
 
-1. The system must use Starlight/Pagefind for full-text search.
-2. The system must ensure only public pages are indexed.
+1. The normalized docs tree and `fea-docs` build must support Pagefind full-text search.
+2. The normalization layer must ensure only pages public for the selected publishing target are available for indexing.
 3. The system must honor `pagefind: false` or equivalent search exclusion metadata.
-4. The system must ensure embedded private content cannot enter the search index.
+4. The system must ensure embedded private or cross-target content cannot enter the search index.
 
 ### Asset Handling
 
-1. The system must resolve Markdown image links, MDX asset imports, and supported Obsidian asset embeds.
-2. The system must copy or reference only assets needed by public pages or explicitly configured public asset directories.
-3. The system must fail strict builds on unresolved public assets.
-4. The system must fail strict builds when public pages reference private assets.
+1. The normalization layer must resolve Markdown image links, MDX asset imports, and supported Obsidian asset embeds.
+2. The normalization layer must copy or reference only assets needed by pages public for the selected publishing target or explicitly configured public asset directories for that target.
+3. The system must fail strict builds on unresolved assets referenced by pages public for the selected target.
+4. The system must fail strict builds when pages public for the selected target reference private or cross-target assets.
 5. The system must avoid emitting arbitrary non-Markdown files from ignored or private paths.
 
 ### MDX and Component Compatibility
 
-1. The system must preserve existing Starlight MDX support.
+1. The normalized docs tree and `fea-docs` build must preserve existing `fea-docs` MDX support.
 2. The system must preserve configured framework integrations such as React.
 3. The system must preserve configured import aliases.
-4. Obsidian syntax transformation must run in a way that does not corrupt MDX ESM, JSX, expressions, or component imports.
-5. MDX compilation errors must remain visible and must fail strict builds.
+4. Obsidian syntax normalization must run in a way that does not corrupt MDX ESM, JSX, expressions, or component imports.
+5. MDX compilation errors from `fea-docs` must remain visible and must fail strict builds.
 
 ### Validation and Diagnostics
 
 1. Development mode must favor warnings for recoverable content issues.
-2. Strict mode must fail on unresolved public links, unresolved public embeds, unresolved public assets, duplicate routes/slugs, invalid frontmatter, missing title fallback, MDX import errors, ambiguous wikilinks, embed cycles, and privacy leaks.
+2. Strict mode must fail on unresolved links, embeds, or assets referenced by pages public for the selected target, duplicate routes/slugs, invalid frontmatter, unknown publish targets, missing title fallback, MDX import errors, ambiguous wikilinks, embed cycles, privacy leaks, and cross-target leaks.
 3. Diagnostics must include source file, location where feasible, issue code, severity, and suggested fix.
 4. The system must provide a summary of warnings and errors at the end of build/start output.
 5. The system should support machine-readable diagnostics for CI or editor integrations.
@@ -190,41 +233,45 @@ The product must support a constrained, reliable subset of Obsidian behavior: wi
 ### Configuration
 
 1. The system must expose an optional Obsidian compatibility config section.
-2. The config must allow enabling or disabling wikilinks, callouts, embeds, backlinks, graph output, and explicit publish allowlisting.
-3. The config must allow defining public roots, ignored paths, public asset directories, and strictness behavior.
-4. Defaults must be safe: private content should not be emitted accidentally when explicit publishing is enabled.
-5. Defaults must be simple: existing non-Obsidian Starlight usage should continue with minimal or no config.
+2. The config must allow enabling or disabling wikilinks, callouts, embeds, backlinks, graph output, and explicit target-based publish allowlisting.
+3. The config must allow defining publishing targets, a selected/default target, optional target-specific output or site settings, public roots, ignored paths, public asset directories, normalized docs destinations, static output destinations, and strictness behavior.
+4. Defaults must be safe: no content is public unless explicitly assigned to a configured publishing target or included through a deliberate future public-root configuration.
+5. Defaults must be simple: existing non-Obsidian `fea-docs` usage should continue with minimal config when Obsidian compatibility is not enabled.
+6. Each publishing target may define separate repo, branch, and path settings for normalized docs and static output.
 
 ### Authoring UX
 
 1. The system must document that Obsidian is an optional editor, not the publishing compiler.
 2. The system must document recommended Obsidian settings and plugins for `.mdx` editing.
 3. The system must recommend standard Markdown links where possible for portability.
-4. The system must provide examples for wikilinks, aliases, callouts, embeds, public flags, and MDX components.
+4. The system must provide examples for wikilinks, aliases, callouts, embeds, publishing target frontmatter, and MDX components.
 5. The system must document unsupported Obsidian features and their expected diagnostics.
 
 ### Deployment
 
-1. The system must produce static output compatible with GitHub Pages.
+1. The system must produce a normalized docs artifact and static output compatible with GitHub Pages-style static hosting.
 2. The system must require no runtime server for links, backlinks, graph data, or search.
-3. The system must remain compatible with `fea-docs start`, `fea-docs build`, and `fea-docs setup --gh-pages` concepts.
+3. The system must remain compatible with `fea-docs start`, `fea-docs build`, and `fea-docs setup --gh-pages` concepts after normalization.
+4. The publishing layer must be able to publish normalized docs and static output to separate configured destinations.
+5. Each destination must support at least repo, branch, and path configuration.
 
 ## Non-Functional Requirements
 
 ### Privacy and Security
 
-1. Generated output must not include private pages, private-only graph nodes, private-only backlinks, private search content, or private assets.
-2. Strict mode must block known private-content leaks.
+1. Generated output, including normalized docs and static output, must not include pages outside the selected publishing target, private-only graph nodes, private-only backlinks, private search content, or private assets.
+2. Strict mode must block known private-content and cross-target leaks.
 3. The system must not execute arbitrary Obsidian plugin code.
 4. The system must not execute arbitrary note content during parsing beyond normal MDX compilation rules.
 5. The documentation must warn that committing private files to a public repository makes them public regardless of build filtering.
+6. The documentation must warn that normalized docs are published artifacts and must be treated with the same care as static output.
 
 ### Correctness
 
 1. Link resolution must be deterministic.
 2. Ambiguous aliases or titles must be reported instead of resolved silently.
-3. Route generation must match Starlight output.
-4. Transformations must preserve source intent for supported syntax.
+3. Route generation must match `fea-docs` output.
+4. Normalization must preserve source intent for supported syntax.
 5. Unsupported syntax must degrade clearly or fail with actionable diagnostics.
 
 ### Performance
@@ -233,21 +280,24 @@ The product must support a constrained, reliable subset of Obsidian behavior: wi
 2. Incremental rebuilds should reuse cached discovery and graph data where feasible.
 3. Full builds should scale to thousands of notes without quadratic link-resolution behavior.
 4. Optional graph UI code must not load on every page unless enabled and needed.
-5. Search indexing must not process private or ignored content.
+5. Search indexing must not process private, cross-target, or ignored content.
 
 ### Reliability
 
-1. Build output must be reproducible from the same source tree and config.
+1. Normalized docs and static build output must be reproducible from the same source tree and config.
 2. Strict mode must be suitable for CI.
 3. Diagnostics must be stable enough for documentation and tests.
-4. Failure modes must leave no partially published private assets in the output directory.
+4. Failure modes must leave no partially published private or cross-target assets in normalized docs, static output, or configured destination branches.
 
 ### Maintainability
 
-1. Parsing, resolution, privacy filtering, and rendering integration should be separated into testable modules.
+1. Parsing, resolution, target filtering, privacy filtering, normalization, rendering integration, and publishing should be separated into testable modules.
 2. The public configuration API should remain small and stable.
-3. Obsidian compatibility should be implemented as an additive layer over Starlight rather than a fork of Starlight behavior.
-4. Tests should focus on observable behavior rather than internal implementation details.
+3. Obsidian compatibility should be implemented in the normalization layer rather than as a fork of `fea-docs` behavior.
+4. Obsidian syntax normalization must be implemented as a dedicated isolated module with a clear input/output contract.
+5. The syntax normalization module should be extensible so additional source syntaxes can be supported alongside Obsidian syntax without rewriting target filtering, rendering integration, or publishing.
+6. The syntax normalization module should be reusable outside the static publishing pipeline, including future editor integrations such as a VS Code extension that previews, validates, or assists with the supported authoring syntax.
+7. Tests should focus on observable behavior rather than internal implementation details.
 
 ### Accessibility
 
@@ -258,49 +308,57 @@ The product must support a constrained, reliable subset of Obsidian behavior: wi
 
 ### Compatibility
 
-1. The system must support current Astro Starlight Markdown and MDX behavior.
+1. The system must support current `fea-docs` Markdown and MDX behavior.
 2. The system must not require paid Obsidian Publish.
 3. The system must work in a static hosting environment.
 4. The system should remain usable when authors do not use Obsidian at all.
+5. Alias resolution should follow Obsidian's vault-wide mental model: aliases are global alternate note names, and duplicate aliases require disambiguation rather than silent local scoping.
 
 ## Implementation Decisions
 
-1. Astro Starlight remains the publishing platform.
+1. The product is split into authoring, normalization, rendering, and publishing layers.
 2. Obsidian is treated as an optional local editor.
-3. The core product is a build-time content intelligence layer: discovery, metadata extraction, graph construction, privacy filtering, syntax transformation, and diagnostics.
-4. The initial supported Obsidian subset is wikilinks, aliases, heading links, common callouts, simple note embeds, asset embeds, backlinks, graph data, and public/private filtering.
-5. Full Dataview, arbitrary Obsidian plugin rendering, embedded search results, and complete block-reference transclusion are out of scope unless later reintroduced through separate PRDs.
-6. Public output should prefer explicit allowlisting for publication-sensitive workflows.
+3. The normalization layer is the build-time content intelligence layer: discovery, metadata extraction, graph construction, target filtering, privacy filtering, syntax normalization, asset selection, and diagnostics.
+4. The initial supported Obsidian subset is wikilinks, global aliases, heading links, block links, common callouts, simple note embeds, heading embeds, block embeds, asset embeds, backlinks, graph data, and target-based public/private filtering.
+5. Full Dataview, arbitrary Obsidian plugin rendering, and embedded search results are out of scope unless later reintroduced through separate PRDs.
+6. Public output must use explicit target allowlisting by default; absent membership in the selected configured publishing target means non-public for that build.
 7. Strict mode is the gate for deployment correctness and privacy safety.
 8. Development mode prioritizes iteration and should provide actionable warnings.
+9. Backlinks are a base capability but are rendered only when opted in globally or with per-page frontmatter `backlinks: true`.
+10. The graph view ships as part of the base product.
+11. Global aliases match Obsidian's vault-wide model; ambiguous aliases fail strict validation.
+12. `fea-docs` consumes normalized Markdown/MDX and remains responsible for rendering static output, not source-vault semantics.
+13. Normalized docs and static output are both publishable artifacts with independently configurable repo, branch, and path destinations per target.
+14. Obsidian syntax normalization is a reusable engine module with a stable contract, not a one-off transform embedded in the publisher or `fea-docs` integration.
 
 ## Acceptance Criteria
 
-1. A sample docs folder containing `.md`, `.mdx`, wikilinks, aliases, callouts, embeds, public/private notes, and assets can be served locally through Starlight.
-2. The same sample can be built to static output compatible with GitHub Pages.
-3. Public wikilinks resolve to correct routes and anchors.
-4. Public callouts render as accessible Starlight-compatible UI.
-5. Public simple embeds render or fail with documented diagnostics.
-6. Backlinks render for public inbound links only.
-7. Static graph data contains public nodes and edges only.
-8. Search indexes public searchable pages only.
-9. Strict mode fails on unresolved links, missing assets, duplicate routes, invalid frontmatter, MDX import errors, ambiguous wikilinks, embed cycles, and private-content leaks.
-10. Documentation clearly states supported syntax, unsupported syntax, Obsidian authoring limits, and source privacy limits.
+1. A sample source vault containing `.md`, `.mdx`, wikilinks, aliases, callouts, embeds, target-specific public/private notes, and assets can be normalized for at least two configured publishing targets.
+2. Each normalized sample docs tree can be served locally through `fea-docs` and built to static output compatible with GitHub Pages-style hosting.
+3. Wikilinks on pages public for the selected target resolve to correct routes and anchors.
+4. Callouts on pages public for the selected target render as accessible `fea-docs`-compatible UI.
+5. Simple, heading, block, and asset embeds on pages public for the selected target render or fail with documented diagnostics.
+6. Backlinks render for inbound links public to the selected target only and only where opted in.
+7. Static graph data and the built-in graph view contain nodes and edges public to the selected target only.
+8. Search indexes searchable pages public to the selected target only.
+9. Strict mode fails on unresolved links, missing assets, duplicate routes, invalid frontmatter, unknown publish targets, MDX import errors, ambiguous wikilinks, embed cycles, private-content leaks, and cross-target leaks.
+10. Normalized docs and static output can be published to separate configured repo, branch, and path destinations for the selected target.
+11. Documentation clearly states supported syntax, unsupported syntax, Obsidian authoring limits, source privacy limits, and normalized-docs privacy limits.
 
 ## Testing Decisions
 
-1. Unit tests should cover parsing of wikilinks, embeds, callouts, frontmatter, aliases, headings, and block IDs.
+1. Unit tests should cover parsing of wikilinks, embeds, callouts, frontmatter, global aliases, headings, and block IDs.
 2. Unit tests should cover deterministic route and target resolution, including ambiguous targets.
-3. Unit tests should cover privacy filtering and asset inclusion rules.
-4. Integration tests should build sample vaults and inspect generated routes, HTML, graph JSON, search inclusion, and diagnostics.
+3. Unit tests should cover target filtering, privacy filtering, and asset inclusion rules.
+4. Integration tests should normalize sample vaults, build normalized docs with `fea-docs`, and inspect generated routes, HTML, graph JSON, search inclusion, publishing artifacts, and diagnostics.
 5. MDX compatibility tests should include imports, JSX, expressions, and Obsidian-like text in code blocks.
 6. Accessibility tests should cover callouts, backlink sections, collapsible UI, and graph fallbacks.
 7. Regression fixtures should include unsupported syntax to verify diagnostics remain clear.
 
-## Open Questions
+## Resolved Product Decisions
 
-1. Should explicit `publish: true` be the default publishing mode for all Obsidian-compatible projects, or only when configured?
-2. Should backlinks be injected into every page automatically or exposed as an opt-in component/layout slot?
-3. Should graph visualization ship in the base product or as an optional integration?
-4. How much block-reference support is worth implementing before real user examples exist?
-5. Should aliases be global across the site, scoped by folder, or configurable?
+1. **Default publication**: Nothing is published by default. A page must opt into one or more centrally configured publishing targets through frontmatter `publish`, such as `publish: engineering` or `publish: [engineering, recipes]`. This preserves the safe allowlist direction from the research while supporting one Obsidian-style vault that publishes different content subsets to different destinations. `publish: false` remains an explicit non-public marker. `publish: true` is allowed only as a documented shorthand for a configured default target; otherwise it must warn in development or fail strict validation.
+2. **Backlink display**: Backlinks are a base capability but are rendered only when opted in globally or per page. Per-page opt-in uses frontmatter `backlinks: true`; custom Markdown syntax is avoided because Obsidian exposes backlinks through app/plugin UI and settings rather than portable Markdown syntax.
+3. **Graph view**: Graph visualization ships as part of the base product, backed by static graph data for the selected publishing target. It must not require a separate integration and must not add page weight where the graph is not shown.
+4. **Block references**: Explicit block IDs and block targets are in scope. The system must preserve `^block-id` anchors and support `[[Note#^block-id]]` and `![[Note#^block-id]]` for target-public content.
+5. **Aliases**: Aliases are global across the docs vault by default, matching Obsidian's vault-wide note-linking model. Frontmatter `aliases` define global alternate note names; pipe syntax defines per-link display text. Duplicate aliases are ambiguous and must warn in development or fail strict validation.
