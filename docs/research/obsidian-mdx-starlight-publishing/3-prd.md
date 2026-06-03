@@ -16,7 +16,7 @@ The product must support a constrained, reliable subset of Obsidian behavior thr
 2. Support `.md` and `.mdx` as first-class source formats.
 3. Convert common Obsidian syntax into normalized Markdown or MDX before `fea-docs` renders static output.
 4. Generate relationship data for backlinks and graph views without requiring a server.
-5. Prevent accidental publication of private notes and private assets by publishing nothing unless it is explicitly opted into a configured publishing target.
+5. Prevent accidental publication of private notes, private assets, and private static files by publishing nothing unless it is explicitly opted into a configured publishing target.
 6. Allow one vault to publish different subsets of content to different configured targets, such as engineering, recipes, crafting, or house-and-garden.
 7. Publish both the normalized docs artifact and the static output artifact to destinations configured per publishing target.
 8. Preserve `fea-docs` simplicity by keeping vault discovery, target filtering, Obsidian syntax handling, and privacy validation outside the renderer.
@@ -30,7 +30,7 @@ The product must support a constrained, reliable subset of Obsidian behavior thr
 4. Making Obsidian preview match deployed MDX exactly.
 5. Creating a separate non-`fea-docs` docs platform.
 6. Providing hard privacy for files committed to a public source repository.
-7. Orchestrating deployment to multiple publishing targets in one command; the first version defines target filtering and target-specific build/publish runs.
+7. Advanced multi-target deployment orchestration such as parallel scheduling, cross-target dependency management, aggregate rollback, or coordinated recovery after partial failure.
 
 ## Actors
 
@@ -44,7 +44,7 @@ The product must support a constrained, reliable subset of Obsidian behavior thr
 1. **Authoring layer**: Authors use Obsidian, VS Code, or any text editor against a source vault containing Markdown, MDX, assets, private notes, drafts, and notes for one or more publishing targets.
 2. **Normalization layer**: A target-aware publishing preparation solution scans the source vault, selects one configured publishing target, applies ignore/draft/publish filtering, resolves supported Obsidian syntax, validates privacy and links, selects assets, and emits a normalized docs tree for that target.
 3. **Rendering layer**: `fea-docs` consumes the normalized docs tree and builds static output. `fea-docs` should not need to understand Obsidian vault semantics, private notes, target membership, wikilink resolution, or source-vault filtering.
-4. **Publishing layer**: The publisher writes both the normalized docs artifact and the generated static output artifact to destinations configured for the selected publishing target.
+4. **Publishing layer**: The publisher writes both the normalized docs artifact and the generated static output artifact to destinations configured for the selected publishing target. It can run for one selected target or iterate over all configured targets by invoking the same target-specific pipeline for each target.
 5. The normalized docs artifact is treated as public generated output. It must satisfy the same target/privacy constraints as the static output.
 6. The normalization layer should preserve plain `.md` files when no MDX features are needed and emit `.mdx` when the source is MDX or the normalized output requires MDX/component syntax.
 
@@ -75,7 +75,7 @@ The product must support a constrained, reliable subset of Obsidian behavior thr
 23. As a maintainer, I want allowed publishing target IDs to be defined in central config, so that frontmatter cannot silently create accidental destinations.
 24. As a maintainer, I want strict mode to fail on unknown or malformed publish targets, so that CI catches configuration drift.
 25. As a publisher, I want notes not assigned to the current publishing target excluded from site output, navigation, search, backlinks, and graph data, so that generated output does not reveal non-target content.
-26. As a publisher, I want private assets excluded unless reachable from pages public for the current target or explicitly public for that target, so that attachments are not leaked.
+26. As a publisher, I want private assets and static files excluded unless reachable from pages public for the current target or explicitly public for that target, so that attachments and other files are not leaked.
 27. As a maintainer, I want strict mode to fail on private-to-public and cross-target leaks, so that CI blocks unsafe deployments.
 28. As a maintainer, I want ignored paths to honor `.gitignore`, default ignores, and user config, so that existing repository hygiene rules apply.
 29. As an author, I want frontmatter titles, global aliases, slugs, drafts, backlink flags, and publish targets to be understood, so that metadata controls routing and publishing.
@@ -88,7 +88,8 @@ The product must support a constrained, reliable subset of Obsidian behavior thr
 36. As a maintainer, I want clear documentation of supported and unsupported Obsidian syntax, so that authors know what to rely on.
 37. As a publisher, I want GitHub Pages-compatible static output, so that publishing remains free and simple.
 38. As a publisher, I want normalized docs and static output to publish to separately configured repo, branch, and path destinations, so that source snapshots and deployed sites can use different branch layouts.
-39. As a maintainer, I want automated tests for parsing, routing, target filtering, privacy filtering, normalization, publishing, and build integration, so that compatibility does not regress.
+39. As a publisher, I want a single command to publish all configured targets, so that routine deployment does not require manually invoking each target.
+40. As a maintainer, I want automated tests for parsing, routing, target filtering, privacy filtering, normalization, publishing, and build integration, so that compatibility does not regress.
 
 ## Functional Requirements
 
@@ -97,8 +98,9 @@ The product must support a constrained, reliable subset of Obsidian behavior thr
 1. The normalization layer must scan `.md` and `.mdx` files recursively from the configured source vault or docs root.
 2. The normalization layer must honor `.gitignore`, a default ignore set, and user-configured ignore patterns.
 3. The system must treat `.md` and `.mdx` as publishable content source files.
-4. The normalized docs tree must preserve existing `fea-docs` routing and navigation behavior where no Obsidian-specific syntax is present.
-5. The normalized docs tree must support directory-based navigation and README/index section pages.
+4. The normalization layer must also discover non-Markdown files under the configured root so they can be copied as static assets when referenced by target-public content or allowed by target-specific asset rules.
+5. The normalized docs tree must preserve existing `fea-docs` routing and navigation behavior where no Obsidian-specific syntax is present.
+6. The normalized docs tree must support directory-based navigation and README/index section pages.
 
 ### Metadata Model
 
@@ -113,22 +115,23 @@ The product must support a constrained, reliable subset of Obsidian behavior thr
 
 1. The system must publish nothing by default.
 2. The system must support centrally configured publishing targets with stable target IDs such as `engineering`, `recipes`, `crafting`, or `house-and-garden`.
-3. The system must build or serve content for one selected publishing target at a time unless a later feature explicitly supports multi-target build orchestration.
-4. The system must support explicit target allowlisting with frontmatter `publish` values that name one or more configured targets.
-5. The system must support a single target string, such as `publish: engineering`, and a YAML target list, such as `publish: [engineering, recipes]`.
-6. The system should support frontmatter `publish: false` as an explicit non-public marker for Obsidian Publish compatibility and clearer author intent.
-7. The system may support `publish: true` only as a documented shorthand for a configured default target; if no default target is configured, `publish: true` must produce a diagnostic.
-8. The system must reject or warn on unknown publish target IDs instead of treating them as public destinations.
-9. A page is public only for publishing targets listed in its `publish` frontmatter and configured centrally; for all other targets, the page is non-public.
-10. The system must support excluding pages with `draft: true` from production builds.
-11. The system must define the precedence between `publish`, configured targets, `draft`, ignore patterns, and build mode.
-12. Ignore patterns must win first, then `draft: true` in production, then explicit membership in the selected configured publishing target; absent target membership means non-public for that build.
-13. The system must exclude pages outside the selected target from normalized docs and rendered static output.
-14. The system must exclude pages outside the selected target from navigation, backlinks, graph data, and search indexes.
-15. The system must detect links from pages public for the selected target to private pages or pages assigned only to other targets.
-16. In strict mode, public-to-private and cross-target page links must fail the build.
-17. In development mode, public-to-private and cross-target page links must produce clear warnings.
-18. The system must document that source privacy is separate from generated-site privacy.
+3. The system must support building, serving, and publishing one selected publishing target at a time.
+4. The system should support publishing all configured targets by iterating over the target-specific normalization, build, and publish workflow for each configured target.
+5. The system must support explicit target allowlisting with frontmatter `publish` values that name one or more configured targets.
+6. The system must support a single target string, such as `publish: engineering`, and a YAML target list, such as `publish: [engineering, recipes]`.
+7. The system should support frontmatter `publish: false` as an explicit non-public marker for Obsidian Publish compatibility and clearer author intent.
+8. The system may support `publish: true` only as a documented shorthand for a configured default target; if no default target is configured, `publish: true` must produce a diagnostic.
+9. The system must reject or warn on unknown publish target IDs instead of treating them as public destinations.
+10. A page is public only for publishing targets listed in its `publish` frontmatter and configured centrally; for all other targets, the page is non-public.
+11. The system must support excluding pages with `draft: true` from production builds.
+12. The system must define the precedence between `publish`, configured targets, `draft`, ignore patterns, and build mode.
+13. Ignore patterns must win first, then `draft: true` in production, then explicit membership in the selected configured publishing target; absent target membership means non-public for that build.
+14. The system must exclude pages outside the selected target from normalized docs and rendered static output.
+15. The system must exclude pages outside the selected target from navigation, backlinks, graph data, and search indexes.
+16. The system must detect links from pages public for the selected target to private pages or pages assigned only to other targets.
+17. In strict mode, public-to-private and cross-target page links must fail the build.
+18. In development mode, public-to-private and cross-target page links must produce clear warnings.
+19. The system must document that source privacy is separate from generated-site privacy.
 
 ### Normalized Docs Artifact
 
@@ -136,11 +139,13 @@ The product must support a constrained, reliable subset of Obsidian behavior thr
 2. The normalized docs tree must contain only pages and assets allowed for the selected publishing target.
 3. The normalized docs tree must preserve plain `.md` files when no MDX syntax is needed.
 4. The normalized docs tree must emit `.mdx` when the source file is MDX or when transformed output requires MDX/component syntax.
-5. The normalized docs tree must include any generated data files needed by `fea-docs`, backlinks, graph views, or search behavior.
-6. The normalized docs tree must include a manifest that maps source files to normalized output files and records target ID, routes, included assets, generated data files, and diagnostics summary.
-7. The normalized docs tree is public generated output and must not include private or cross-target content.
-8. `fea-docs` must consume the normalized docs tree as its input for preview and static builds.
-9. `fea-docs` must not be responsible for resolving Obsidian syntax, source-vault filtering, publishing target membership, or private-content exclusion.
+5. The normalization layer must only transform `.md` and `.mdx` source files; other file types must be copied unchanged when included in the normalized docs tree.
+6. Copied non-Markdown files must preserve their relative paths from the configured root unless target config explicitly remaps them.
+7. The normalized docs tree must include any generated data files needed by `fea-docs`, backlinks, graph views, or search behavior.
+8. The normalized docs tree must include a manifest that maps source files to normalized output files and records target ID, routes, included assets, copied static files, generated data files, and diagnostics summary.
+9. The normalized docs tree is public generated output and must not include private or cross-target content.
+10. `fea-docs` must consume the normalized docs tree as its input for preview and static builds.
+11. `fea-docs` must not be responsible for resolving Obsidian syntax, source-vault filtering, publishing target membership, or private-content exclusion.
 
 ### Wikilinks
 
@@ -194,7 +199,7 @@ The product must support a constrained, reliable subset of Obsidian behavior thr
 1. The normalization layer must emit static graph data for pages public for the selected publishing target.
 2. Graph nodes must include at least page ID, title, route, and optional tags.
 3. Graph edges must include source, target, and edge type where known.
-4. Graph data must exclude pages outside the selected publishing target, private assets, and unresolved targets.
+4. Graph data must exclude pages outside the selected publishing target, private assets, private static files, and unresolved targets.
 5. The system must include a built-in client-side graph view as part of the base product.
 6. The built-in graph view must require no separate integration package.
 7. The graph UI must avoid increasing baseline page weight for pages where the graph is not shown.
@@ -208,11 +213,13 @@ The product must support a constrained, reliable subset of Obsidian behavior thr
 
 ### Asset Handling
 
-1. The normalization layer must resolve Markdown image links, MDX asset imports, and supported Obsidian asset embeds.
-2. The normalization layer must copy or reference only assets needed by pages public for the selected publishing target or explicitly configured public asset directories for that target.
-3. The system must fail strict builds on unresolved assets referenced by pages public for the selected target.
-4. The system must fail strict builds when pages public for the selected target reference private or cross-target assets.
-5. The system must avoid emitting arbitrary non-Markdown files from ignored or private paths.
+1. The normalization layer must resolve Markdown image links, Markdown links to non-Markdown files, MDX asset imports, MDX references to files under the configured root, and supported Obsidian asset embeds.
+2. The normalization layer must preserve `fea-docs` support for referencing arbitrary non-Markdown files from within the configured root.
+3. The normalization layer must copy referenced non-Markdown files unchanged into the normalized docs tree when they are allowed for the selected publishing target.
+4. The normalization layer must copy or reference only assets and static files needed by pages public for the selected publishing target or explicitly configured public asset directories for that target.
+5. The system must fail strict builds on unresolved assets or static files referenced by pages public for the selected target.
+6. The system must fail strict builds when pages public for the selected target reference private or cross-target assets or static files.
+7. The system must avoid emitting arbitrary non-Markdown files from ignored, private, or cross-target paths.
 
 ### MDX and Component Compatibility
 
@@ -254,12 +261,15 @@ The product must support a constrained, reliable subset of Obsidian behavior thr
 3. The system must remain compatible with `fea-docs start`, `fea-docs build`, and `fea-docs setup --gh-pages` concepts after normalization.
 4. The publishing layer must be able to publish normalized docs and static output to separate configured destinations.
 5. Each destination must support at least repo, branch, and path configuration.
+6. The publishing layer should support a publish-all mode that iterates over all configured publishing targets using the same target-specific normalization, build, and publish workflow.
+7. Publish-all mode may run sequentially in the first version and must report per-target success or failure.
+8. Publish-all mode is not required to provide aggregate rollback or coordinated recovery after partial failure.
 
 ## Non-Functional Requirements
 
 ### Privacy and Security
 
-1. Generated output, including normalized docs and static output, must not include pages outside the selected publishing target, private-only graph nodes, private-only backlinks, private search content, or private assets.
+1. Generated output, including normalized docs and static output, must not include pages outside the selected publishing target, private-only graph nodes, private-only backlinks, private search content, private assets, or private static files.
 2. Strict mode must block known private-content and cross-target leaks.
 3. The system must not execute arbitrary Obsidian plugin code.
 4. The system must not execute arbitrary note content during parsing beyond normal MDX compilation rules.
@@ -287,7 +297,7 @@ The product must support a constrained, reliable subset of Obsidian behavior thr
 1. Normalized docs and static build output must be reproducible from the same source tree and config.
 2. Strict mode must be suitable for CI.
 3. Diagnostics must be stable enough for documentation and tests.
-4. Failure modes must leave no partially published private or cross-target assets in normalized docs, static output, or configured destination branches.
+4. Failure modes must leave no partially published private or cross-target assets or static files in normalized docs, static output, or configured destination branches.
 
 ### Maintainability
 
@@ -343,7 +353,8 @@ The product must support a constrained, reliable subset of Obsidian behavior thr
 8. Search indexes searchable pages public to the selected target only.
 9. Strict mode fails on unresolved links, missing assets, duplicate routes, invalid frontmatter, unknown publish targets, MDX import errors, ambiguous wikilinks, embed cycles, private-content leaks, and cross-target leaks.
 10. Normalized docs and static output can be published to separate configured repo, branch, and path destinations for the selected target.
-11. Documentation clearly states supported syntax, unsupported syntax, Obsidian authoring limits, source privacy limits, and normalized-docs privacy limits.
+11. Publish-all mode can publish every configured target by reusing the target-specific pipeline and reporting per-target success or failure.
+12. Documentation clearly states supported syntax, unsupported syntax, Obsidian authoring limits, source privacy limits, and normalized-docs privacy limits.
 
 ## Testing Decisions
 
