@@ -1,0 +1,51 @@
+{
+  "run_id": "free-models-api-access",
+  "question": "1. Which API provides access to which free models? 2. Which free models do the agents OpenCode and PI give access to?",
+  "depth": "standard",
+  "checkpoint_mode": "default",
+  "status": "complete",
+  "created_at": "2026-06-06T12:00:00Z",
+  "updated_at": "2026-06-06T12:45:00Z",
+  "nodes": [
+    {
+      "id": "n-001",
+      "type": "discovery",
+      "title": "Discover free LLM API providers",
+      "status": "complete",
+      "depends_on": [],
+      "artifacts": ["notes/s1-promptt-dev.md", "notes/s2-agentdeals.md"]
+    },
+    {
+      "id": "n-002",
+      "type": "discovery",
+      "title": "Discover OpenCode free model access",
+      "status": "complete",
+      "depends_on": [],
+      "artifacts": ["notes/s3-computingforgeeks.md"]
+    },
+    {
+      "id": "n-003",
+      "type": "discovery",
+      "title": "Discover PI agent free model access",
+      "status": "complete",
+      "depends_on": [],
+      "artifacts": ["notes/s5-pi-free.md"]
+    },
+    {
+      "id": "n-004",
+      "type": "synthesis",
+      "title": "Synthesize findings into final report",
+      "status": "complete",
+      "depends_on": ["n-001", "n-002", "n-003"],
+      "artifacts": ["final-report.md"]
+    },
+    {
+      "id": "n-005",
+      "type": "evaluator",
+      "title": "Run quality gates",
+      "status": "complete",
+      "depends_on": ["n-004"],
+      "artifacts": ["evaluation.md"]
+    }
+  ]
+}

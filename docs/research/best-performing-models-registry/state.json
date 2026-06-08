@@ -1,0 +1,119 @@
+{
+  "run_id": "best-performing-models-registry",
+  "question": "What are the best performing free and paid AI models for research, coding (TypeScript, Python, CSS), thinking and image generation tasks, and how can this process be automated to fetch models and their rankings deterministically?",
+  "depth": "deep",
+  "checkpoint_mode": "default",
+  "status": "complete",
+  "created_at": "2026-06-08T00:00:00Z",
+  "updated_at": "2026-06-08T00:00:00Z",
+  "nodes": [
+    {
+      "id": "n-001",
+      "type": "subquestion-planning",
+      "title": "Decompose main question into subquestions and dependency graph",
+      "status": "complete",
+      "depends_on": [],
+      "artifacts": [],
+      "blocked_reason": null
+    },
+    {
+      "id": "n-002",
+      "type": "discovery",
+      "title": "LMSYS Chatbot Arena overall and category rankings",
+      "status": "complete",
+      "depends_on": ["n-001"],
+      "artifacts": ["notes/s-lmsys-arena.md"],
+      "blocked_reason": null
+    },
+    {
+      "id": "n-003",
+      "type": "discovery",
+      "title": "Coding benchmarks: LiveCodeBench, SWE-bench, Aider, Codeforces",
+      "status": "complete",
+      "depends_on": ["n-001"],
+      "artifacts": ["notes/s-coding-benchmarks.md"],
+      "blocked_reason": null
+    },
+    {
+      "id": "n-004",
+      "type": "discovery",
+      "title": "Thinking/reasoning benchmarks: GPQA, MATH, HumanEval, MMLU-Pro, ARC-AGI",
+      "status": "complete",
+      "depends_on": ["n-001"],
+      "artifacts": ["notes/s-reasoning-benchmarks.md"],
+      "blocked_reason": null
+    },
+    {
+      "id": "n-005",
+      "type": "discovery",
+      "title": "Image generation benchmarks: Artificial Analysis Arena, T2I-Arena, text rendering, photoreception",
+      "status": "complete",
+      "depends_on": ["n-001"],
+      "artifacts": ["notes/s-image-benchmarks.md"],
+      "blocked_reason": null
+    },
+    {
+      "id": "n-006",
+      "type": "discovery",
+      "title": "Free/open-weight model landscape and self-hostable options",
+      "status": "complete",
+      "depends_on": ["n-001"],
+      "artifacts": ["notes/s-free-open-models.md"],
+      "blocked_reason": null
+    },
+    {
+      "id": "n-007",
+      "type": "discovery",
+      "title": "Automation approaches for programmatic model ranking",
+      "status": "complete",
+      "depends_on": ["n-001"],
+      "artifacts": ["notes/s-automation-approaches.md"],
+      "blocked_reason": null
+    },
+    {
+      "id": "n-008",
+      "type": "secondary-lead-followup",
+      "title": "Analyze secondary leads from discovery nodes",
+      "status": "complete",
+      "depends_on": ["n-002", "n-003", "n-004", "n-005", "n-006", "n-007"],
+      "artifacts": ["notes/s-secondary-followups.md", "notes/s-secondary-benchmarks.md"],
+      "blocked_reason": null
+    },
+    {
+      "id": "n-009",
+      "type": "synthesis",
+      "title": "Synthesize model rankings across categories (free-tier, paid, open-weight)",
+      "status": "complete",
+      "depends_on": ["n-008"],
+      "artifacts": [],
+      "blocked_reason": null
+    },
+    {
+      "id": "n-010",
+      "type": "synthesis",
+      "title": "Synthesize automation pipeline design and recs",
+      "status": "complete",
+      "depends_on": ["n-008"],
+      "artifacts": [],
+      "blocked_reason": null
+    },
+    {
+      "id": "n-011",
+      "type": "evaluator",
+      "title": "Quality gate evaluation pass",
+      "status": "complete",
+      "depends_on": ["n-009", "n-010"],
+      "artifacts": [],
+      "blocked_reason": null
+    },
+    {
+      "id": "n-012",
+      "type": "report-generation",
+      "title": "Generate final-report.md, source-inventory.md, evaluation.md",
+      "status": "complete",
+      "depends_on": ["n-011"],
+      "artifacts": ["source-inventory.md", "evaluation.md", "final-report.md"],
+      "blocked_reason": null
+    }
+  ]
+}
