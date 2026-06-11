@@ -1,0 +1,65 @@
+{
+  "run_id": "2026-06-10-streaming-crawler-feasibility",
+  "question": "Can an automated, scheduled process access streaming sites, crawl for specific content, and download video streams?",
+  "depth": "deep",
+  "checkpoint_mode": "default",
+  "status": "complete",
+  "created_at": "2026-06-10T12:00:00Z",
+  "updated_at": "2026-06-10T12:35:00Z",
+  "nodes": [
+    {
+      "id": "n-001",
+      "type": "discovery",
+      "title": "Discover browser automation & crawling approaches for streaming sites",
+      "status": "complete",
+      "depends_on": [],
+      "artifacts": ["notes/s1.md", "notes/s3.md", "notes/s6.md"],
+      "blocked_reason": null
+    },
+    {
+      "id": "n-002",
+      "type": "discovery",
+      "title": "Research video stream protocol detection & download methods",
+      "status": "complete",
+      "depends_on": [],
+      "artifacts": ["notes/s4.md", "notes/s5.md", "notes/s7.md"],
+      "blocked_reason": null
+    },
+    {
+      "id": "n-003",
+      "type": "discovery",
+      "title": "Research existing open-source tools for automated video downloading",
+      "status": "complete",
+      "depends_on": [],
+      "artifacts": ["notes/s2.md", "notes/s7.md"],
+      "blocked_reason": null
+    },
+    {
+      "id": "n-004",
+      "type": "analysis",
+      "title": "Analyze scheduling, monitoring, and change-detection approaches",
+      "status": "complete",
+      "depends_on": ["n-001", "n-003"],
+      "artifacts": ["final-report.md"],
+      "blocked_reason": null
+    },
+    {
+      "id": "n-005",
+      "type": "analysis",
+      "title": "Synthesize findings into feasibility answer",
+      "status": "complete",
+      "depends_on": ["n-002", "n-004"],
+      "artifacts": ["final-report.md"],
+      "blocked_reason": null
+    },
+    {
+      "id": "n-006",
+      "type": "qa",
+      "title": "Quality gate evaluation and report generation",
+      "status": "complete",
+      "depends_on": ["n-005"],
+      "artifacts": ["evaluation.md", "source-inventory.md"],
+      "blocked_reason": null
+    }
+  ]
+}
