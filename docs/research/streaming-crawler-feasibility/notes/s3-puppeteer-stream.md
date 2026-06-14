@@ -1,3 +1,7 @@
+---
+title: 'Source Note: S3 - puppeteer-stream npm package'
+---
+
 # Source Note: S3 - puppeteer-stream npm package
 
 ## Metadata

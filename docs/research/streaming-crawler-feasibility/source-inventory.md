@@ -1,3 +1,7 @@
+---
+title: 'Source Inventory'
+---
+
 # Source Inventory
 
 | ID | Source | Type | Date | Quality | Contribution | Limitations |

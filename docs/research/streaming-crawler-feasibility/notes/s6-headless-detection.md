@@ -1,3 +1,7 @@
+---
+title: 'Source Note: S6 - Headless Browser Detection & Evasion'
+---
+
 # Source Note: S6 - Headless Browser Detection & Evasion
 
 ## Metadata

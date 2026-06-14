@@ -1,3 +1,7 @@
+---
+title: 'Source Note: S5 - VideoHelp Forum: Extracting m3u8 URL from streaming sites'
+---
+
 # Source Note: S5 - VideoHelp Forum: Extracting m3u8 URL from streaming sites
 
 ## Metadata

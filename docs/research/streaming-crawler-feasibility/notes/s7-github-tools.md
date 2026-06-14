@@ -1,3 +1,7 @@
+---
+title: 'Source Note: S7 - GitHub: Open-source M3U8/HLS Download Tools'
+---
+
 # Source Note: S7 - GitHub: Open-source M3U8/HLS Download Tools
 
 ## Metadata

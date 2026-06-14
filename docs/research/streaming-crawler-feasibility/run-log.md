@@ -1,3 +1,7 @@
+---
+title: 'run log'
+---
+
 - 2026-06-10T12:00:00Z: Run initialized (depth=deep, mode=default)
 - 2026-06-10T12:00:00Z: Brief written
 - 2026-06-10T12:00:00Z: Discovery branches n-001, n-002, n-003 started

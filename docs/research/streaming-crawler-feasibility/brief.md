@@ -1,3 +1,7 @@
+---
+title: 'Research Brief'
+---
+
 # Research Brief
 
 ## Question

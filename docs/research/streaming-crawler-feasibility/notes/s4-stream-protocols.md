@@ -1,3 +1,7 @@
+---
+title: 'Source Note: S4 - Adaptive Bitrate Streaming: HLS, DASH, and CDN Delivery'
+---
+
 # Source Note: S4 - Adaptive Bitrate Streaming: HLS, DASH, and CDN Delivery
 
 ## Metadata

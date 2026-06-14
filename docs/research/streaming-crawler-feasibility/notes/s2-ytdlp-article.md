@@ -1,3 +1,7 @@
+---
+title: 'Source Note: S2 - yt-dlp: CLI Video Downloader in 2026'
+---
+
 # Source Note: S2 - yt-dlp: CLI Video Downloader in 2026
 
 ## Metadata

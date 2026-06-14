@@ -1,3 +1,7 @@
+---
+title: 'Source Note: S8 - Google Gemini Share Links'
+---
+
 # Source Note: S8 - Google Gemini Share Links
 
 ## Metadata

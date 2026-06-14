@@ -1,3 +1,7 @@
+---
+title: 'Source Note: S1 - Hyperbrowser Managed Browser Service'
+---
+
 # Source Note: S1 - Hyperbrowser Managed Browser Service
 
 ## Metadata
